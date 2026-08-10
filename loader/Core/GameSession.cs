@@ -169,7 +169,7 @@ public class GameSession
 
         // ---- Мод (скачивание с удалённого хоста + автообновление) ----
         _progress("mod", 76, "Мод FluxVisuals...");
-        string modFileName = "fluxvisuals-mod-1.0.11.jar";
+        string modFileName = "fluxvisuals-mod-1.0.12.jar";
         string modDst = Path.Combine(modsDir, modFileName);
 
         // Проверка обновлений мода через AuthServer
