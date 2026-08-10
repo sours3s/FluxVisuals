@@ -25,6 +25,8 @@ public class CameraOverhaul extends Module {
 
    private float roll = 0;
    private float bob = 0;
+   private float yawOffset = 0;
+   private float pitchOffset = 0;
 
    public CameraOverhaul() {
       this.addSettings(new Setting[]{intensity, rollAmount, bobAmount});
@@ -50,10 +52,32 @@ public class CameraOverhaul extends Module {
       return bob;
    }
 
+   /** Yaw sway: subtle yaw offset when strafing. */
+   public float getYawOffset() {
+      if (!this.enable || mc.player == null) return 0;
+      float strafe = mc.player.sidewaysSpeed;
+      float walkSpeed = (float) mc.player.getVelocity().length();
+      float targetYaw = (float) (Math.sin(System.currentTimeMillis() / 600.0) * strafe * walkSpeed * 0.3F * intensity.get());
+      yawOffset += (targetYaw - yawOffset) * 0.08F;
+      return yawOffset;
+   }
+
+   /** Pitch sway: subtle pitch bob when walking forward. */
+   public float getPitchOffset() {
+      if (!this.enable || mc.player == null) return 0;
+      float forward = mc.player.forwardSpeed;
+      float walkSpeed = (float) mc.player.getVelocity().length();
+      float targetPitch = (float) (Math.sin(System.currentTimeMillis() / 400.0) * forward * walkSpeed * 0.2F * intensity.get());
+      pitchOffset += (targetPitch - pitchOffset) * 0.1F;
+      return pitchOffset;
+   }
+
    @Override
    public void onDisable() {
       super.onDisable();
       roll = 0;
       bob = 0;
+      yawOffset = 0;
+      pitchOffset = 0;
    }
 }

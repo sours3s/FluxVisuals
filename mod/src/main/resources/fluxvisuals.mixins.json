@@ -48,6 +48,7 @@
     "ArmorStandEntityRendererMixin",
     "PlayerEntityRendererMixin",
     "PlayerEntityMixin",
+    "EntityRenderManagerMixin",
     "AppleSkinMixin",
     "DebugHudMixin",
     "InGameHudCrosshairMixin",

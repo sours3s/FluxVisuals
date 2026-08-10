@@ -19,6 +19,7 @@ import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.player.EventRotation;
 import ru.fluxvisuals.event.render.CameraPositionEvent;
 import ru.fluxvisuals.module.impl.visuals.SmoothCamera;
+import ru.fluxvisuals.module.impl.visuals.CameraOverhaul;
 
 @Environment(EnvType.CLIENT)
 @Mixin({Camera.class})
@@ -132,5 +133,20 @@ public abstract class CameraMixin {
          ((CameraAccessor)this).invokeSetPos(position.x, position.y, position.z);
       }
       this.fluxvisuals$rotationEvent = null;
+
+      // CameraOverhaul: apply pitch/yaw sway based on movement
+      if (focusedEntity != null && MinecraftClient.getInstance().options.getPerspective() == Perspective.FIRST_PERSON) {
+         CameraOverhaul overhaul = ru.fluxvisuals.client.FluxVisualsClient.get.manager != null
+            ? ru.fluxvisuals.client.FluxVisualsClient.get.manager.get(CameraOverhaul.class) : null;
+         if (overhaul != null && overhaul.enable) {
+            float currentYaw = this.fluxvisuals$smoothInitialized ? this.fluxvisuals$smoothYaw : focusedEntity.getYaw(tickProgress);
+            float currentPitch = this.fluxvisuals$smoothInitialized ? this.fluxvisuals$smoothPitch : focusedEntity.getPitch(tickProgress);
+            float yawOffset = overhaul.getYawOffset();
+            float pitchOffset = overhaul.getPitchOffset();
+            if (Math.abs(yawOffset) > 0.001F || Math.abs(pitchOffset) > 0.001F) {
+               this.setRotation(currentYaw + yawOffset, currentPitch + pitchOffset);
+            }
+         }
+      }
    }
 }
