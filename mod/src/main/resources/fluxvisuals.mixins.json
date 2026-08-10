@@ -48,6 +48,10 @@
     "ArmorStandEntityRendererMixin",
     "PlayerEntityRendererMixin",
     "PlayerEntityMixin",
+    "AppleSkinMixin",
+    "DebugHudMixin",
+    "InGameHudCrosshairMixin",
+    "EntityCullingMixin",
     "screen.TitleScreenMixin",
     "screen.SplashOverlayMixin",
     "screen.LogoTextureMixin"

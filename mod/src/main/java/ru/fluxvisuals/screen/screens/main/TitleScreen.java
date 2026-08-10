@@ -77,6 +77,9 @@ public class TitleScreen extends Screen {
 
         renderAccountWidget(textAlpha, currentAlphaNorm);
 
+        // Changelog panel (right side)
+        ChangelogPanel.render(Client.RENDERER, width, height, currentAlphaNorm);
+
         String username = mc.getSession().getUsername();
 
         float textY = startY - 80f;
@@ -308,6 +311,13 @@ public class TitleScreen extends Screen {
                 Text.translatable("menu.quit").getString(),
                 CustomButton.CustomButtonBuilder.ButtonType.RED,
                 this::startQuitFade
+        );
+
+        // Settings hub button
+        addButton(LEFT_PADDING, startY + margin * 4, BUTTON_WIDTH, BUTTON_HEIGHT,
+                "Настройки",
+                CustomButton.CustomButtonBuilder.ButtonType.ALT,
+                () -> client.setScreen(new SettingsHubScreen(this))
         );
     }
 
