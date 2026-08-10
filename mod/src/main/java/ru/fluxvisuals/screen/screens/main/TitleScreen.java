@@ -97,7 +97,7 @@ public class TitleScreen extends Screen {
 
         textY += 18f;
         drawSafeText(
-                "godweer 1.21.11",
+                "FluxVisuals 1.21.11",
                 LEFT_PADDING, textY,
                 CUSTOM_FONT, FONT_SIZE_TITLE,
                 new Color(19, 255, 174, textAlpha)

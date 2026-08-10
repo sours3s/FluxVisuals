@@ -79,7 +79,7 @@ public final class MsdfFont implements MinecraftHolder {
 
             int[] rw = ServerPrefix.rwFrom(String.valueOf(ch));
             if (rw[0] != -1 && rw[1] != -1) {
-                Identifier id = Identifier.of("godweer", "images/ui/rw_prefix.png");
+                Identifier id = Identifier.of("fluxvisuals", "images/ui/rw_prefix.png");
                 TextureAtlas.UV uv = Client.RENDERER.getCrenderSystem().getAtlas().getOrCreate(id.toString(), id);
                 if (uv != null) {
                     TextureAtlas atlas = Client.RENDERER.getCrenderSystem().getAtlas();
@@ -140,7 +140,7 @@ public final class MsdfFont implements MinecraftHolder {
             char ch = text.charAt(i);
             int[] rw = ServerPrefix.rwFrom(String.valueOf(ch));
             if (rw[0] != -1 && rw[1] != -1) {
-                Identifier id = Identifier.of("godweer", "images/ui/rw_prefix.png");
+                Identifier id = Identifier.of("fluxvisuals", "images/ui/rw_prefix.png");
                 TextureAtlas.UV uv = Client.RENDERER.getCrenderSystem().getAtlas().getOrCreate(id.toString(), id);
                 if (uv != null) {
                     float aspect = uv.width / uv.height;
@@ -204,12 +204,12 @@ public final class MsdfFont implements MinecraftHolder {
         }
 
         public Builder data(String dataFileName) {
-            this.dataIdentifer = Identifier.of("godweer", "fonts/" + dataFileName + ".json");
+            this.dataIdentifer = Identifier.of("fluxvisuals", "fonts/" + dataFileName + ".json");
             return this;
         }
 
         public Builder atlas(String atlasFileName) {
-            this.atlasIdentifier = Identifier.of("godweer", "fonts/" + atlasFileName + ".png");
+            this.atlasIdentifier = Identifier.of("fluxvisuals", "fonts/" + atlasFileName + ".png");
             return this;
         }
 

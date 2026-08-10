@@ -138,10 +138,10 @@ public class CRenderSystem {
         atlas = new TextureAtlas(5000, 5000);
 
         try {
-            atlas.add(TextureUse.SFMEDIUM, Identifier.of("godweer", "fonts/sfmedium.png"));
-            atlas.add(TextureUse.ICONS, Identifier.of("godweer", "fonts/icons.png"));
-            atlas.add(TextureUse.EMOJIS, Identifier.of("godweer", "fonts/emojis.png"));
-            atlas.add(TextureUse.ICONS_NURIK, Identifier.of("godweer", "fonts/icons_nurik.png"));
+            atlas.add(TextureUse.SFMEDIUM, Identifier.of("fluxvisuals", "fonts/sfmedium.png"));
+            atlas.add(TextureUse.ICONS, Identifier.of("fluxvisuals", "fonts/icons.png"));
+            atlas.add(TextureUse.EMOJIS, Identifier.of("fluxvisuals", "fonts/emojis.png"));
+            atlas.add(TextureUse.ICONS_NURIK, Identifier.of("fluxvisuals", "fonts/icons_nurik.png"));
         } catch (Exception e) {}
 
         vao = GL30.glGenVertexArrays();
