@@ -21,6 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.module.impl.visuals.AspectRation;
 import ru.fluxvisuals.module.impl.visuals.CameraCustomer;
+import ru.fluxvisuals.module.impl.visuals.Zoom;
+import ru.fluxvisuals.module.impl.visuals.CameraOverhaul;
 import ru.fluxvisuals.module.impl.visuals.HUD.InformationHUD;
 import ru.fluxvisuals.util.other.Mathf;
 import ru.fluxvisuals.module.impl.visuals.CustomWorld;
@@ -76,6 +78,12 @@ public abstract class GameRendererMixin {
          }
       }
 
+      // Apply Zoom module FOV
+      Zoom zoom = FluxVisualsClient.get.manager != null ? FluxVisualsClient.get.manager.get(Zoom.class) : null;
+      if (zoom != null && zoom.enable) {
+         finalFov *= zoom.getCurrentFov();
+      }
+
       cir.setReturnValue(matrix4f.perspective(finalFov * (float) (Math.PI / 180.0), aspect, 0.05F, this.getFarPlaneDistance()));
    }
 
@@ -94,6 +102,20 @@ public abstract class GameRendererMixin {
          RenderSystem.getModelViewStack().pushMatrix().mul(matrixStack.peek().getPositionMatrix());
          matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
          matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(camera.getYaw() + 180.0F));
+
+         // CameraOverhaul: apply roll and bob
+         CameraOverhaul overhaul = FluxVisualsClient.get.manager != null
+            ? FluxVisualsClient.get.manager.get(CameraOverhaul.class) : null;
+         if (overhaul != null && overhaul.enable) {
+            float roll = overhaul.getRoll();
+            float bob = overhaul.getBob();
+            if (Math.abs(roll) > 0.001F) {
+               matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(roll));
+            }
+            if (Math.abs(bob) > 0.001F) {
+               matrixStack.translate(0, bob * 0.01, 0);
+            }
+         }
          float tickDelta = InformationHUD.mc.getRenderTickCounter().getTickProgress(true);
          float fov = ((GameRendererAccessor)InformationHUD.mc.gameRenderer).invokeGetFov(camera, tickDelta, true);
          Mathf.lastProjMat.set(InformationHUD.mc.gameRenderer.getBasicProjectionMatrix(fov));
