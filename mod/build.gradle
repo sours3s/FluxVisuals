@@ -1,0 +1,86 @@
+plugins {
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+repositories {
+	mavenCentral()
+	// Репозиторий CaffeineMC — стабильный Sodium 0.8.13+mc1.21.11 (совместим с Iris 1.10.7)
+	maven {
+		name = "CaffeineMC"
+		url = "https://maven.caffeinemc.net/releases"
+	}
+}
+
+loom {
+	accessWidenerPath = file("src/main/resources/fluxvisuals.accesswidener")
+	mods {
+		"fluxvisuals" {
+			sourceSet sourceSets.main
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}"
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Стабильный Sodium 0.8.13+mc1.21.11 (совместим с Iris 1.10.7; 0.8.14-beta ломает его).
+	// compileOnly — jar кладёт сам лоадер в game/mods, в мод не бандлим.
+	modCompileOnly "net.caffeinemc:sodium-fabric:0.8.13+mc1.21.11"
+
+	// JNA — для Discord Rich Presence (JNI)
+	implementation "net.java.dev.jna:jna:5.15.0"
+	implementation "net.java.dev.jna:jna-platform:5.15.0"
+
+	// Lombok (@Generated и codegen из Arizona-порта).
+	compileOnly "org.projectlombok:lombok:1.18.38"
+	annotationProcessor "org.projectlombok:lombok:1.18.38"
+}
+
+processResources {
+	def version = project.version
+	inputs.property "version", version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+	archiveBaseName.set(project.archives_base_name)
+
+	def projectName = project.name
+	inputs.property "projectName", projectName
+
+	from("LICENSE") {
+		rename { "${it}_$projectName"}
+	}
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+
+	repositories {
+	}
+}
