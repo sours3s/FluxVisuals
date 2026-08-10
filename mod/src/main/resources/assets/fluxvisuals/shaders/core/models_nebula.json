@@ -1,0 +1,8 @@
+{
+  "vertex": "minecraft:core/position_color",
+  "fragment": "godweer:pipeline/nebula",
+  "samplers": [],
+  "uniforms": [
+    { "name": "ShaderFogData", "type": "uniform_buffer", "count": 1 }
+  ]
+}

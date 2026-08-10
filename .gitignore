@@ -1,0 +1,9 @@
+game/
+mod/.gradle/
+mod/build/
+mod/bin/
+*.class
+*.dll
+*.exe
+*.log
+*.zip

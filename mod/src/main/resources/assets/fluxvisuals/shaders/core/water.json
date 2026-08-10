@@ -1,0 +1,8 @@
+{
+  "vertex": "godweer:pipeline/shader_fog",
+  "fragment": "godweer:pipeline/water",
+  "samplers": [],
+  "uniforms": [
+    { "name": "ShaderFogData", "type": "uniform_buffer", "count": 1 }
+  ]
+}

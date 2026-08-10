@@ -1,0 +1,10 @@
+{
+  "vertex": "minecraft:core/position_color",
+  "fragment": "godweer:pipeline/models_plasma",
+  "samplers": [
+    { "name": "Sampler0" }
+  ],
+  "uniforms": [
+    { "name": "ShaderFogData", "type": "uniform_buffer", "count": 1 }
+  ]
+}
