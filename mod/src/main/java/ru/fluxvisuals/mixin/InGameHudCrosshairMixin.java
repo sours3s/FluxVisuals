@@ -10,14 +10,12 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ru.fluxvisuals.client.FluxVisualsClient;
-import ru.fluxvisuals.module.impl.visuals.CrosshairModule;
-import ru.fluxvisuals.util.render.core.Renderer2D;
-import ru.fluxvisuals.util.render.text.FontRegistry;
+import ru.fluxvisuals.crosshair.CrosshairSettings;
+import ru.fluxvisuals.crosshair.RenderCrosshairDrawer;
 
 /**
- * Отменяет ванильный crosshair и рисует кастомный при включённом CrosshairModule.
- * Статичная ошибка коррекции (когда атака кулдаунится) от ванильного тоже скрывается.
+ * Всегда рисует кастомный прицел вместо ванильного на основе настроек
+ * «Мастерской прицелов» (CrosshairSettings). Тумблер-модуля нет.
  */
 @Environment(EnvType.CLIENT)
 @Mixin(InGameHud.class)
@@ -25,25 +23,13 @@ public class InGameHudCrosshairMixin {
 
    @Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true)
    private void onRenderCrosshair(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-      CrosshairModule module = null;
-      if (FluxVisualsClient.get != null && FluxVisualsClient.get.manager != null) {
-         module = FluxVisualsClient.get.manager.get(CrosshairModule.class);
-      }
-      if (module == null || !module.enable) return;
+      MinecraftClient mc = MinecraftClient.getInstance();
+      CrosshairSettings settings = CrosshairSettings.getInstance();
+      if (!settings.enabled) return;
+      // Скрываем в спектаторе (как ванильный)
+      if (mc.player != null && mc.player.isSpectator()) return;
 
       ci.cancel();
-
-      // Use Renderer2D from FluxVisualsClient
-      Renderer2D r2 = null;
-      try {
-         r2 = FluxVisualsClient.getRenderer();
-      } catch (Exception ignored) {}
-
-      if (r2 != null) {
-         // Renderer2D needs a frame — render during the HUD frame
-         r2.pushAlpha(0.95F);
-         module.renderCrosshair(r2);
-         r2.popAlpha();
-      }
+      RenderCrosshairDrawer.draw(context, settings);
    }
 }

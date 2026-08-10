@@ -313,8 +313,15 @@ public class TitleScreen extends Screen {
                 this::startQuitFade
         );
 
-        // Settings hub button
+        // Мастерская прицелов — отдельная кнопка в главном меню
         addButton(LEFT_PADDING, startY + margin * 4, BUTTON_WIDTH, BUTTON_HEIGHT,
+                "Мастерская прицелов",
+                CustomButton.CustomButtonBuilder.ButtonType.ALT,
+                () -> client.setScreen(new CrosshairCatalogScreen(this))
+        );
+
+        // Settings hub button
+        addButton(LEFT_PADDING, startY + margin * 5, BUTTON_WIDTH, BUTTON_HEIGHT,
                 "Настройки",
                 CustomButton.CustomButtonBuilder.ButtonType.ALT,
                 () -> client.setScreen(new SettingsHubScreen(this))

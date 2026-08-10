@@ -99,7 +99,7 @@ public class Manager {
       this.module.add(new ru.fluxvisuals.module.impl.visuals.DynamicLights());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.EntityCulling());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.CameraOverhaul());
-      this.module.add(new ru.fluxvisuals.module.impl.visuals.CrosshairModule());
+
       this.module.add(new ru.fluxvisuals.module.impl.visuals.MotionBlur());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.FirstPersonModel());
       this.module.add(new ru.fluxvisuals.module.impl.utils.HitDelayFix());

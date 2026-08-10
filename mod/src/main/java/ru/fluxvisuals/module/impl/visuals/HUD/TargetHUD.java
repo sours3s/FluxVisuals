@@ -48,7 +48,7 @@ public final class TargetHUD {
    public static final BooleanSetting showItems = new BooleanSetting("TargetHUD Items", true);
    public static final BooleanSetting showOnHover = new BooleanSetting("TargetHUD Show on hover", true);
    public static final BooleanSetting particles = new BooleanSetting("TargetHUD Particles", true);
-   public static final SliderSetting scale = new SliderSetting("TargetHUD Scale", 1.3F, 0.5F, 2.5F, 0.05F, false);
+   public static final SliderSetting scale = new SliderSetting("TargetHUD Scale", 1.6F, 0.5F, 2.5F, 0.05F, false);
 
    // === Advantage indicator ===
    public static final BooleanSetting advantage = new BooleanSetting("Combat Advantage", true);

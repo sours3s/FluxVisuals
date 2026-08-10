@@ -102,7 +102,8 @@ public class SettingsHubScreen extends Screen {
          CustomButton.CustomButtonBuilder.ButtonType.MAIN,
          () -> client.setScreen(null)); // closes this screen, user opens ClickGUI via keybind
 
-      addButton(LEFT_PAD, y + margin, BTN_W, BTN_H, "Каталог прицелов",
+      // Мастерская прицелов (доступна и отдельной кнопкой в главном меню)
+      addButton(LEFT_PAD, y + margin, BTN_W, BTN_H, "Мастерская прицелов",
          CustomButton.CustomButtonBuilder.ButtonType.ALT,
          () -> client.setScreen(new CrosshairCatalogScreen(this)));
    }
