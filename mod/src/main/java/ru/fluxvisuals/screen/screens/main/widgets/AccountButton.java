@@ -32,7 +32,7 @@ public class AccountButton extends RendererObject {
     private boolean selected = false;
     private boolean favorite = false;
 
-    private final Identifier skinTexture = Identifier.of("godweer","images/ui/pic/a/kowk.png");
+    private final Identifier skinTexture = Identifier.of("fluxvisuals","images/ui/pic/a/kowk.png");
 
     public AccountButton(Account account, Runnable onLogin, Runnable onDelete, Runnable onCopy, Runnable onFavorite) {
         this.account = account;

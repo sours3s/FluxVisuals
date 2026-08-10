@@ -42,7 +42,7 @@ public class ClientPipelines {
         if (sharedUniformBuffer == null) {
             sharedDataBuffer = MemoryUtil.memAlloc(64);
             sharedUniformBuffer = RenderSystem.getDevice().createBuffer(
-                    () -> "godweer:shared_chams_shader_uniform",
+                    () -> "fluxvisuals:shared_chams_shader_uniform",
                     GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_COPY_DST,
                     64
             );
@@ -115,7 +115,7 @@ public class ClientPipelines {
             SourceFactor.ONE, DestFactor.ZERO,
             SourceFactor.ONE, DestFactor.ZERO
     );
-    public static final RenderLayer HUD = RenderLayer.of("godweer_hud",
+    public static final RenderLayer HUD = RenderLayer.of("fluxvisuals_hud",
             RenderSetup.builder(reg(RenderPipeline.builder(GUI_SNIPPET).withLocation("pipeline/gui").build())).build());
 
     public static final RenderPipeline OUTLINE_PIPELINE = reg(
