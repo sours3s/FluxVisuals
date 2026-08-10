@@ -29,16 +29,12 @@ import ru.fluxvisuals.util.render.math.animation.AnimationMath;
 import ru.fluxvisuals.util.render.text.FontRegistry;
 
 /**
- * Target HUD — полный перенос GodWeer TargetHudElement.
+ * Target HUD — компактный худ-элемент под прицелом.
  *
- * <p>Компактный макет GodWeer: голова 20px, основная панель 28px высотой,
+ * <p>Голова 20px, основная панель 28px высотой,
  * предметы сверху (14.5px бокс), имя справа от головы со скроллом, HP-бар с
  * градиентом клиентского цвета {@code getMainColor(1, 0)} → {@code getMainColor(1, 40)},
  * абсорбция золотом, частицы {@code Particles2DEngine} (dir/roll, sin/cos, затухание).
- *
- * <p>Голова рисуется плоским {@code PlayerSkinDrawer.draw(5-arg)} в логических координатах
- * GUI (без 3D-рендера и без матричных трансформаций) — это устраняет краш при F5 и
- * «голову за пределами панели».
  *
  * <p>Таргет только из-под прицела (не сквозь стены); при простое показывается сам игрок.
  */
@@ -47,11 +43,12 @@ public final class TargetHUD {
    private static final MinecraftClient mc = MinecraftClient.getInstance();
 
    // === Настройки (регистрируются в Hud.java) ===
+   public static final ModeSetting targetMode = new ModeSetting("TargetHUD Mode", "Normal", "Normal", "Minimal");
    public static final ModeSetting style = new ModeSetting("TargetHUD Style", "Glass", "Dark", "Glass");
    public static final BooleanSetting showItems = new BooleanSetting("TargetHUD Items", true);
    public static final BooleanSetting showOnHover = new BooleanSetting("TargetHUD Show on hover", true);
    public static final BooleanSetting particles = new BooleanSetting("TargetHUD Particles", true);
-   public static final SliderSetting scale = new SliderSetting("TargetHUD Scale", 1.0F, 0.5F, 2.0F, 0.05F, false);
+   public static final SliderSetting scale = new SliderSetting("TargetHUD Scale", 1.3F, 0.5F, 2.5F, 0.05F, false);
 
    // === Advantage indicator ===
    public static final BooleanSetting advantage = new BooleanSetting("Combat Advantage", true);
@@ -60,7 +57,7 @@ public final class TargetHUD {
    public static final SliderSetting advArmorWeight = new SliderSetting("Armor Weight", 0.25F, 0.0F, 1.0F, 0.05F, false);
    public static final SliderSetting advDamageWeight = new SliderSetting("Damage Weight", 0.25F, 0.0F, 1.0F, 0.05F, false);
 
-   // === Константы макета (GodWeer TargetHudElement) ===
+   // === Константы макета ===
    private static final float ITEM_BOX = 14.5F;
    private static final float SPACING = 1.5F;
    private static final float MAIN_HEIGHT = 28.0F;   // высота основной панели
@@ -70,6 +67,7 @@ public final class TargetHUD {
    // === Состояние ===
    private static final Animation openAnimation = new Animation();
    private static final Particles2DEngine particlesEngine = new Particles2DEngine();
+   private static final ComboTracker comboTracker = new ComboTracker();
    private static LivingEntity prevTarget = null;
    private static LivingEntity lastHoveredEntity = null;
    private static long lastHoverTime = 0L;
@@ -98,6 +96,13 @@ public final class TargetHUD {
          return le;
       }
       return null;
+   }
+
+   /** Вызывается из AttackEvent для обновления комбо-трекера. */
+   public static void onAttack(LivingEntity target) {
+      if (target != null) {
+         comboTracker.onHit(target);
+      }
    }
 
    public static void targetHUD(Renderer2D r2, DrawContext drawContext) {
@@ -129,7 +134,13 @@ public final class TargetHUD {
       float anim = (float) openAnimation.get();
       if (anim < 0.01F) return;
 
-      // Предметы цели (GodWeer: main, head, chest, legs, feet, offhand)
+      // === Minimal mode: compact HP + combo under crosshair ===
+      if (targetMode.is("Minimal")) {
+         renderMinimal(r2, anim, s, prevTarget);
+         return;
+      }
+
+      // Предметы цели (main, head, chest, legs, feet, offhand)
       List<ItemStack> items = new ArrayList<>();
       if (showItems.get() && prevTarget != null) {
          items.add(prevTarget.getMainHandStack());
@@ -189,7 +200,7 @@ public final class TargetHUD {
       float headY = boxY + 4.0F * s;
       drawHead(r2, drawContext, prevTarget, headX, headY, headSize, anim);
 
-      // Имя со скроллом (GodWeer: baseline mainBoxY + 4.5)
+      // Имя со скроллом
       String name = prevTarget instanceof CreeperEntity ? "Грустный крипер" : prevTarget.getName().getString();
       float nameX = headX + headSize + 5.0F * s;
       float nameW = width - (headSize + 15.0F * s);
@@ -208,7 +219,7 @@ public final class TargetHUD {
       r2.text(FontRegistry.INTER_MEDIUM, nameX - scrollAnim, boxY + 4.5F * s, nameSize, name, -1);
       r2.popClipRect();
 
-      // HP-бар (GodWeer: barY = boxY + mainHeight - 8.5, barH = 3.5)
+      // HP-бар
       float barX = nameX;
       float barY = boxY + mainHeight - 8.5F * s;
       float barW = nameW;
@@ -220,7 +231,7 @@ public final class TargetHUD {
       // Фон бара
       r2.rect(barX, barY, barW, barH, 4.0F * s, Renderer2D.ColorUtil.replAlpha(0xFF000000, (int) (60 * anim)));
 
-      // Градиент клиентского цвета: getColor(0) → getColor(40) как в GodWeer
+      // Градиент клиентского цвета
       int c1 = Renderer2D.ColorUtil.getMainColor(1, 0);
       int c2 = Renderer2D.ColorUtil.getMainColor(1, 40);
       drawHpGradient(r2, barX, barY, barW * hpFactor, barH, c1, c2, anim);
@@ -277,6 +288,52 @@ public final class TargetHUD {
       drawContext.getMatrices().popMatrix();
       r2.popAlpha();
       DraggableManager.getInstance().endDrag(session);
+   }
+
+   /** Minimal mode: компактный HP + комбо под прицелом. */
+   private static void renderMinimal(Renderer2D r2, float anim, float s, LivingEntity target) {
+      if (target == null) return;
+      float fontSize = 11.0F * s;
+      float hp = target.getHealth();
+      float maxHp = target.getMaxHealth();
+      int combo = comboTracker.getCombo();
+
+      String hpStr = String.valueOf((int) hp);
+      String maxStr = "/" + (int) maxHp;
+      String comboStr = combo > 1 ? "  x" + combo : "";
+      String label = hpStr + maxStr + comboStr;
+
+      float centerX = mc.getWindow().getScaledWidth() / 2.0F;
+      float centerY = mc.getWindow().getScaledHeight() / 2.0F;
+      float textW = r2.measureText(FontRegistry.INTER_SEMIBOLD, label, fontSize).width;
+      float padX = 6.0F * s;
+      float padY = 3.0F * s;
+      float bgW = textW + padX * 2;
+      float bgH = fontSize + padY * 2;
+      float bgX = centerX - bgW / 2.0F;
+      float bgY = centerY + 18.0F * s;
+
+      r2.pushAlpha(anim);
+      int bgColor = Renderer2D.ColorUtil.replAlpha(0xFF000000, (int) (140 * anim));
+      int outColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), (int) (60 * anim));
+      r2.rect(bgX, bgY, bgW, bgH, 5.0F * s, bgColor);
+      r2.rectOutline(bgX, bgY, bgW, bgH, 5.0F * s, outColor, 0.6F);
+
+      int hpColor = hp > maxHp * 0.5F ? 0xFF55FF55 : hp > maxHp * 0.25F ? 0xFFFFFF55 : 0xFFFF5555;
+      hpColor = Renderer2D.ColorUtil.replAlpha(hpColor, (int) (255 * anim));
+      int maxColor = Renderer2D.ColorUtil.replAlpha(0xFFC8C8C8, (int) (180 * anim));
+      int comboColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), (int) (255 * anim));
+
+      float tx = bgX + padX;
+      float ty = bgY + padY + 1.0F;
+      r2.text(FontRegistry.INTER_SEMIBOLD, tx, ty, fontSize, hpStr, hpColor);
+      tx += r2.measureText(FontRegistry.INTER_SEMIBOLD, hpStr, fontSize).width;
+      r2.text(FontRegistry.INTER_SEMIBOLD, tx, ty, fontSize, maxStr, maxColor);
+      if (combo > 1) {
+         tx += r2.measureText(FontRegistry.INTER_SEMIBOLD, maxStr, fontSize).width;
+         r2.text(FontRegistry.INTER_SEMIBOLD, tx, ty, fontSize, comboStr, comboColor);
+      }
+      r2.popAlpha();
    }
 
    /** Плоский скин-аватар в логических координатах GUI (без 3D, без матричных трюков). */
@@ -347,7 +404,7 @@ public final class TargetHUD {
       drawContext.getMatrices().popMatrix();
    }
 
-   /** Спавн частиц у края HP-бара (GodWeer spawnHealthParticles). */
+   /** Спавн частиц у края HP-бара. */
    private static void spawnHealthParticles(float x, float y, int color) {
       if (Math.random() > 0.8) {
          float dir = (float) (Math.random() * 360.0F);
@@ -361,7 +418,7 @@ public final class TargetHUD {
       }
    }
 
-   /** Движок частиц (порт GodWeer Particles2DEngine). */
+   /** Движок частиц (2D-частицы). */
    @Environment(EnvType.CLIENT)
    private static final class Particles2DEngine {
       private final List<Particle2D> particles = new ArrayList<>();
@@ -382,7 +439,7 @@ public final class TargetHUD {
       }
    }
 
-   /** Частица (порт GodWeer Particle2D: dir/roll, движение по sin/cos, затухание, цвет клиента). */
+   /** Частица (dir/roll, движение по sin/cos, затухание, цвет клиента). */
    @Environment(EnvType.CLIENT)
    private static final class Particle2D {
       private float x;

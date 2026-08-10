@@ -5,7 +5,7 @@ import ru.fluxvisuals.vse.utils.math.ColorUtility;
 import java.awt.*;
 
 /**
- * Минимальный ClientSettings для порта рендер-системы GodWeer.
+ * Минимальный ClientSettings для рендер-системы.
  * Только цветовые эффекты, которые нужны ClientRenderer.
  */
 @SuppressWarnings({"unused", "FieldMayBeFinal"})
