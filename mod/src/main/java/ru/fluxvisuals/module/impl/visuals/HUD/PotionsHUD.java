@@ -31,7 +31,7 @@ public class PotionsHUD {
    public static MinecraftClient mc = MinecraftClient.getInstance();
 
    // === Настройки ===
-   public static final SliderSetting scale = new SliderSetting("PotionsHUD Scale", 1.0F, 0.5F, 2.0F, 0.05F, false);
+   public static final SliderSetting scale = new SliderSetting("PotionsHUD Scale", 1.4F, 0.5F, 2.5F, 0.05F, false);
 
    private static final int HARMFUL_EFFECT_COLOR = 0xFFFF5353;  // was new Color(16734547).getRGB()
    private static final Map<RegistryEntry<StatusEffect>, Integer> maxDurations = new HashMap<>();
@@ -122,10 +122,12 @@ public class PotionsHUD {
             guiScale = 1.0F;
          }
          float hudScale = session.scale();
+         // Apply the module scale setting so it actually affects rendered content
+         float finalScale = hudScale * s;
 
          drawContext.getMatrices().pushMatrix();
          drawContext.getMatrices().translate(x / guiScale, y / guiScale);
-         drawContext.getMatrices().scale(hudScale, hudScale);
+         drawContext.getMatrices().scale(finalScale, finalScale);
          drawContext.getMatrices().translate(-x / guiScale, -y / guiScale);
  
          try {

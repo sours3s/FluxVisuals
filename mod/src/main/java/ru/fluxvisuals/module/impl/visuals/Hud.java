@@ -13,6 +13,7 @@ import ru.fluxvisuals.event.EventInit;
 import ru.fluxvisuals.event.impl.EventScreen;
 import ru.fluxvisuals.event.input.MouseScrollEvent;
 import ru.fluxvisuals.event.lifecycle.ClientTickEvent;
+import ru.fluxvisuals.event.player.AttackEvent;
 import ru.fluxvisuals.module.api.Category;
 import ru.fluxvisuals.module.api.IModule;
 import ru.fluxvisuals.module.api.Module;
@@ -77,7 +78,7 @@ public class Hud extends Module {
       this.addSettings(new Setting[]{
          element, notify, blur, healthThreshold, durabilityThreshold,
          InformationHUD.metrics, ArrayListHUD.sortByWidth, ArrayListHUD.smooth,
-         TargetHUD.style, TargetHUD.showItems, TargetHUD.showOnHover, TargetHUD.particles, TargetHUD.scale,
+         TargetHUD.targetMode, TargetHUD.style, TargetHUD.showItems, TargetHUD.showOnHover, TargetHUD.particles, TargetHUD.scale,
          PotionsHUD.scale
       });
    }
@@ -86,6 +87,14 @@ public class Hud extends Module {
     * Предупреждения о малом здоровье и износе брони (настройки "Low Health"/"Low Durability").
     * Раньше эти флаги были, но никто их не использовал — модуль не работал.
     */
+   @EventInit
+   public void onAttack(AttackEvent e) {
+      if (!this.enable || mc.player == null) return;
+      if (e.getTarget() instanceof net.minecraft.entity.LivingEntity le) {
+         TargetHUD.onAttack(le);
+      }
+   }
+
    @EventInit
    public void onTick(ClientTickEvent event) {
       if (!this.enable || mc.player == null || mc.world == null) {

@@ -47,6 +47,7 @@
     "BlockRenderManagerMixin",
     "ArmorStandEntityRendererMixin",
     "PlayerEntityRendererMixin",
+    "PlayerEntityMixin",
     "screen.TitleScreenMixin",
     "screen.SplashOverlayMixin",
     "screen.LogoTextureMixin"

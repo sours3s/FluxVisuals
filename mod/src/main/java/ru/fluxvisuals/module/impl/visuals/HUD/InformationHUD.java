@@ -67,7 +67,7 @@ public class InformationHUD {
       String xStr = String.valueOf((int) mc.player.getX());
       String yStr = String.valueOf((int) mc.player.getY());
       String zStr = String.valueOf((int) mc.player.getZ());
-      String bpsValue = String.format("%.1f", bps);
+      String bpsValue = String.format("%.1f", Math.min(bps, 999.9F));
       String systemTime = systemTime();
       String gameTime = gameTime();
 
@@ -94,12 +94,18 @@ public class InformationHUD {
       // Иконки слева от каждого сегмента (ICONS-глифы «1» и «2» известны и работают).
       float ICON = 42.0F;
       float SEP = 34.0F;
-      float totalWidth = ICON;
+      float SEPARATOR_DRAWN = 18.0F; // separators drawn in render loop but missing from segWidths
+      float totalWidth = 14.0F; // left padding of drawClientRect
+      boolean first = true;
       for (int i = 0; i < 3; i++) {
          if (!show[i]) continue;
-         totalWidth += segWidths[i] + (i == 0 ? SEP : SEP);
+         if (!first) totalWidth += SEPARATOR_DRAWN + SEP; // separator + gap
+         first = false;
+         if (i == 0) totalWidth += ICON; // coords icon "1"
+         if (i == 2) totalWidth += ICON; // speed icon "2"
+         totalWidth += segWidths[i];
       }
-      totalWidth += 16.0F;
+      totalWidth += 20.0F; // right padding
       float totalHeight = 40.64F;
 
       float preferredX = 20.0F;

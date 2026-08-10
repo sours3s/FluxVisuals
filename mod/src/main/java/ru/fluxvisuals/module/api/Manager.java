@@ -88,6 +88,25 @@ public class Manager {
       this.module.add(new SoundFX());
       this.module.add(new ChatSounds());
 
+      // === Новые модули (Etaps 2-4) ===
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.MaceHelper());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.ReachCircle());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.Keystrokes());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.ArmorStatus());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.BetterPing());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.Zoom());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.Hitboxes());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.DynamicLights());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.EntityCulling());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.CameraOverhaul());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.CrosshairModule());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.MotionBlur());
+      this.module.add(new ru.fluxvisuals.module.impl.visuals.FirstPersonModel());
+      this.module.add(new ru.fluxvisuals.module.impl.utils.HitDelayFix());
+      this.module.add(new ru.fluxvisuals.module.impl.utils.AppleSkin());
+      this.module.add(new ru.fluxvisuals.module.impl.utils.BetterF3());
+      this.module.add(new ru.fluxvisuals.module.impl.utils.PearlClutchHelper());
+
       this.module.sort(java.util.Comparator.comparing(m -> m.name));
 
       // Build caches

@@ -19,6 +19,7 @@ public class DiscordRCP extends Module {
 
    public DiscordRCP() {
       this.enable = true; // включено сразу — RPC пишет только в named pipe, без риска
+      this.onEnable();    // регистрируем обработчики событий
    }
 
    @EventInit
