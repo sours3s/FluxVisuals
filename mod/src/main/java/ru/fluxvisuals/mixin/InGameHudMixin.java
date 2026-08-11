@@ -23,16 +23,25 @@ import ru.fluxvisuals.util.render.HudRenderBridge;
 @Mixin({InGameHud.class})
 public class InGameHudMixin {
    private static boolean isHudModuleEnabled() {
-      Hud hud = FluxVisualsClient.get.manager != null ? FluxVisualsClient.get.manager.get(Hud.class) : null;
-      return hud != null && hud.enable;
+      return FluxVisualsClient.get != null && FluxVisualsClient.get.manager != null;
    }
 
    private static boolean isCustomPotionsActive() {
-      return isHudModuleEnabled() && Hud.element.get("Список зелий");
+      if (!isHudModuleEnabled()) return false;
+      try {
+         return Hud.isPotionListActive();
+      } catch (Throwable t) {
+         return false;
+      }
    }
 
    private static boolean isCustomHotbarActive() {
-      return isHudModuleEnabled() && Hud.element.get("Хот бар");
+      if (!isHudModuleEnabled()) return false;
+      try {
+         return Hud.isHotbarBindsActive();
+      } catch (Throwable t) {
+         return false;
+      }
    }
    @Inject(
       method = {"renderStatusEffectOverlay"},
@@ -40,9 +49,8 @@ public class InGameHudMixin {
       cancellable = true
    )
    private void onRenderStatusEffects(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-      if (isCustomPotionsActive()) {
-         ci.cancel();
-      }
+      // Ванильные иконки эффектов убраны всегда — есть элемент Potions.
+      ci.cancel();
    }
 
    @Inject(

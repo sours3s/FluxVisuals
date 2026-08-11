@@ -22,6 +22,7 @@ import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
 import ru.fluxvisuals.module.api.setting.impl.MultiBooleanSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 import ru.fluxvisuals.module.impl.visuals.HUD.ArrayListHUD;
+import ru.fluxvisuals.module.impl.visuals.HUD.HotBarHUD;
 import ru.fluxvisuals.module.impl.visuals.HUD.InformationHUD;
 import ru.fluxvisuals.module.impl.visuals.HUD.KeyBindHUD;
 import ru.fluxvisuals.module.impl.visuals.HUD.PotionsHUD;
@@ -55,6 +56,27 @@ public class Hud extends Module {
       new BooleanSetting("Potion List", true),
       new BooleanSetting("Hotbar Binds", true)
    );
+
+   // Статические методы для проверки элементов HUD (используются в миксинах, чтобы избежать проблем с байткодом)
+   public static boolean isPotionListActive() {
+      if (element == null) return false;
+      for (BooleanSetting setting : element.settings) {
+         if ("Potion List".equals(setting.name)) {
+            return setting.get();
+         }
+      }
+      return false;
+   }
+
+   public static boolean isHotbarBindsActive() {
+      if (element == null) return false;
+      for (BooleanSetting setting : element.settings) {
+         if ("Hotbar Binds".equals(setting.name)) {
+            return setting.get();
+         }
+      }
+      return false;
+   }
    public static MultiBooleanSetting notify = new MultiBooleanSetting(
       "Notification Settings",
       new BooleanSetting("Modules", true),
@@ -135,6 +157,9 @@ public class Hud extends Module {
             }
          }
       }
+
+      // Кастомный хотбар (предметы/бары) — обновление анимаций раз в тик.
+      HotBarHUD.tick();
    }
 
    @EventInit
@@ -142,9 +167,7 @@ public class Hud extends Module {
       if (!this.enable) {
          return;
       }
-      if (!(mc.currentScreen instanceof ChatScreen)) {
-         return;
-      }
+      // Масштабирование ctrl+колесо работает и в игре, и в чате (без этого — только в чате).
       long handle = e.window();
       if (handle == 0L) {
          return;
@@ -197,12 +220,16 @@ public class Hud extends Module {
                if (PotionsHUD.hasContent()) {
                   PotionsHUD.potions(r2, e.drawContext());
                } else if (chatOpen) {
-                  renderEmptyPlaceholder(r2, "potionsHUD", "Potions", 20.0F, 474.0F);
+                  PotionsHUD.renderEmpty(r2);
                }
             }
 
             if (element.get("Keybind List")) {
                KeyBindHUD.keybind(r2);
+            }
+
+            if (element.get("Hotbar Binds")) {
+               HotBarHUD.hotbar(r2, e.drawContext());
             }
 
             renderEditHints(r2, e.viewportWidth(), e.viewportHeight());
