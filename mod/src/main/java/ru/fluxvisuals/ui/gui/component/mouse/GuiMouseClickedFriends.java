@@ -14,7 +14,8 @@ import ru.fluxvisuals.ui.gui.component.render.GuiRenderFriends;
 import ru.fluxvisuals.ui.gui.component.render.GuiRenderMain;
 
 /**
- * Клики вкладки «Друзья»: фокус строки поиска, добавление/удаление друзей.
+ * Клики вкладки «Друзья»: переключение под-вкладок, поиск, добавление/удаление.
+ * Индексы строк совпадают с рендером (GuiRenderFriends.rowY).
  */
 @Environment(EnvType.CLIENT)
 public class GuiMouseClickedFriends extends GuiScreen {
@@ -31,59 +32,64 @@ public class GuiMouseClickedFriends extends GuiScreen {
 
       float x = GuiRenderFriends.rowX();
       float w = GuiRenderFriends.rowW();
-      float inputH = 24.0F;
-      float inputY = GuiLayout.clipY() + 2.0F;
-      float listY0 = inputY + inputH + 6.0F;
-      float headerH = 18.0F;
-      float rowH = 20.0F;
-      float gapR = 3.0F;
       float scroll = GuiScreen.getScrollUtil().getScroll();
 
-      // Фокус поля поиска.
-      if (GuiRenderMain.isHovered(mouseX, mouseY, x, inputY, w, inputH)) {
+      // ---- Переключение вкладок ----
+      float tabW = (w - GuiRenderFriends.TAB_GAP) / 2.0F;
+      for (int i = 0; i < 2; i++) {
+         float tx = x + i * (tabW + GuiRenderFriends.TAB_GAP);
+         if (GuiRenderMain.isHovered(mouseX, mouseY, tx, GuiRenderFriends.tabY(), tabW, GuiRenderFriends.TAB_H)) {
+            if (GuiScreen.friendsTab != i) {
+               GuiScreen.friendsTab = i;
+               GuiScreen.friendsSearchText = "";
+               GuiScreen.friendsSearchEditing = false;
+            }
+            return true;
+         }
+      }
+
+      // ---- Фокус поля поиска ----
+      if (GuiRenderMain.isHovered(mouseX, mouseY, x, GuiRenderFriends.inputY(), w, GuiRenderFriends.INPUT_H)) {
          GuiScreen.friendsSearchEditing = true;
          return true;
       }
 
-      List<String> online = GuiRenderFriends.filteredOnline();
-      List<Friend> friends = GuiRenderFriends.filteredFriends();
-      boolean showManual = !GuiScreen.friendsSearchText.trim().isEmpty()
-            && online.stream().noneMatch(n -> n.equalsIgnoreCase(GuiScreen.friendsSearchText.trim()));
+      float listY0 = GuiRenderFriends.listY0();
 
-      int onlineRows = online.size() + (showManual ? 1 : 0);
-      float rowIndex = 0.0F;
+      if (GuiScreen.friendsTab == 1) {
+         // ---- Вкладка «Сервер»: добавить по нику / онлайн-игроки ----
+         List<String> online = GuiRenderFriends.filteredOnline();
+         boolean showManual = !GuiScreen.friendsSearchText.trim().isEmpty()
+               && online.stream().noneMatch(n -> n.equalsIgnoreCase(GuiScreen.friendsSearchText.trim()));
 
-      // Кнопка «+» в строке «Добавить по нику».
-      if (showManual) {
-         rowIndex++;
-         float y = listY0 + rowIndex * (rowH + gapR) - scroll;
-         rowIndex++;
-         if (GuiRenderFriends.isSmallButton(x, y, w, mouseX, mouseY)) {
-            addFriend(GuiScreen.friendsSearchText.trim());
-            return true;
+         int idx = 0;
+         if (showManual) {
+            float y = GuiRenderFriends.rowY(idx, scroll);
+            idx++;
+            if (GuiRenderFriends.isSmallButton(x, y, w, mouseX, mouseY)) {
+               addFriend(GuiScreen.friendsSearchText.trim());
+               return true;
+            }
          }
-      }
-
-      // Строки онлайн-игроков.
-      for (String name : online) {
-         float y = listY0 + rowIndex * (rowH + gapR) - scroll;
-         rowIndex++;
-         if (!FriendManager.isFriend(name) && GuiRenderFriends.isSmallButton(x, y, w, mouseX, mouseY)) {
-            addFriend(name);
-            return true;
+         for (String name : online) {
+            float y = GuiRenderFriends.rowY(idx, scroll);
+            idx++;
+            if (!FriendManager.isFriend(name) && GuiRenderFriends.isSmallButton(x, y, w, mouseX, mouseY)) {
+               addFriend(name);
+               return true;
+            }
          }
-      }
-
-      // Заголовок «Друзья» + строки друзей.
-      if (friends.size() > 0) {
-         rowIndex++;
-      }
-      for (Friend f : friends) {
-         float y = listY0 + rowIndex * (rowH + gapR) - scroll;
-         rowIndex++;
-         if (GuiRenderFriends.isSmallButton(x, y, w, mouseX, mouseY)) {
-            removeFriend(f.getName());
-            return true;
+      } else {
+         // ---- Вкладка «Друзья»: удаление ----
+         List<Friend> friends = GuiRenderFriends.filteredFriends();
+         int idx = 0;
+         for (Friend f : friends) {
+            float y = GuiRenderFriends.rowY(idx, scroll);
+            idx++;
+            if (GuiRenderFriends.isSmallButton(x, y, w, mouseX, mouseY)) {
+               removeFriend(f.getName());
+               return true;
+            }
          }
       }
 
@@ -102,7 +108,7 @@ public class GuiMouseClickedFriends extends GuiScreen {
       if (FluxVisualsClient.get == null || FluxVisualsClient.get.friendManager == null) {
          return;
       }
-      if (name.equalsIgnoreCase(GuiScreen.mc.player.getName().getString())) {
+      if (GuiScreen.mc.player != null && name.equalsIgnoreCase(GuiScreen.mc.player.getName().getString())) {
          return; // нельзя добавить себя
       }
       FluxVisualsClient.get.friendManager.add(name);

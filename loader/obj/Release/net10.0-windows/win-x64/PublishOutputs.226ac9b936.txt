@@ -1,0 +1,6 @@
+D:\FluxVisuals\publish\FluxVisualsLoader.pdb
+D:\FluxVisuals\publish\Resources\FluxVisuals.ico
+D:\FluxVisuals\publish\Microsoft.Web.WebView2.Core.xml
+D:\FluxVisuals\publish\Microsoft.Web.WebView2.WinForms.xml
+D:\FluxVisuals\publish\Microsoft.Web.WebView2.Wpf.xml
+D:\FluxVisuals\publish\FluxVisualsLoader.exe

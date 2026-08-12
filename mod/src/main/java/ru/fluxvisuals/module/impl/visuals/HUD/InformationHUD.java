@@ -1,6 +1,5 @@
 package ru.fluxvisuals.module.impl.visuals.HUD;
 
-import java.util.Calendar;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -15,11 +14,8 @@ import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.text.FontRegistry;
 
 /**
- * Единая статус-строка: координаты, системное/игровое время, скорость (BPS) и пинг —
- * в одной компактной строке. Каждая метрика включается/выключается отдельной настройкой
- * {@link #metrics} (отображается в ClickGUI на модуле Hud).
- *
- * <p>Строки и измерения кэшируются через {@link TextCache} (только если текст не менялся).
+ * Инфо-строка: координаты + скорость (BPS) — компактно, отцентрировано.
+ * Время вынесено в WaterMark (не дублируется).
  */
 @Environment(EnvType.CLIENT)
 public class InformationHUD {
@@ -28,7 +24,6 @@ public class InformationHUD {
    public static final MultiBooleanSetting metrics = new MultiBooleanSetting(
       "Status Line Metrics",
       new BooleanSetting("Координаты", true),
-      new BooleanSetting("Время", true),
       new BooleanSetting("Скорость", true)
    );
 
@@ -37,19 +32,22 @@ public class InformationHUD {
    private static double prevZ = 0.0;
    private static long prevTime = 0L;
    private static float bps = 0.0F;
+   // Накопительный расчёт: позиция игрока обновляется раз в тик (50 мс), поэтому
+   // мерить по кадрам нельзя — на высоком FPS bps будет прыгать в 0. Считаем по окну ~250 мс.
+   private static float accDistance = 0.0F;
+   private static long accTimeMs = 0L;
+   private static final long BPS_WINDOW_MS = 250L;
 
    private static final String LBL_X = "x";
    private static final String LBL_Y = "y";
    private static final String LBL_Z = "z";
    private static final String LBL_BPS = "bps";
-   private static final String LBL_MS = "ms";
 
    private InformationHUD() {}
 
    public static void information(Renderer2D r2) {
-      if (mc.player == null || mc.world == null) {
-         return;
-      }
+      if (mc.player == null || mc.world == null) return;
+
       Hud.animC.update();
       boolean chat = mc.currentScreen instanceof ChatScreen;
       Hud.animC.run(chat ? 1.0 : 0.0, 0.8F, Easings.CIRC_OUT, false);
@@ -57,56 +55,41 @@ public class InformationHUD {
       updateBps();
 
       float fontSize = 28.0F;
-      float textY = 25.0F;
-
-      // ===== Сегменты в порядке: координаты / время / скорость =====
       boolean showCoords = metrics.get("Координаты");
-      boolean showTime = metrics.get("Время");
       boolean showSpeed = metrics.get("Скорость");
 
       String xStr = String.valueOf((int) mc.player.getX());
       String yStr = String.valueOf((int) mc.player.getY());
       String zStr = String.valueOf((int) mc.player.getZ());
       String bpsValue = String.format("%.1f", Math.min(bps, 999.9F));
-      String systemTime = systemTime();
-      String gameTime = gameTime();
 
-      float[] segWidths = new float[3];
-      boolean[] show = { showCoords, showTime, showSpeed };
-
+      // ===== Вычисляем ширину сегментов =====
+      float coordsW = 0;
       if (showCoords) {
-         segWidths[0] = TextCache.width(r2, FontRegistry.INTER_MEDIUM, xStr, fontSize)
+         coordsW = TextCache.width(r2, FontRegistry.INTER_MEDIUM, xStr, fontSize)
                + TextCache.width(r2, FontRegistry.INTER_MEDIUM, LBL_X, fontSize)
                + TextCache.width(r2, FontRegistry.INTER_MEDIUM, yStr, fontSize)
                + TextCache.width(r2, FontRegistry.INTER_MEDIUM, LBL_Y, fontSize)
                + TextCache.width(r2, FontRegistry.INTER_MEDIUM, zStr, fontSize)
                + TextCache.width(r2, FontRegistry.INTER_MEDIUM, LBL_Z, fontSize);
       }
-      if (showTime) {
-         String timeStr = systemTime + "  " + gameTime;
-         segWidths[1] = TextCache.width(r2, FontRegistry.INTER_MEDIUM, timeStr, fontSize);
-      }
+      float speedW = 0;
       if (showSpeed) {
-         segWidths[2] = TextCache.width(r2, FontRegistry.INTER_MEDIUM, bpsValue, fontSize)
+         speedW = TextCache.width(r2, FontRegistry.INTER_MEDIUM, bpsValue, fontSize)
                + TextCache.width(r2, FontRegistry.INTER_MEDIUM, LBL_BPS, fontSize);
       }
 
-      // Иконки слева от каждого сегмента (ICONS-глифы «1» и «2» известны и работают).
-      float ICON = 42.0F;
-      float SEP = 34.0F;
-      float SEPARATOR_DRAWN = 18.0F; // separators drawn in render loop but missing from segWidths
-      float totalWidth = 14.0F; // left padding of drawClientRect
-      boolean first = true;
-      for (int i = 0; i < 3; i++) {
-         if (!show[i]) continue;
-         if (!first) totalWidth += SEPARATOR_DRAWN + SEP; // separator + gap
-         first = false;
-         if (i == 0) totalWidth += ICON; // coords icon "1"
-         if (i == 2) totalWidth += ICON; // speed icon "2"
-         totalWidth += segWidths[i];
-      }
-      totalWidth += 20.0F; // right padding
-      float totalHeight = 40.64F;
+      float ICON = 24.0F;       // уменьшен с 36 -> 24 (было слишком большим)
+      float GAP = 16.0F;        // уменьшен с 24 -> 16
+      float PADDING = 10.0F;    // уменьшен с 12 -> 10
+
+      float totalWidth = PADDING;
+      if (showCoords) totalWidth += coordsW;       // убрали ICON перед координатами
+      if (showCoords && showSpeed) totalWidth += GAP;
+      if (showSpeed) totalWidth += ICON + speedW;  // иконка только перед BPS
+      totalWidth += PADDING;
+
+      float totalHeight = 38.0F;
 
       float preferredX = 20.0F;
       float preferredY = mc.getWindow().getHeight() - 75.0F + (20.0F + -20.0F * Hud.animC.get());
@@ -118,56 +101,40 @@ public class InformationHUD {
 
       Hud.drawClientRect(r2, x, y, totalWidth, totalHeight, 13.0F, 1.0F, 1.0F);
 
-      float cursorX = x + 14.0F;
+      // Вертикальное центрирование текста в рамке. r2.text принимает BASELINE,
+      // поэтому baseline = y + (totalHeight + ascender) / 2 — так глифы стоят по центру,
+      // а не уезжают за верхнюю границу рамки.
+      float ascent = TextCache.measure(r2, FontRegistry.INTER_MEDIUM, "A", fontSize).baselineOffset;
+      float textY = y + (totalHeight + ascent) / 2.0F;
+      float cursorX = x + PADDING;
       int main = Renderer2D.ColorUtil.getMainColor(1, 1);
       int text = Renderer2D.ColorUtil.getTextColor(1, 1);
 
       if (showCoords) {
-         r2.text(FontRegistry.ICONS, cursorX, y + textY, 32.0F, "1", main);
-         cursorX += ICON;
          float sx = cursorX;
-         drawPair(r2, sx, y, textY, fontSize, xStr, LBL_X, text, main);
-         sx += TextCache.width(r2, FontRegistry.INTER_MEDIUM, xStr, fontSize) + TextCache.width(r2, FontRegistry.INTER_MEDIUM, LBL_X, fontSize);
-         drawPair(r2, sx, y, textY, fontSize, yStr, LBL_Y, text, main);
-         sx += TextCache.width(r2, FontRegistry.INTER_MEDIUM, yStr, fontSize) + TextCache.width(r2, FontRegistry.INTER_MEDIUM, LBL_Y, fontSize);
-         r2.text(FontRegistry.INTER_MEDIUM, sx, y + textY, fontSize, zStr, text);
+         r2.text(FontRegistry.INTER_MEDIUM, sx, textY, fontSize, xStr, text);
+         sx += TextCache.width(r2, FontRegistry.INTER_MEDIUM, xStr, fontSize);
+         r2.text(FontRegistry.INTER_MEDIUM, sx, textY, fontSize, LBL_X, main);
+         sx += TextCache.width(r2, FontRegistry.INTER_MEDIUM, LBL_X, fontSize);
+         r2.text(FontRegistry.INTER_MEDIUM, sx, textY, fontSize, yStr, text);
+         sx += TextCache.width(r2, FontRegistry.INTER_MEDIUM, yStr, fontSize);
+         r2.text(FontRegistry.INTER_MEDIUM, sx, textY, fontSize, LBL_Y, main);
+         sx += TextCache.width(r2, FontRegistry.INTER_MEDIUM, LBL_Y, fontSize);
+         r2.text(FontRegistry.INTER_MEDIUM, sx, textY, fontSize, zStr, text);
          sx += TextCache.width(r2, FontRegistry.INTER_MEDIUM, zStr, fontSize);
-         r2.text(FontRegistry.INTER_MEDIUM, sx, y + textY, fontSize, LBL_Z, main);
-         cursorX += segWidths[0] + SEP;
-      }
-
-      if (showTime) {
-         separator(r2, cursorX, y);
-         cursorX += 18.0F;
-         String timeStr = systemTime + "  " + gameTime;
-         r2.text(FontRegistry.INTER_MEDIUM, cursorX, y + textY, fontSize, timeStr, text);
-         cursorX += segWidths[1] + SEP;
+         r2.text(FontRegistry.INTER_MEDIUM, sx, textY, fontSize, LBL_Z, main);
+         cursorX += coordsW + GAP;
       }
 
       if (showSpeed) {
-         separator(r2, cursorX, y);
-         cursorX += 18.0F;
-         r2.text(FontRegistry.ICONS, cursorX, y + textY, 32.0F, "2", main);
+         r2.text(FontRegistry.ICONS, cursorX, textY, 32.0F, "2", main);
          cursorX += ICON;
-         r2.text(FontRegistry.INTER_MEDIUM, cursorX, y + textY, fontSize, bpsValue, text);
+         r2.text(FontRegistry.INTER_MEDIUM, cursorX, textY, fontSize, bpsValue, text);
          cursorX += TextCache.width(r2, FontRegistry.INTER_MEDIUM, bpsValue, fontSize);
-         r2.text(FontRegistry.INTER_MEDIUM, cursorX, y + textY, fontSize, LBL_BPS, main);
-         cursorX += segWidths[2] + SEP;
+         r2.text(FontRegistry.INTER_MEDIUM, cursorX, textY, fontSize, LBL_BPS, main);
       }
 
       DraggableManager.getInstance().endDrag(session);
-   }
-
-   private static void drawPair(Renderer2D r2, float x, float panelY, float textY, float size,
-                                String value, String label, int valueColor, int labelColor) {
-      r2.text(FontRegistry.INTER_MEDIUM, x, panelY + textY, size, value, valueColor);
-      x += TextCache.width(r2, FontRegistry.INTER_MEDIUM, value, size);
-      r2.text(FontRegistry.INTER_MEDIUM, x, panelY + textY, size, label, labelColor);
-   }
-
-   private static void separator(Renderer2D r2, float x, float panelY) {
-      r2.rect(x, panelY + 15.0F, 2.34F, 11.21F, 4.0F,
-            Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), 80));
    }
 
    private static void updateBps() {
@@ -184,28 +151,19 @@ public class InformationHUD {
          double dx = mc.player.getX() - prevX;
          double dy = mc.player.getY() - prevY;
          double dz = mc.player.getZ() - prevZ;
-         double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-         bps = (float) (distance * 1000.0 / deltaTime);
+         accDistance += (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+         accTimeMs += deltaTime;
       }
       prevTime = currentTime;
       prevX = mc.player.getX();
       prevY = mc.player.getY();
       prevZ = mc.player.getZ();
-   }
 
-   private static String systemTime() {
-      Calendar calendar = Calendar.getInstance();
-      int hours = calendar.get(11);
-      int minutes = calendar.get(12);
-      return String.format("%d:%02d", hours, minutes);
-   }
-
-   private static String gameTime() {
-      if (mc.world == null) return "";
-      long timeOfDay = mc.world.getTimeOfDay();
-      long ticks = (timeOfDay + 6000L) % 24000L;
-      long hours = ticks / 1000L;
-      long minutes = (ticks % 1000L) * 60L / 1000L;
-      return String.format("%d:%02d", hours, minutes);
+      // Раз в окно (~250 мс) публикуем сглаженный BPS.
+      if (accTimeMs >= BPS_WINDOW_MS) {
+         bps = accDistance * 1000.0F / accTimeMs;
+         accDistance = 0.0F;
+         accTimeMs = 0L;
+      }
    }
 }

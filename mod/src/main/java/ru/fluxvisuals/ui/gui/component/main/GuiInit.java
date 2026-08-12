@@ -13,6 +13,7 @@ public class GuiInit extends GuiScreen {
       GuiScreen.alphaPC.run(1.0, 0.55F, Easings.EXPO_OUT);
       GuiScreen.exit = false;
       GuiScreen.mainAnimation.reset();
+      GuiScreen.categoryAnimation.reset();
       GuiScreen.alpha.run(1.0);
    }
 }

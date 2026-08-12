@@ -14,6 +14,7 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.util.Identifier;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -39,15 +40,56 @@ public class PotionsHUD {
    private static final Map<RegistryEntry<StatusEffect>, Float> animatedLineX = new HashMap<>();
    private static final Map<RegistryEntry<StatusEffect>, Float> animatedY = new HashMap<>();
    private static final Map<RegistryEntry<StatusEffect>, Animation2> animatedAlphas = new HashMap<>();
+   private static final Map<RegistryEntry<StatusEffect>, Animation2> animatedSlide = new HashMap<>(); // slide from top animation
    private static final Map<RegistryEntry<StatusEffect>, StatusEffectInstance> cachedEffects = new HashMap<>();
+   // Общая анимация появления панели при открытии чата (как у Binds): fade + сдвиг сверху.
+   private static final Animation2 panelAnim = new Animation2();
+
+   /** Обновляет анимацию панели и возвращает текущую прозрачность (0..1). */
+   private static float updatePanelAlpha() {
+      boolean chat = mc.currentScreen instanceof ChatScreen;
+      boolean close = !hasContent() && !chat;
+      panelAnim.run(close ? 0.0 : 1.0, 0.15, Easings.QUART_OUT, true);
+      panelAnim.update();
+      return (float) panelAnim.get();
+   }
 
    /** Есть ли активные эффекты (контент для отображения). */
    public static boolean hasContent() {
       return mc.player != null && mc.player.getStatusEffects() != null && !mc.player.getStatusEffects().isEmpty();
    }
 
+   /**
+    * Пустое состояние — такой же хедер-бокс как у Binds, чтобы элемент был
+    * виден/перетаскиваем и выглядел одинаково при отсутствии эффектов.
+    */
+   public static void renderEmpty(Renderer2D r2) {
+      float pAnim = updatePanelAlpha();
+      float w = 130.0F;
+      float h = 44.0F;
+      float preferredX = 20.0F;
+      float preferredY = 474.0F;
+      DraggableManager.DragSession session = DraggableManager.getInstance()
+            .beginDrag("potionsHUD", preferredX, preferredY, w, h);
+      float x = session.positionX();
+      float y = session.positionY() - 32.0F * (1.0F - pAnim);
+      r2.pushAlpha(pAnim);
+      Hud.drawClientRect(r2, x, y, w, h, 13.0F, 1.0F, 1.0F);
+      r2.text(FontRegistry.INTER_MEDIUM, x + 14.0F, y + 28.0F, 28.0F, "Potions",
+            ru.fluxvisuals.util.color.ColorUtil.replAlpha(Renderer2D.ColorUtil.getTextColor(1, 1), 1.0F));
+      float iconX = x + w - 28.0F;
+      r2.text(FontRegistry.ICONS, iconX, y + 30.0F, 36.0F, "x",
+            ru.fluxvisuals.util.color.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), 1.0F));
+      r2.rect(x + 10.0F, y + 39.52F, w - 20.0F, 1.0F,
+            Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), 25));
+      DraggableManager.getInstance().endDrag(session);
+      r2.popAlpha();
+   }
+
    public static void potions(Renderer2D r2, DrawContext drawContext) {
       if (mc.player != null) {
+         float pAnim = updatePanelAlpha();
+         r2.pushAlpha(pAnim);
          Set<RegistryEntry<StatusEffect>> activeEffects = new HashSet<>();
          for (StatusEffectInstance effect : mc.player.getStatusEffects()) {
             activeEffects.add(effect.getEffectType());
@@ -61,11 +103,24 @@ public class PotionsHUD {
                newAnim.set(0.0);
                animatedAlphas.put(effectType, newAnim);
             }
+            // Initialize slide animation for new effects (slide from top like Binds)
+            if (!animatedSlide.containsKey(effectType)) {
+               Animation2 slideAnim = new Animation2();
+               slideAnim.set(-30.0); // start offset from top
+               animatedSlide.put(effectType, slideAnim);
+            }
          }
 
          animatedAlphas.forEach((effectTypex, anim) -> {
             double targetValue = activeEffects.contains(effectTypex) ? 1.0 : 0.0;
             anim.run(targetValue, 0.6, Easings.QUART_OUT, true);
+            anim.update();
+         });
+
+         // Update slide animations (like Binds module animations)
+         animatedSlide.forEach((effectTypex, anim) -> {
+            double targetValue = activeEffects.contains(effectTypex) ? 0.0 : -30.0;
+            anim.run(targetValue, 0.4, Easings.EXPO_OUT, true);
             anim.update();
          });
          Set<RegistryEntry<StatusEffect>> effectsToRender = new HashSet<>(activeEffects);
@@ -115,7 +170,7 @@ public class PotionsHUD {
          DraggableManager.DragSession session = DraggableManager.getInstance()
                .beginDrag("potionsHUD", preferredX, preferredY, boundingWidth, boundingHeight);
          float x = session.positionX();
-         float y = session.positionY();
+         float y = session.positionY() - 32.0F * (1.0F - pAnim);
 
          float guiScale = (float)mc.getWindow().getScaleFactor();
          if (guiScale <= 0.0F) {
@@ -158,6 +213,15 @@ public class PotionsHUD {
                      float currentAnimatedY = animatedY.getOrDefault(effectType, targetY);
                      currentAnimatedY = AnimationMath.animation(currentAnimatedY, targetY, 0.1F);
                      animatedY.put(effectType, currentAnimatedY);
+
+                     // Apply slide animation (like Binds)
+                     float slideOffset = 0.0F;
+                     Animation2 slideAnim = animatedSlide.get(effectType);
+                     if (slideAnim != null) {
+                        slideOffset = (float) slideAnim.get();
+                     }
+                     currentAnimatedY += slideOffset;
+
                      if (currentAlpha <= 0.01F) {
                         offset += 45.0F * currentAlpha;
                         effectIndex++;
@@ -260,6 +324,7 @@ public class PotionsHUD {
             return anim == null || anim.get() <= 0.01F && !activeEffectTypes.contains(key);
          });
 
+         r2.popAlpha();
          DraggableManager.getInstance().endDrag(session);
       }
    }

@@ -1,6 +1,6 @@
 {
-  "vertex": "godweer:pipeline/shader_fog",
-  "fragment": "godweer:pipeline/nebula",
+  "vertex": "fluxvisuals:pipeline/shader_fog",
+  "fragment": "fluxvisuals:pipeline/nebula",
   "samplers": [],
   "uniforms": [
     { "name": "ShaderFogData", "type": "uniform_buffer", "count": 1 }

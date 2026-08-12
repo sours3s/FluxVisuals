@@ -43,6 +43,15 @@ dependencies {
 	annotationProcessor "org.projectlombok:lombok:1.18.38"
 }
 
+configurations {
+	// ProGuard — обфускация финального jar (запускается напрямую через JavaExec)
+	proguard
+}
+
+dependencies {
+	proguard "com.guardsquare:proguard-base:7.6.1"
+}
+
 processResources {
 	def version = project.version
 	inputs.property "version", version
@@ -83,4 +92,45 @@ publishing {
 
 	repositories {
 	}
+}
+
+// ---- Обфускация финального jar (ProGuard, запуск напрямую через JavaExec) ----
+// Берёт remapped jar и переименовывает классы/методы/поля, кроме keep-списка
+// (миксины, entrypoint, лицензия, события, module API). Результат — build/release/.
+tasks.register('obfuscateJar', JavaExec) {
+	dependsOn remapJar
+
+	def outDir = layout.buildDirectory.dir("release")
+	def outJar = layout.buildDirectory.file("release/${archives_base_name}-${project.version}.jar")
+
+	classpath = configurations.proguard
+	mainClass = 'proguard.ProGuard'
+	jvmArgs '-Xmx2g'
+
+	args '-injars', remapJar.archiveFile.get().asFile.absolutePath
+	args '-outjars', outJar.get().asFile.absolutePath
+
+	// Библиотеки: все зависимости (minecraft named, fabric-loader, mixin, jna) + JDK 21 jmods.
+	configurations.runtimeClasspath.files.each { f ->
+		args '-libraryjars', f.absolutePath
+	}
+	def jhome = System.getProperty('java.home')
+	if (jhome != null) {
+		def jmods = new File(jhome, 'jmods')
+		if (jmods.isDirectory()) {
+			jmods.listFiles().findAll { it.name.endsWith('.jmod') }.each { args '-libraryjars', it.absolutePath }
+		}
+	}
+
+	args '-include', file('proguard-rules.pro').absolutePath
+
+	inputs.file(remapJar.archiveFile)
+	inputs.files(file('proguard-rules.pro'),
+		file('obfuscation-dictionary.txt'),
+		file('class-obfuscation-dictionary.txt'),
+		file('package-obfuscation-dictionary.txt'))
+	outputs.dir(outDir)
+
+	// Без принудительного указания working dir файл правил ищется относительно CWD.
+	workingDir = projectDir
 }

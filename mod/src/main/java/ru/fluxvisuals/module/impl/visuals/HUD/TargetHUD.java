@@ -48,7 +48,7 @@ public final class TargetHUD {
    public static final BooleanSetting showItems = new BooleanSetting("TargetHUD Items", true);
    public static final BooleanSetting showOnHover = new BooleanSetting("TargetHUD Show on hover", true);
    public static final BooleanSetting particles = new BooleanSetting("TargetHUD Particles", true);
-   public static final SliderSetting scale = new SliderSetting("TargetHUD Scale", 1.6F, 0.5F, 2.5F, 0.05F, false);
+   public static final SliderSetting scale = new SliderSetting("TargetHUD Scale", 5.0F, 0.5F, 6.0F, 0.05F, false);
 
    // === Advantage indicator ===
    public static final BooleanSetting advantage = new BooleanSetting("Combat Advantage", true);
@@ -92,7 +92,7 @@ public final class TargetHUD {
       if (raw == null && mc.targetedEntity != null && mc.targetedEntity != mc.player) {
          raw = mc.targetedEntity;
       }
-      if (raw instanceof LivingEntity le && le != mc.player) {
+      if (raw instanceof LivingEntity le && le != mc.player && le.isAlive()) {
          return le;
       }
       return null;
@@ -109,11 +109,7 @@ public final class TargetHUD {
       if (mc == null || mc.player == null || mc.world == null || mc.getWindow() == null) {
          return;
       }
-      float s = scale.get();
-      float width = WIDTH * s;
-      float mainHeight = MAIN_HEIGHT * s;
-      float headSize = HEAD_SIZE * s;
-
+      // Start drag first to get the session with persisted scale
       boolean isInChat = mc.currentScreen instanceof ChatScreen;
       LivingEntity hovered = getHoveredEntity();
       long now = System.currentTimeMillis();
@@ -134,13 +130,14 @@ public final class TargetHUD {
       float anim = (float) openAnimation.get();
       if (anim < 0.01F) return;
 
-      // === Minimal mode: compact HP + combo under crosshair ===
+      // Minimal mode uses crosshair-center positioning, skip drag
       if (targetMode.is("Minimal")) {
+         float s = scale.get();
          renderMinimal(r2, anim, s, prevTarget);
          return;
       }
 
-      // Предметы цели (main, head, chest, legs, feet, offhand)
+      // Items
       List<ItemStack> items = new ArrayList<>();
       if (showItems.get() && prevTarget != null) {
          items.add(prevTarget.getMainHandStack());
@@ -152,27 +149,36 @@ public final class TargetHUD {
          items.removeIf(ItemStack::isEmpty);
       }
 
+      // Initial scale for layout calculations (will be updated after drag session)
+      float s = scale.get();
+
       float totalItemsW = items.size() * ITEM_BOX * s + Math.max(0, items.size() - 1) * SPACING * s;
       float itemStartY = 0.0F;
       float mainBoxY = showItems.get() && !items.isEmpty() ? ITEM_BOX * s + 2.0F * s : 0.0F;
+      float panelH = mainBoxY + MAIN_HEIGHT * s + 6.0F * s;
 
-      // Drag-область: по умолчанию чуть ниже середины экрана (под прицелом).
-      float panelH = mainBoxY + mainHeight + 6.0F * s;
       int fbW = mc.getWindow().getFramebufferWidth();
       int fbH = mc.getWindow().getFramebufferHeight();
-      float defX = Math.max(0.0F, (fbW - width) / 2.0F);
+      float defX = Math.max(0.0F, (fbW - WIDTH * s) / 2.0F);
       float defY = Math.max(0.0F, fbH * 0.55F);
+
+      // Begin drag to get session with persisted scale
       DraggableManager.DragSession session = DraggableManager.getInstance()
-            .beginDrag("targetHUD", defX, defY, width, panelH);
+            .beginDrag("targetHUD", defX, defY, WIDTH * s, panelH);
       float x = session.positionX();
       float y = session.positionY();
+      float hudScale = session.scale(); // this includes Ctrl+scroll persisted scale
+      s = hudScale; // use persisted scale for layout
+
+      // Recalculate dimensions with correct scale
+      float width = WIDTH * s;
+      float mainHeight = MAIN_HEIGHT * s;
+      float headSize = HEAD_SIZE * s;
       float boxY = y + mainBoxY;
 
-      // Apply HUD scale matrix (like PotionsHUD)
+      // Apply HUD scale matrix
       float guiScale = (float) mc.getWindow().getScaleFactor();
       if (guiScale <= 0.0F) guiScale = 1.0F;
-      float hudScale = session.scale();
-
       drawContext.getMatrices().pushMatrix();
       drawContext.getMatrices().translate(x / guiScale, y / guiScale);
       drawContext.getMatrices().scale(hudScale, hudScale);
@@ -215,8 +221,11 @@ public final class TargetHUD {
       float targetOffset = scrollDir > 0 ? Math.max(0.0F, tWidth - nameW) : 0.0F;
       scrollAnim = AnimationMath.animation(scrollAnim, targetOffset, 0.05F);
 
+      // r2.text принимает BASELINE. Раньше baseline стоял в 4.5s от верха рамки —
+      // верх глифов (ascent ~10.5s) уезжал за верхнюю границу. Опускаем так, чтобы
+      // верх текста оставался внутри панели и не наезжал на HP-бар ниже.
       r2.pushClipRect((int) nameX, (int) boxY, (int) nameW, (int) mainHeight);
-      r2.text(FontRegistry.INTER_MEDIUM, nameX - scrollAnim, boxY + 4.5F * s, nameSize, name, -1);
+      r2.text(FontRegistry.INTER_MEDIUM, nameX - scrollAnim, boxY + 12.0F * s, nameSize, name, -1);
       r2.popClipRect();
 
       // HP-бар

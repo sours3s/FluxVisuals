@@ -12,6 +12,8 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import org.apache.commons.io.FilenameUtils;
 import ru.fluxvisuals.client.FluxVisualsClient;
+import ru.fluxvisuals.module.api.Module;
+import ru.fluxvisuals.ui.draggable.DraggableManager;
 
 @Environment(EnvType.CLIENT)
 public final class ConfigManager extends Manager<Config> {
@@ -20,6 +22,17 @@ public final class ConfigManager extends Manager<Config> {
    private static final boolean IS_LINUX = OS.contains("nix") || OS.contains("nux") || OS.contains("aix");
    private static File configDirectory;
    private static final ArrayList<Config> loadedConfigs = new ArrayList<>();
+   private static String lastUsedConfig = "default";
+
+   public static String getLastUsedConfig() {
+      return lastUsedConfig;
+   }
+
+   public static void setLastUsedConfig(String name) {
+      if (name != null && !name.isEmpty()) {
+         lastUsedConfig = name;
+      }
+   }
 
    public static File getConfigDirectoryPath() {
       return getConfigDirectory();
@@ -95,9 +108,13 @@ public final class ConfigManager extends Manager<Config> {
                   JsonParser parser = new JsonParser();
                   JsonObject object = (JsonObject)parser.parse(reader);
                   config.load(object);
+                  if (FluxVisualsClient.get != null && FluxVisualsClient.get.manager != null) {
+                     FluxVisualsClient.get.manager.invalidateCaches();
+                  }
                   var6 = true;
                }
 
+               setLastUsedConfig(configName);
                return var6;
             } catch (IOException var9) {
                return false;
@@ -125,6 +142,7 @@ public final class ConfigManager extends Manager<Config> {
                var5 = true;
             }
 
+            setLastUsedConfig(configName);
             return var5;
          } catch (IOException var9) {
             return false;
@@ -161,9 +179,49 @@ public final class ConfigManager extends Manager<Config> {
       }
    }
 
+   /**
+    * Полный сброс: отключает все модули, сбрасывает настройки к дефолту,
+    * удаляет все конфиги кроме default, сбрасывает положения HUD.
+    */
+   public void resetAll() {
+      // Отключаем все модули
+      if (FluxVisualsClient.get != null && FluxVisualsClient.get.manager != null) {
+         for (Module m : FluxVisualsClient.get.manager.getModules()) {
+            if (m.enable) {
+               m.toggle(); // вызовет onDisable + autoSave
+            }
+            // Сбрасываем бинды и настройки к дефолту
+            m.bind = m.module.bind() == 0 ? -1 : m.module.bind();
+            m.load(new JsonObject()); // очистит настройки
+         }
+      }
+      // Удаляем все конфиги кроме default
+      File configDir = getConfigDirectory();
+      if (configDir.exists()) {
+         File[] files = configDir.listFiles((d, n) -> n.endsWith(".json") && !n.equals("default.json"));
+         if (files != null) {
+            for (File f : files) f.delete();
+         }
+      }
+      // Очищаем загруженные конфиги
+      this.getContents().clear();
+      // Перезагружаем default
+      this.setContents(loadConfigs());
+      // Сбрасываем драggable позиции
+      DraggableManager.getInstance().resetAll();
+      setLastUsedConfig("default");
+      // Сохраняем default
+      this.saveConfig("default");
+   }
+
    public void autoSave() {
       if (FluxVisualsClient.get.configManager != null) {
-         this.saveConfig("default");
+         String lastUsed = FluxVisualsClient.get.configManager.getLastUsedConfig();
+         if (lastUsed != null && !lastUsed.isEmpty()) {
+            this.saveConfig(lastUsed);
+         } else {
+            this.saveConfig("default");
+         }
       }
    }
 }

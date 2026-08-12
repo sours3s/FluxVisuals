@@ -54,7 +54,7 @@ public class WaterMark {
       }
       if (StyleConfig.watermarkLogo) {
          int logo = TextureLoader.load("assets/fluxvisuals/textures/gui/logo.png");
-         r2.drawRgbaTexture(logo, tx + 5.0F, ty + 5.0F, 26.0F, 26.0F, -1, true);
+         r2.drawRgbaTexture(logo, tx + 5.0F, ty + 5.0F, 26.0F, 26.0F, -1, false);
          textX = tx + 34.0F;
       } else {
          textX = tx + 16.0F;

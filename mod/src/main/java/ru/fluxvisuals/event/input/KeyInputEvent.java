@@ -2,10 +2,10 @@ package ru.fluxvisuals.event.input;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import ru.fluxvisuals.event.Event;
+import ru.fluxvisuals.event.EventCancellable;
 
 @Environment(EnvType.CLIENT)
-public final class KeyInputEvent extends Event {
+public final class KeyInputEvent extends EventCancellable {
    private final long window;
    private final int key;
    private final int scancode;

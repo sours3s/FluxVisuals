@@ -119,7 +119,7 @@ public class GuiRenderSpecial extends GuiScreen {
       float btnY = inputY + inputH + 6.0F;
       float btnH = 20.0F;
       float gap = 4.0F;
-      float btnW = (w - gap * 2.0F) / 3.0F;
+      float btnW = (w - gap * 3.0F) / 4.0F;
       float listY0 = btnY + btnH + 8.0F;
       float listHeaderH = 16.0F;
       float rowH = 20.0F;
@@ -136,8 +136,8 @@ public class GuiRenderSpecial extends GuiScreen {
       r2.text(FontRegistry.INTER_MEDIUM, x + w - 20.0F, inputY + inputH / 2.0F + 0.8F, 13.0F, editing ? "|" : "", mainColor);
 
       // ---- Компактные кнопки действий ----
-      String[] actions = new String[]{"Save", "Load", "Reset"};
-      for (int i = 0; i < 3; i++) {
+      String[] actions = new String[]{"Save", "Load", "Reset", "Dir"};
+      for (int i = 0; i < 4; i++) {
          float bx = x + i * (btnW + gap);
          r2.rect(bx, btnY, btnW, btnH, 5.0F, i == 0 ? backHover : backThree);
          r2.rectOutline(bx, btnY, btnW, btnH, 5.0F, outlineColor, 0.2F);

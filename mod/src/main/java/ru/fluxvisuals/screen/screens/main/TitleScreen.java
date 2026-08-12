@@ -313,13 +313,6 @@ public class TitleScreen extends Screen {
                 this::startQuitFade
         );
 
-        // Мастерская прицелов — отдельная кнопка в главном меню
-        addButton(LEFT_PADDING, startY + margin * 4, BUTTON_WIDTH, BUTTON_HEIGHT,
-                "Мастерская прицелов",
-                CustomButton.CustomButtonBuilder.ButtonType.ALT,
-                () -> client.setScreen(new CrosshairCatalogScreen(this))
-        );
-
         // Settings hub button
         addButton(LEFT_PADDING, startY + margin * 5, BUTTON_WIDTH, BUTTON_HEIGHT,
                 "Настройки",
@@ -347,4 +340,10 @@ public class TitleScreen extends Screen {
 
     @Override
     public boolean shouldCloseOnEsc() { return false; }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        ChangelogPanel.scroll(verticalAmount);
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+    }
 }

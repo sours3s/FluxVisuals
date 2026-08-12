@@ -14,6 +14,10 @@ import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
 import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 
+/**
+ * Better World — меняет время/погоду/яркость.
+ * При отключении восстанавливает оригинальные значения.
+ */
 @IModule(name = "Better World", description = "Изменяет отображение мира", category = Category.Visuals, bind = -1)
 @Environment(EnvType.CLIENT)
 public class BetterWorld extends Module {
@@ -24,6 +28,12 @@ public class BetterWorld extends Module {
    public final BooleanSetting fullBright = new BooleanSetting("FullBright", false);
    public final BooleanSetting weather = new BooleanSetting("Weather", false);
    public final ModeSetting weatherMode = new ModeSetting("WeatherMode", "Clear", "Clear", "Rain", "Storm");
+
+   // Для восстановления при отключении
+   private long savedTime = -1L;
+   private float savedRain = -1F;
+   private float savedThunder = -1F;
+   private boolean wasActive = false;
 
    public BetterWorld() {
       this.addSettings(new Setting[]{this.changeTime, this.time, this.fullBright, this.weather, this.weatherMode});
@@ -39,18 +49,55 @@ public class BetterWorld extends Module {
       if (mc.player == null || mc.world == null) {
          return;
       }
-      if (this.changeTime.get()) {
+
+      boolean timeActive = this.changeTime.get();
+      boolean weatherActive = this.weather.get();
+      boolean brightActive = this.fullBright.get();
+
+      // Сохраняем оригинальные значения при первом включении
+      if ((timeActive || weatherActive) && !wasActive) {
+         savedTime = mc.world.getTimeOfDay();
+         savedRain = mc.world.getRainGradient(1.0F);
+         savedThunder = mc.world.getThunderGradient(1.0F);
+         wasActive = true;
+      }
+
+      if (timeActive) {
          mc.world.setTime(0L, (long) this.time.get() * 500L, false);
       }
-      if (this.fullBright.get()) {
+
+      if (brightActive) {
          mc.player.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 400, 2), mc.player);
       }
-      if (this.weather.get()) {
+
+      if (weatherActive) {
          String mode = this.weatherMode.get();
          boolean raining = mode.equals("Rain") || mode.equals("Storm");
          boolean thundering = mode.equals("Storm");
          mc.world.setRainGradient(raining ? 1.0F : 0.0F);
          mc.world.setThunderGradient(thundering ? 1.0F : 0.0F);
       }
+   }
+
+   @Override
+   public void onDisable() {
+      super.onDisable();
+      if (mc.player != null && mc.world != null && wasActive) {
+         // Восстанавливаем время
+         if (savedTime >= 0) {
+            mc.world.setTime(savedTime, 0L, false);
+         }
+         // Восстанавливаем погоду
+         if (savedRain >= 0) {
+            mc.world.setRainGradient(savedRain);
+         }
+         if (savedThunder >= 0) {
+            mc.world.setThunderGradient(savedThunder);
+         }
+      }
+      wasActive = false;
+      savedTime = -1L;
+      savedRain = -1F;
+      savedThunder = -1F;
    }
 }

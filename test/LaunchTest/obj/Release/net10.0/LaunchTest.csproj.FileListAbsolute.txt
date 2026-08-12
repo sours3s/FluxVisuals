@@ -1,0 +1,15 @@
+D:\FluxVisuals\test\LaunchTest\bin\Release\net10.0\Resources\fluxvisuals-mod-1.21.11.jar
+D:\FluxVisuals\test\LaunchTest\bin\Release\net10.0\LaunchTest.exe
+D:\FluxVisuals\test\LaunchTest\bin\Release\net10.0\LaunchTest.deps.json
+D:\FluxVisuals\test\LaunchTest\bin\Release\net10.0\LaunchTest.runtimeconfig.json
+D:\FluxVisuals\test\LaunchTest\bin\Release\net10.0\LaunchTest.dll
+D:\FluxVisuals\test\LaunchTest\bin\Release\net10.0\LaunchTest.pdb
+D:\FluxVisuals\test\LaunchTest\obj\Release\net10.0\LaunchTest.GeneratedMSBuildEditorConfig.editorconfig
+D:\FluxVisuals\test\LaunchTest\obj\Release\net10.0\LaunchTest.AssemblyInfoInputs.cache
+D:\FluxVisuals\test\LaunchTest\obj\Release\net10.0\LaunchTest.AssemblyInfo.cs
+D:\FluxVisuals\test\LaunchTest\obj\Release\net10.0\LaunchTest.csproj.CoreCompileInputs.cache
+D:\FluxVisuals\test\LaunchTest\obj\Release\net10.0\LaunchTest.dll
+D:\FluxVisuals\test\LaunchTest\obj\Release\net10.0\refint\LaunchTest.dll
+D:\FluxVisuals\test\LaunchTest\obj\Release\net10.0\LaunchTest.pdb
+D:\FluxVisuals\test\LaunchTest\obj\Release\net10.0\LaunchTest.genruntimeconfig.cache
+D:\FluxVisuals\test\LaunchTest\obj\Release\net10.0\ref\LaunchTest.dll

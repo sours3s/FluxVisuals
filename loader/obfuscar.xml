@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Obfuscator>
+  <Module file='bin/Release/net10.0-windows/win-x64/FluxVisualsLoader.dll' />
+  <Module file='bin/Release/net10.0-windows/win-x64/FluxVisualsLoader.dll'>
+    <Rename mode='ren' />
+    <Rename mode='enc' />
+  </Module>
+</Obfuscator>

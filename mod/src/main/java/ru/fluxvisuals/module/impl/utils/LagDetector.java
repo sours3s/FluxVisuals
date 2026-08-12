@@ -16,6 +16,9 @@ import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 import ru.fluxvisuals.module.impl.visuals.Hud;
 
+/**
+ * Lag Detector — уведомляет о провалах TPS сервера и скачках пинга.
+ */
 @IModule(name = "Lag Detector", description = "Уведомляет о провалах TPS сервера и скачках пинга.", category = Category.Utils, bind = -1)
 @Environment(EnvType.CLIENT)
 public class LagDetector extends Module {
@@ -36,7 +39,7 @@ public class LagDetector extends Module {
       long now = System.currentTimeMillis();
       if (lastPacketTime != 0L) {
          float dt = (now - lastPacketTime) / 1000.0F;
-         if (dt > 0) {
+         if (dt > 0 && dt < 5.0F) { // защита от аномально больших dt
             packetBasedTps = 1.0F / dt;
          }
       }
@@ -50,9 +53,9 @@ public class LagDetector extends Module {
       long now = System.currentTimeMillis();
       if (lastTickTime != 0L) {
          float dt = (now - lastTickTime) / 1000.0F;
-         if (dt > 0) {
+         if (dt > 0 && dt < 5.0F) { // защита от аномально больших dt
             tickCount++;
-            if (dt >= 1.0F) {
+            if (tickCount >= 20) { // каждые ~1 секунду
                currentTps = tickCount / dt;
                tickCount = 0;
                lastTickTime = now;
@@ -62,9 +65,9 @@ public class LagDetector extends Module {
          lastTickTime = now;
       }
 
-      // Проверка TPS
+      // Проверка TPS (берём среднее от обоих методов)
       if (tpsWarning.get()) {
-         float tps = Math.min(currentTps, packetBasedTps); // берём худшее
+         float tps = (currentTps + packetBasedTps) / 2.0F;
          if (tps < tpsThreshold.get() && now - lastNotify > cooldown.get() * 1000L) {
             lastNotify = now;
             Hud hud = FluxVisualsClient.get.manager != null ? FluxVisualsClient.get.manager.get(Hud.class) : null;
@@ -84,7 +87,7 @@ public class LagDetector extends Module {
                   lastNotify = now;
                   Hud hud = FluxVisualsClient.get.manager != null ? FluxVisualsClient.get.manager.get(Hud.class) : null;
                   if (hud != null) {
-                     hud.showNotification("warn", "Пинг вспыхнул (" + ping + "ms)", 3000L, 0xFFFFB347);
+                     hud.showNotification("warn", "Пинг высок: " + ping + "ms", 3000L, 0xFFFF5353);
                   }
                }
             }

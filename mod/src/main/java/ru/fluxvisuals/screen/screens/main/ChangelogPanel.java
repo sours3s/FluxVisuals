@@ -24,6 +24,35 @@ public final class ChangelogPanel {
    private static final float HEADER_HEIGHT = 20f;
 
    private static final String[][] SECTIONS = {
+      {"v1.0.13", null},
+      {"added", "Shader Fog — 5 режимов неба (Caustic, Drain, Nebula, Plasma, Bloom)"},
+      {"added", "Better Minecraft — анимации инвентаря, таба, чата и хотбара"},
+      {"added", "Обфускация jar (ProGuard) — защита от копирования"},
+      {"fixed", "TargetHUD: масштаб 3.0, ctrl+колесо, ник в рамке, скрытие при смерти цели"},
+      {"fixed", "BPS — исправлен расчёт (не зависает на нуле)"},
+      {"fixed", "Координаты и BPS отцентрированы в рамке"},
+      {"fixed", "ArrayList — текст по центру строки"},
+      {"fixed", "Хотбар пропадал — исправлено"},
+      {"fixed", "ClickGUI — только правый Shift (по умолчанию)"},
+      {"fixed", "Логотип больше не перевёрнут"},
+      {"fixed", "Убрана Мастерская прицелов из меню"},
+      {"fixed", "Motion Blur — исправлен рендер эффекта"},
+      {"fixed", "Dynamic Lights — свет факелов и горящих сущностей"},
+      {"fixed", "Бинды модулей — смена клавиши применяется сразу"},
+      {"fixed", "Друзья: вкладки, скролл, удаление, сохранение"},
+      {"v1.0.12", null},
+      {"added", "Друзья: вкладки Друзья/Сервер, скролл, удаление"},
+      {"added", "Dynamic Lights — реально работает (свет факелов/горящих)"},
+      {"added", "Motion Blur — исправлен рендер"},
+      {"fixed", "Бинды модулей — смена клавиши теперь применяется"},
+      {"fixed", "Discord RPC — вкл/выкл через ClickGUI"},
+      {"fixed", "Lag Detector — корректный расчёт TPS и пинга"},
+      {"fixed", "Better World / Custom World — восстановление при выключении"},
+      {"fixed", "TargetHUD: размер, центрирование, фикс BPS"},
+      {"fixed", "PotionsHUD — единый стиль с Binds"},
+      {"fixed", "Better F3 — полная замена ванильного"},
+      {"fixed", "Убраны ванильные иконки эффектов (верхний правый угол)"},
+      {"fixed", "Конфиги: полный reset, не плодит default, кнопка папки"},
       {"v1.0.11", null},
       {"added", "Mace Helper"},
       {"added", "Reach Circle"},
@@ -55,7 +84,14 @@ public final class ChangelogPanel {
    private static final Color BG_COLOR = new Color(10, 10, 12, 180);
    private static final Color OUTLINE_COLOR = new Color(255, 255, 255, 5);
 
+   /** Прокрутка ченджлога (колёсиком мыши), в пикселях. */
+   private static float scrollOffset = 0.0F;
+
    private ChangelogPanel() {}
+
+   public static void scroll(double verticalDelta) {
+      scrollOffset = Math.max(0.0F, scrollOffset + (float) verticalDelta * 8.0F);
+   }
 
    public static void render(ClientRenderer renderer, int screenWidth, int screenHeight, float alpha) {
       if (renderer == null || alpha <= 0.01f) return;
@@ -73,37 +109,50 @@ public final class ChangelogPanel {
          }
       }
 
+      // Панель не выше экрана; при переполнении — скролл.
+      float maxPanelH = screenHeight - panelY - 20f;
+      float panelH = Math.min(totalH, maxPanelH);
+      float maxScroll = Math.max(0.0f, totalH - panelH);
+      scrollOffset = Math.max(0.0f, Math.min(scrollOffset, maxScroll));
+
       // Draw background
-      renderer.blur(panelX, panelY, PANEL_WIDTH, totalH, new Vector4f(8), 15f, alpha * 0.8f);
-      renderer.rect(panelX, panelY, PANEL_WIDTH, totalH, new Vector4f(8), 1f,
+      renderer.blur(panelX, panelY, PANEL_WIDTH, panelH, new Vector4f(8), 15f, alpha * 0.8f);
+      renderer.rect(panelX, panelY, PANEL_WIDTH, panelH, new Vector4f(8), 1f,
          BG_COLOR, BG_COLOR, BG_COLOR, BG_COLOR);
-      renderer.outline(panelX, panelY, PANEL_WIDTH, totalH, 0.5f, new Vector4f(8),
+      renderer.outline(panelX, panelY, PANEL_WIDTH, panelH, 0.5f, new Vector4f(8),
          new Vector2f(1), OUTLINE_COLOR, OUTLINE_COLOR, OUTLINE_COLOR, OUTLINE_COLOR);
 
       // Title
       renderer.text("CHANGELOG", panelX + PADDING_X, panelY + 8f,
          TextureUse.SFMEDIUM, HEADER_SIZE, new Color(19, 255, 174, (int)(255 * alpha)));
 
-      float y = panelY + HEADER_HEIGHT;
+      float topBound = panelY + HEADER_HEIGHT;
+      float bottomBound = panelY + panelH;
+      float y = topBound - scrollOffset;
 
       for (String[] entry : SECTIONS) {
          if (entry[1] == null) {
             // Version header
-            renderer.text(entry[0], panelX + PADDING_X, y + 2f,
-               TextureUse.SFMEDIUM, 7.5f, new Color(255, 255, 255, (int)(220 * alpha)));
-            y += LINE_HEIGHT + SECTION_GAP;
+            float h = LINE_HEIGHT + SECTION_GAP;
+            if (y + h >= topBound && y <= bottomBound) {
+               renderer.text(entry[0], panelX + PADDING_X, y + 2f,
+                  TextureUse.SFMEDIUM, 7.5f, new Color(255, 255, 255, (int)(220 * alpha)));
+            }
+            y += h;
          } else {
             // Item
-            String type = entry[0];
-            String text = entry[1];
-            Color typeColor = "added".equals(type) ? ADDED_COLOR : FIXED_COLOR;
-            String prefix = "added".equals(type) ? "+ " : "* ";
+            if (y + LINE_HEIGHT >= topBound && y <= bottomBound) {
+               String type = entry[0];
+               String text = entry[1];
+               Color typeColor = "added".equals(type) ? ADDED_COLOR : FIXED_COLOR;
+               String prefix = "added".equals(type) ? "+ " : "* ";
 
-            float tx = panelX + PADDING_X;
-            renderer.text(prefix + text, tx, y,
-               TextureUse.SFMEDIUM, ITEM_SIZE,
-               new Color(typeColor.getRed(), typeColor.getGreen(), typeColor.getBlue(),
-                  (int)(typeColor.getAlpha() * alpha)));
+               float tx = panelX + PADDING_X;
+               renderer.text(prefix + text, tx, y,
+                  TextureUse.SFMEDIUM, ITEM_SIZE,
+                  new Color(typeColor.getRed(), typeColor.getGreen(), typeColor.getBlue(),
+                     (int)(typeColor.getAlpha() * alpha)));
+            }
             y += LINE_HEIGHT;
          }
       }

@@ -11,6 +11,10 @@ import ru.fluxvisuals.module.api.setting.Setting;
 import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
 import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
 
+/**
+ * Custom World — клиентское изменение времени суток.
+ * При отключении восстанавливает оригинальное время.
+ */
 @IModule(
    name = "Custom World",
    category = Category.Visuals,
@@ -20,11 +24,11 @@ import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
 @Environment(EnvType.CLIENT)
 public class CustomWorld extends Module {
    public static ModeSetting timeOfDay = new ModeSetting("Time Mode", "Night", "Night", "Day", "Sunset", "Sunrise", "Midnight", "Noon");
-
    public static BooleanSetting timeEnabled = new BooleanSetting("Time Enabled", true);
 
    public static long customTime = -1L;
    public static boolean isEnabled = false;
+   private long savedTime = -1L;
 
    public CustomWorld() {
       this.addSettings(new Setting[]{timeOfDay, timeEnabled});
@@ -34,6 +38,9 @@ public class CustomWorld extends Module {
    public void onEnable() {
       super.onEnable();
       isEnabled = true;
+      if (mc.world != null) {
+         savedTime = mc.world.getTimeOfDay();
+      }
       this.updateTargetTime();
    }
 
@@ -42,11 +49,15 @@ public class CustomWorld extends Module {
       super.onDisable();
       isEnabled = false;
       customTime = -1L;
+      if (mc.world != null && savedTime >= 0) {
+         mc.world.setTime(savedTime, 0L, false);
+      }
+      savedTime = -1L;
    }
 
    @EventInit
    public void onUpdate(EventUpdate e) {
-      if (isEnabled && mc.world != null) {
+      if (isEnabled && mc.world != null && timeEnabled.get()) {
          this.updateTargetTime();
       }
    }

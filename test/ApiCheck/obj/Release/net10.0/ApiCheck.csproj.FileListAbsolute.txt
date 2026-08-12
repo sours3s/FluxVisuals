@@ -1,0 +1,14 @@
+D:\FluxVisuals\test\ApiCheck\bin\Release\net10.0\ApiCheck.exe
+D:\FluxVisuals\test\ApiCheck\bin\Release\net10.0\ApiCheck.deps.json
+D:\FluxVisuals\test\ApiCheck\bin\Release\net10.0\ApiCheck.runtimeconfig.json
+D:\FluxVisuals\test\ApiCheck\bin\Release\net10.0\ApiCheck.dll
+D:\FluxVisuals\test\ApiCheck\bin\Release\net10.0\ApiCheck.pdb
+D:\FluxVisuals\test\ApiCheck\obj\Release\net10.0\ApiCheck.GeneratedMSBuildEditorConfig.editorconfig
+D:\FluxVisuals\test\ApiCheck\obj\Release\net10.0\ApiCheck.AssemblyInfoInputs.cache
+D:\FluxVisuals\test\ApiCheck\obj\Release\net10.0\ApiCheck.AssemblyInfo.cs
+D:\FluxVisuals\test\ApiCheck\obj\Release\net10.0\ApiCheck.csproj.CoreCompileInputs.cache
+D:\FluxVisuals\test\ApiCheck\obj\Release\net10.0\ApiCheck.dll
+D:\FluxVisuals\test\ApiCheck\obj\Release\net10.0\refint\ApiCheck.dll
+D:\FluxVisuals\test\ApiCheck\obj\Release\net10.0\ApiCheck.pdb
+D:\FluxVisuals\test\ApiCheck\obj\Release\net10.0\ApiCheck.genruntimeconfig.cache
+D:\FluxVisuals\test\ApiCheck\obj\Release\net10.0\ref\ApiCheck.dll

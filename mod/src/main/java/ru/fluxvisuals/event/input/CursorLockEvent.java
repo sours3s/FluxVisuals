@@ -3,10 +3,10 @@ package ru.fluxvisuals.event.input;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
-import ru.fluxvisuals.event.Event;
+import ru.fluxvisuals.event.EventCancellable;
 
 @Environment(EnvType.CLIENT)
-public final class CursorLockEvent extends Event {
+public final class CursorLockEvent extends EventCancellable {
    private final MinecraftClient client;
    private final long windowHandle;
 
