@@ -18,12 +18,17 @@ import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.text.FontRegistry;
 
 /**
- * Вкладка ClickGUI «Друзья»: строка поиска по нику, список игроков на сервере
- * с кнопкой «+» (добавить в друзья) и список друзей с кнопкой «-» (удалить).
+ * Вкладка ClickGUI «Друзья» с двумя под-вкладками: «Друзья» (сохранённые) и «Сервер» (онлайн).
+ * Единый расчёт rowY — клики и рендер всегда совпадают.
  */
 @Environment(EnvType.CLIENT)
 public class GuiRenderFriends extends GuiScreen {
    public static final float PAD = 4.0F;
+   public static final float TAB_H = 22.0F;
+   public static final float TAB_GAP = 4.0F;
+   public static final float INPUT_H = 24.0F;
+   public static final float ROW_H = 20.0F;
+   public static final float ROW_GAP = 3.0F;
 
    private GuiRenderFriends() {
    }
@@ -88,6 +93,23 @@ public class GuiRenderFriends extends GuiScreen {
       return GuiLayout.clipWidth() - 8.0F;
    }
 
+   public static float tabY() {
+      return GuiLayout.clipY() + 2.0F;
+   }
+
+   public static float inputY() {
+      return tabY() + TAB_H + 4.0F;
+   }
+
+   public static float listY0() {
+      return inputY() + INPUT_H + 6.0F;
+   }
+
+   /** Единый расчёт Y строки по индексу — обязателен и в рендере, и в кликах. */
+   public static float rowY(int index, float scroll) {
+      return listY0() + index * (ROW_H + ROW_GAP) - scroll;
+   }
+
    public static void render(Renderer2D r2, float mainAlpha, int mouseX, int mouseY) {
       if (GuiScreen.selectedCategories != Category.Friends) {
          return;
@@ -105,109 +127,115 @@ public class GuiRenderFriends extends GuiScreen {
 
       float x = rowX();
       float w = rowW();
-      float inputH = 24.0F;
-      float inputY = GuiLayout.clipY() + 2.0F;
 
-      List<String> online = filteredOnline();
-      List<Friend> friends = filteredFriends();
-      // "Добавить по нику", если в поиске ник не из списка онлайн.
-      boolean showManual = !GuiScreen.friendsSearchText.trim().isEmpty()
-            && online.stream().noneMatch(n -> n.equalsIgnoreCase(GuiScreen.friendsSearchText.trim()));
-
-      float headerH = 18.0F;
-      float rowH = 20.0F;
-      float gapR = 3.0F;
-      int onlineRows = online.size() + (showManual ? 1 : 0);
-      int friendRows = friends.size();
-      float listY0 = inputY + inputH + 6.0F;
-      int totalRows = (onlineRows > 0 ? 1 + onlineRows : 0) + (friendRows > 0 ? 1 + friendRows : 0);
-      GuiScreen.getScrollUtil().setMax(totalRows * (rowH + gapR) + headerH, GuiLayout.clipHeight() - (inputH + 12.0F));
-      float scroll = GuiScreen.getScrollUtil().getScroll();
+      // ---- Вкладки ----
+      float tabW = (w - TAB_GAP) / 2.0F;
+      String[] tabs = new String[]{"Друзья", "Сервер"};
+      for (int i = 0; i < 2; i++) {
+         float tx = x + i * (tabW + TAB_GAP);
+         boolean active = GuiScreen.friendsTab == i;
+         boolean hover = GuiRenderMain.isHovered(mouseX, mouseY, tx, tabY(), tabW, TAB_H);
+         r2.rect(tx, tabY(), tabW, TAB_H, 6.0F, active ? backHover : backThree);
+         r2.rectOutline(tx, tabY(), tabW, TAB_H, 6.0F, outlineColor, active ? 0.35F : 0.2F);
+         float tw = r2.measureText(FontRegistry.INTER_MEDIUM, tabs[i], 12.0F).width;
+         r2.text(FontRegistry.INTER_MEDIUM, tx + tabW / 2.0F - tw / 2.0F, tabY() + TAB_H / 2.0F + 0.8F, 12.0F, tabs[i],
+               active ? mainColor : textColor);
+      }
 
       // ---- Строка поиска ----
       boolean editing = GuiScreen.friendsSearchEditing;
-      r2.rect(x, inputY, w, inputH, 6.0F, editing ? backHover : backThree);
-      r2.rectOutline(x, inputY, w, inputH, 6.0F, outlineColor, editing ? 0.35F : 0.2F);
-      r2.text(FontRegistry.ICONS, x + 9.0F, inputY + inputH / 2.0F + 0.8F, 14.0F, "h", mutedText);
+      r2.rect(x, inputY(), w, INPUT_H, 6.0F, editing ? backHover : backThree);
+      r2.rectOutline(x, inputY(), w, INPUT_H, 6.0F, outlineColor, editing ? 0.35F : 0.2F);
+      r2.text(FontRegistry.ICONS, x + 9.0F, inputY() + INPUT_H / 2.0F + 0.8F, 14.0F, "h", mutedText);
       String shown = GuiScreen.friendsSearchText.isEmpty() ? "поиск по нику…" : GuiScreen.friendsSearchText;
-      r2.text(FontRegistry.INTER_MEDIUM, x + 26.0F, inputY + inputH / 2.0F + 0.8F, 13.0F, shown,
+      r2.text(FontRegistry.INTER_MEDIUM, x + 26.0F, inputY() + INPUT_H / 2.0F + 0.8F, 13.0F, shown,
             GuiScreen.friendsSearchText.isEmpty() ? mutedText : textColor);
+      r2.text(FontRegistry.INTER_MEDIUM, x + w - 20.0F, inputY() + INPUT_H / 2.0F + 0.8F, 13.0F, editing ? "|" : "", mainColor);
 
-      float rowIndex = 0.0F;
+      // ---- Список ----
+      float scroll = GuiScreen.getScrollUtil().getScroll();
+      float viewTop = GuiLayout.clipY() - ROW_H;
+      float viewBottom = GuiLayout.clipY() + GuiLayout.clipHeight();
+      float listH = GuiLayout.clipHeight() - (listY0() - GuiLayout.clipY());
 
-      // ---- Список онлайн ----
-      if (onlineRows > 0) {
-         float hy = listY0 + rowIndex * (rowH + gapR) - scroll;
-         if (hy >= GuiLayout.clipY() - rowH && hy <= GuiLayout.clipY() + GuiLayout.clipHeight()) {
-            r2.text(FontRegistry.INTER_MEDIUM, x + 2.0F, hy + headerH / 2.0F + 0.6F, 11.0F, "На сервере", mutedText);
+      if (GuiScreen.friendsTab == 1) {
+         List<String> online = filteredOnline();
+         boolean showManual = !GuiScreen.friendsSearchText.trim().isEmpty()
+               && online.stream().noneMatch(n -> n.equalsIgnoreCase(GuiScreen.friendsSearchText.trim()));
+         int rows = online.size() + (showManual ? 1 : 0);
+         GuiScreen.getScrollUtil().setMax(rows * (ROW_H + ROW_GAP) + 6.0F, listH);
+
+         if (rows == 0) {
+            r2.text(FontRegistry.INTER_MEDIUM, x + 8.0F, listY0() + 6.0F, 12.0F,
+                  onlinePlayers().isEmpty() ? "Нет подключения к серверу" : "Никто не найден", mutedText);
          }
-         rowIndex++;
+
+         int idx = 0;
          if (showManual) {
-            float y = listY0 + rowIndex * (rowH + gapR) - scroll;
-            rowIndex++;
-            if (y >= GuiLayout.clipY() - rowH && y <= GuiLayout.clipY() + GuiLayout.clipHeight()) {
-               boolean hover = GuiRenderMain.isHovered(mouseX, mouseY, x, y, w, rowH);
-               r2.rect(x, y, w, rowH, 5.0F, hover ? backHover : backThree);
-               r2.text(FontRegistry.INTER_MEDIUM, x + 8.0F, y + rowH / 2.0F + 0.8F, 13.0F, GuiScreen.friendsSearchText.trim(), textColor);
-               drawSmallButton(r2, x + w - 22.0F, y + (rowH - 14.0F) / 2.0F, mainColor, "+");
+            float y = rowY(idx, scroll);
+            idx++;
+            if (y >= viewTop && y <= viewBottom) {
+               boolean hover = GuiRenderMain.isHovered(mouseX, mouseY, x, y, w, ROW_H);
+               r2.rect(x, y, w, ROW_H, 5.0F, hover ? backHover : backThree);
+               r2.text(FontRegistry.INTER_MEDIUM, x + 8.0F, y + ROW_H / 2.0F + 0.8F, 13.0F, GuiScreen.friendsSearchText.trim(), textColor);
+               drawSmallButton(r2, x + w - 22.0F, y + (ROW_H - 14.0F) / 2.0F, mainColor, "+");
             }
          }
          for (String name : online) {
-            float y = listY0 + rowIndex * (rowH + gapR) - scroll;
-            rowIndex++;
-            if (y < GuiLayout.clipY() - rowH || y > GuiLayout.clipY() + GuiLayout.clipHeight()) {
+            float y = rowY(idx, scroll);
+            idx++;
+            if (y < viewTop || y > viewBottom) {
                continue;
             }
             boolean isFriend = FriendManager.isFriend(name);
-            boolean hover = GuiRenderMain.isHovered(mouseX, mouseY, x, y, w, rowH);
-            r2.rect(x, y, w, rowH, 5.0F, hover ? backHover : backThree);
+            boolean hover = GuiRenderMain.isHovered(mouseX, mouseY, x, y, w, ROW_H);
+            r2.rect(x, y, w, ROW_H, 5.0F, hover ? backHover : backThree);
             if (isFriend) {
-               r2.rect(x, y, 2.0F, rowH, 1.0F, mainColor);
+               r2.rect(x, y, 2.0F, ROW_H, 1.0F, mainColor);
             }
-            r2.text(FontRegistry.INTER_MEDIUM, x + 8.0F, y + rowH / 2.0F + 0.8F, 13.0F, name, isFriend ? mainColor : textColor);
+            r2.text(FontRegistry.INTER_MEDIUM, x + 8.0F, y + ROW_H / 2.0F + 0.8F, 13.0F, name, isFriend ? mainColor : textColor);
             if (!isFriend) {
-               drawSmallButton(r2, x + w - 22.0F, y + (rowH - 14.0F) / 2.0F, mainColor, "+");
+               drawSmallButton(r2, x + w - 22.0F, y + (ROW_H - 14.0F) / 2.0F, mainColor, "+");
             } else {
-               r2.text(FontRegistry.ICONS, x + w - 22.0F + 7.0F, y + rowH / 2.0F + 0.8F, 10.0F, "e", mainColor);
+               r2.text(FontRegistry.ICONS, x + w - 22.0F + 7.0F, y + ROW_H / 2.0F + 0.8F, 10.0F, "e", mainColor);
             }
          }
-      }
+      } else {
+         List<Friend> friends = filteredFriends();
+         int rows = friends.size();
+         GuiScreen.getScrollUtil().setMax(rows * (ROW_H + ROW_GAP) + 6.0F, listH);
 
-      // ---- Список друзей ----
-      if (friendRows > 0) {
-         float hy = listY0 + rowIndex * (rowH + gapR) - scroll;
-         rowIndex++;
-         if (hy >= GuiLayout.clipY() - rowH && hy <= GuiLayout.clipY() + GuiLayout.clipHeight()) {
-            r2.text(FontRegistry.INTER_MEDIUM, x + 2.0F, hy + headerH / 2.0F + 0.6F, 11.0F, "Друзья (" + FriendManager.friends.size() + ")", mutedText);
+         if (rows == 0) {
+            r2.text(FontRegistry.INTER_MEDIUM, x + 8.0F, listY0() + 6.0F, 12.0F,
+                  "Друзей пока нет — добавь через вкладку «Сервер»", mutedText);
          }
+
+         int idx = 0;
          for (Friend f : friends) {
-            float y = listY0 + rowIndex * (rowH + gapR) - scroll;
-            rowIndex++;
-            if (y < GuiLayout.clipY() - rowH || y > GuiLayout.clipY() + GuiLayout.clipHeight()) {
+            float y = rowY(idx, scroll);
+            idx++;
+            if (y < viewTop || y > viewBottom) {
                continue;
             }
-            boolean hover = GuiRenderMain.isHovered(mouseX, mouseY, x, y, w, rowH);
-            r2.rect(x, y, w, rowH, 5.0F, hover ? backHover : backThree);
-            r2.rect(x, y, 2.0F, rowH, 1.0F, mainColor);
-            r2.text(FontRegistry.INTER_MEDIUM, x + 8.0F, y + rowH / 2.0F + 0.8F, 13.0F, f.getName(), mainColor);
-            drawSmallButton(r2, x + w - 22.0F, y + (rowH - 14.0F) / 2.0F, dangerColor, "-");
+            boolean hover = GuiRenderMain.isHovered(mouseX, mouseY, x, y, w, ROW_H);
+            r2.rect(x, y, w, ROW_H, 5.0F, hover ? backHover : backThree);
+            r2.rect(x, y, 2.0F, ROW_H, 1.0F, mainColor);
+            r2.text(FontRegistry.INTER_MEDIUM, x + 8.0F, y + ROW_H / 2.0F + 0.8F, 13.0F, f.getName(), mainColor);
+            drawSmallButton(r2, x + w - 22.0F, y + (ROW_H - 14.0F) / 2.0F, dangerColor, "-");
          }
-      }
-
-      if (onlineRows == 0 && friendRows == 0) {
-         r2.text(FontRegistry.INTER_MEDIUM, x + 8.0F, listY0 + 6.0F, 12.0F,
-               onlinePlayers().isEmpty() ? "Нет подключения к серверу" : "Никто не найден", mutedText);
       }
    }
 
-   /** Маленькая круглая кнопка («+»/«-») справа в строке. */
+   /** Маленькая круглая кнопка («+»/«-») справа в строке, символ по центру. */
    private static void drawSmallButton(Renderer2D r2, float bx, float by, int color, String symbol) {
       r2.rect(bx, by, 14.0F, 14.0F, 7.0F, Renderer2D.ColorUtil.replAlpha(color, 70));
-      r2.text(FontRegistry.INTER_MEDIUM, bx + 5.4F, by + 7.6F, 12.0F, symbol, Renderer2D.ColorUtil.replAlpha(color, 255));
+      float sw = r2.measureText(FontRegistry.INTER_MEDIUM, symbol, 12.0F).width;
+      r2.text(FontRegistry.INTER_MEDIUM, bx + 7.0F - sw / 2.0F, by + 7.0F - 3.2F, 12.0F, symbol,
+            Renderer2D.ColorUtil.replAlpha(color, 255));
    }
 
    /** Хит-область кнопки «+»/«-» в строке списка. */
    public static boolean isSmallButton(float rowX, float rowY, float rowW, int mouseX, int mouseY) {
-      return GuiRenderMain.isHovered(mouseX, mouseY, rowX + rowW - 22.0F, rowY + (20.0F - 14.0F) / 2.0F, 14.0F, 14.0F);
+      return GuiRenderMain.isHovered(mouseX, mouseY, rowX + rowW - 22.0F, rowY + (ROW_H - 14.0F) / 2.0F, 14.0F, 14.0F);
    }
 }

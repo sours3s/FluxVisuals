@@ -9,6 +9,10 @@ import ru.fluxvisuals.module.api.Category;
 import ru.fluxvisuals.module.api.IModule;
 import ru.fluxvisuals.module.api.Module;
 
+/**
+ * Discord RPC — показывает активность FluxVisuals в Discord.
+ * Включается/выключается в ClickGUI, корректно подключается/отключается.
+ */
 @IModule(name = "Discord RPC", description = "Показывает активность FluxVisuals в Discord (с кнопкой на сервер)", category = Category.Utils, bind = -1)
 @Environment(EnvType.CLIENT)
 public class DiscordRCP extends Module {
@@ -18,13 +22,17 @@ public class DiscordRCP extends Module {
    private long lastReconnect = 0L;
 
    public DiscordRCP() {
-      this.enable = true; // включено сразу — RPC пишет только в named pipe, без риска
-      this.onEnable();    // регистрируем обработчики событий
+      // Не авто-включаем — пользователь включает через ClickGUI
+      this.enable = false;
    }
 
    @EventInit
    public void onTick(ClientTickEvent e) {
-      startRpc();
+      if (enable) {
+         startRpc();
+      } else {
+         stopRpc();
+      }
    }
 
    private synchronized void startRpc() {
@@ -33,10 +41,9 @@ public class DiscordRCP extends Module {
 
       thread = new Thread(() -> {
          long startTs = System.currentTimeMillis() / 1000L;
-         while (!Thread.currentThread().isInterrupted()) {
+         while (!Thread.currentThread().isInterrupted() && enable) {
             try {
                if (!ipc.isConnected()) {
-                  // переподключение не чаще раза в 5 секунд, пока Discord не поднимется
                   long now = System.currentTimeMillis();
                   if (now - lastReconnect >= 5000L) {
                      lastReconnect = now;
@@ -56,12 +63,25 @@ public class DiscordRCP extends Module {
       thread.start();
    }
 
-   @Override
-   public void onDisable() {
+   private synchronized void stopRpc() {
+      if (!started) return;
       started = false;
       if (thread != null) {
          thread.interrupt();
+         thread = null;
       }
       ipc.shutdown();
+   }
+
+   @Override
+   public void onDisable() {
+      super.onDisable();
+      stopRpc();
+   }
+
+   @Override
+   public void onEnable() {
+      super.onEnable();
+      // startRpc будет вызван на следующем тике
    }
 }

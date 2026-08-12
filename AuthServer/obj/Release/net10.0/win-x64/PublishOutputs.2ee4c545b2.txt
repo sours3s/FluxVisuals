@@ -1,0 +1,11 @@
+D:\FluxVisuals\AuthServer\deploy\win-x64\appsettings.json
+D:\FluxVisuals\AuthServer\deploy\win-x64\deploy\linux-x64\appsettings.json
+D:\FluxVisuals\AuthServer\deploy\win-x64\deploy\linux-x64\AuthServer.staticwebassets.endpoints.json
+D:\FluxVisuals\AuthServer\deploy\win-x64\deploy\linux-x64\deploy\win-x64\appsettings.json
+D:\FluxVisuals\AuthServer\deploy\win-x64\deploy\linux-x64\deploy\win-x64\AuthServer.staticwebassets.endpoints.json
+D:\FluxVisuals\AuthServer\deploy\win-x64\deploy\linux-x64\deploy\win-x64\deploy\linux-x64\appsettings.json
+D:\FluxVisuals\AuthServer\deploy\win-x64\deploy\linux-x64\deploy\win-x64\deploy\linux-x64\AuthServer.staticwebassets.endpoints.json
+D:\FluxVisuals\AuthServer\deploy\win-x64\deploy\linux-x64\deploy\win-x64\deploy\linux-x64\deploy\win-x64\appsettings.json
+D:\FluxVisuals\AuthServer\deploy\win-x64\deploy\linux-x64\deploy\win-x64\deploy\linux-x64\deploy\win-x64\AuthServer.staticwebassets.endpoints.json
+D:\FluxVisuals\AuthServer\deploy\win-x64\AuthServer.pdb
+D:\FluxVisuals\AuthServer\deploy\win-x64\AuthServer.exe

@@ -32,7 +32,7 @@ public class GuiRenderUpPanel extends GuiScreen {
       float nameX = GuiScreen.x + 36.0F;
       if (StyleConfig.clickGuiLogo) {
          int logoId = TextureLoader.load("assets/fluxvisuals/textures/gui/logo.png");
-         renderer2D.drawRgbaTexture(logoId, GuiScreen.x + 10.0F, GuiScreen.y + 11.0F, 22.0F, 22.0F, -1, true);
+         renderer2D.drawRgbaTexture(logoId, GuiScreen.x + 10.0F, GuiScreen.y + 11.0F, 22.0F, 22.0F, -1, false);
          nameX = GuiScreen.x + 36.0F;
       } else {
          nameX = GuiScreen.x + 18.0F;

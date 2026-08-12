@@ -1,0 +1,2 @@
+D:\FluxVisuals\loader\publish-v1.0.6\FluxVisualsLoader.pdb
+D:\FluxVisuals\loader\publish-v1.0.6\FluxVisualsLoader.exe

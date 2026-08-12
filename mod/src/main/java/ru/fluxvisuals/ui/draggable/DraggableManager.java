@@ -392,6 +392,13 @@ public final class DraggableManager {
       return Collections.unmodifiableMap(snapshot);
    }
 
+   public void resetAll() {
+      this.persistedPositions.clear();
+      this.persistedScales.clear();
+      this.lastBounds.clear();
+      this.dragStates.clear();
+   }
+
    private void ensureFrame() {
       if (!this.frameActive || this.renderer == null) {
          throw new IllegalStateException("beginFrame must be called before beginDrag");

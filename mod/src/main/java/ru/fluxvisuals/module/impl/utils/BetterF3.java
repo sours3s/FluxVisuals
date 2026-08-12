@@ -3,6 +3,10 @@ package ru.fluxvisuals.module.impl.utils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
+import org.lwjgl.glfw.GLFW;
+import ru.fluxvisuals.event.EventInit;
 import ru.fluxvisuals.module.api.Category;
 import ru.fluxvisuals.module.api.IModule;
 import ru.fluxvisuals.module.api.Module;
@@ -12,9 +16,11 @@ import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
 
 /**
  * BetterF3 — чистый кастомный оверлей отладки вместо ванильного F3.
- * Миксин DebugHudMixin отменяет ванильный и рисует кастомный.
+ * Миксин DebugHudMixin отменяет ванильный и рисует кастомный когда:
+ * - модуль включен
+ * - нажата клавиша F3 (или бинд) — работает только пока зажата клавиша
  */
-@IModule(name = "Better F3", description = "Замена стандартного экрана отладки F3 на чистый оверлей", category = Category.Utils, bind = -1)
+@IModule(name = "Better F3", description = "Замена стандартного экрана отладки F3 на чистый оверлей", category = Category.Utils, bind = GLFW.GLFW_KEY_F3)
 @Environment(EnvType.CLIENT)
 public class BetterF3 extends Module {
    private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -34,4 +40,10 @@ public class BetterF3 extends Module {
    }
 
    public static BetterF3 getInstance() { return INSTANCE; }
+
+   /** Проверяет, нажата ли клавиша F3 (или бинд) прямо сейчас. */
+   public static boolean isF3Pressed() {
+      if (mc.options == null) return false;
+      return mc.options.debugOverlayKey.isPressed();
+   }
 }

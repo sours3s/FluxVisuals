@@ -93,6 +93,9 @@ public class GuiMouseClickedModule extends GuiScreen {
                   module.binding = false;
                   GuiScreen.activeModuleBind = null;
                   GuiScreen.getModuleBindAnimation(module).run(1.0, 0.2F, Easings.SINE_OUT);
+                  if (ru.fluxvisuals.client.FluxVisualsClient.get != null && ru.fluxvisuals.client.FluxVisualsClient.get.manager != null) {
+                     ru.fluxvisuals.client.FluxVisualsClient.get.manager.invalidateCaches();
+                  }
                   return true;
                }
             }

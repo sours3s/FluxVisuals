@@ -1,6 +1,6 @@
 {
-  "vertex": "godweer:pipeline/shader_fog",
-  "fragment": "godweer:pipeline/caustic",
+  "vertex": "fluxvisuals:pipeline/shader_fog",
+  "fragment": "fluxvisuals:pipeline/caustic",
   "samplers": [],
   "uniforms": [
     { "name": "ShaderFogData", "type": "uniform_buffer", "count": 1 }

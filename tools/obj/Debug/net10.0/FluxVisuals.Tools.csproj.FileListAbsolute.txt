@@ -1,0 +1,14 @@
+D:\FluxVisuals\tools\bin\Debug\net10.0\EncryptMod.exe
+D:\FluxVisuals\tools\bin\Debug\net10.0\EncryptMod.deps.json
+D:\FluxVisuals\tools\bin\Debug\net10.0\EncryptMod.runtimeconfig.json
+D:\FluxVisuals\tools\bin\Debug\net10.0\EncryptMod.dll
+D:\FluxVisuals\tools\bin\Debug\net10.0\EncryptMod.pdb
+D:\FluxVisuals\tools\obj\Debug\net10.0\FluxVisuals.Tools.GeneratedMSBuildEditorConfig.editorconfig
+D:\FluxVisuals\tools\obj\Debug\net10.0\FluxVisuals.Tools.AssemblyInfoInputs.cache
+D:\FluxVisuals\tools\obj\Debug\net10.0\FluxVisuals.Tools.AssemblyInfo.cs
+D:\FluxVisuals\tools\obj\Debug\net10.0\FluxVisuals.Tools.csproj.CoreCompileInputs.cache
+D:\FluxVisuals\tools\obj\Debug\net10.0\EncryptMod.dll
+D:\FluxVisuals\tools\obj\Debug\net10.0\refint\EncryptMod.dll
+D:\FluxVisuals\tools\obj\Debug\net10.0\EncryptMod.pdb
+D:\FluxVisuals\tools\obj\Debug\net10.0\FluxVisuals.Tools.genruntimeconfig.cache
+D:\FluxVisuals\tools\obj\Debug\net10.0\ref\EncryptMod.dll

@@ -1,0 +1,2 @@
+D:\FluxVisuals\loader\bin\Release\single5\FluxVisualsLoader.pdb
+D:\FluxVisuals\loader\bin\Release\single5\FluxVisualsLoader.exe

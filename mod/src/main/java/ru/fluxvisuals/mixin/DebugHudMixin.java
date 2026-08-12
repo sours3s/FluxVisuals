@@ -32,6 +32,9 @@ public class DebugHudMixin {
       MinecraftClient mc = MinecraftClient.getInstance();
       if (mc.player == null || mc.world == null) return;
 
+      // Show custom overlay ONLY when F3 key is held (like vanilla F3)
+      if (!BetterF3.isF3Pressed()) return;
+
       ci.cancel(); // Cancel vanilla debug
 
       float guiScale = (float) mc.getWindow().getScaleFactor();

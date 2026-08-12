@@ -139,7 +139,7 @@ public class ArrayListHUD {
 
          if (pillW > 6.0F) {
             float textY = pillY + pillH / 2.0F
-               + TextCache.measure(r2, FontRegistry.INTER_MEDIUM, module.name, 32.0F).height * 0.5F - 1.0F;
+               + TextCache.measure(r2, FontRegistry.INTER_MEDIUM, module.name, 32.0F).baselineOffset * 0.5F - 1.0F;
             float textX = clamp(translate.getX() + x + 6.0F, 1.0F, Math.max(1.0F, fbWidth - 1.0F));
             r2.text(FontRegistry.INTER_MEDIUM, textX, textY, 32.0F, module.name,
                Renderer2D.ColorUtil.replAlpha(baseColor, Math.round(alpha * 255.0F)));

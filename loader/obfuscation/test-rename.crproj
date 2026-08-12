@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project outputDir="out_test" baseDir=".." xmlns="http://confuser.codeplex.com">
+    <Rule pattern="true" preset="none" inherit="false">
+        <Protection id="rename" />
+    </Rule>
+    <module path="bin\Release\net10.0-windows\win-x64\FluxVisualsLoader.dll" />
+</Project>

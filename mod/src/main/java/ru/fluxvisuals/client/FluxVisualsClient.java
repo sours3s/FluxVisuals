@@ -17,6 +17,7 @@ import ru.fluxvisuals.config.StyleConfig;
 import ru.fluxvisuals.config.friend.FriendManager;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.RenderHandler;
+import ru.fluxvisuals.event.render.EventRender2D;
 import ru.fluxvisuals.event.render.RenderEvent;
 import ru.fluxvisuals.module.api.Manager;
 import ru.fluxvisuals.module.bind.BindingManager;

@@ -58,6 +58,8 @@ public class GuiScreen {
    public static boolean configNameEditing = false;
    public static String friendsSearchText = "";
    public static boolean friendsSearchEditing = false;
+   /** Вкладка друзей: 0 = «Друзья», 1 = «Сервер» (онлайн-игроки). */
+   public static int friendsTab = 0;
    public static long lastBackspaceTime = 0L;
    public static boolean backspaceHeld = false;
    public static long firstBackspacePressTime = 0L;

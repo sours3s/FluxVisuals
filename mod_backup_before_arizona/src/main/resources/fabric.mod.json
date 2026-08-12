@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "fluxvisuals",
+  "version": "${version}",
+  "name": "FluxVisuals",
+  "description": "FluxVisuals — красивый визуальный клиент для Minecraft (HUD, TargetHUD, ClickGUI, эффекты). Только клиентская отрисовка.",
+  "authors": ["FluxVisuals"],
+  "license": "MIT",
+  "icon": "assets/fluxvisuals/textures/icon/logo.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["ru.fluxvisuals.client.FluxVisualsClient"]
+  },
+  "mixins": ["fluxvisuals.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

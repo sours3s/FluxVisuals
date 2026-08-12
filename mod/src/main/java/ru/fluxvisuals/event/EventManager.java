@@ -118,7 +118,17 @@ public class EventManager {
       return event;
    }
 
-   private static void invoke(EventManager.MethodData data, Event argument) {
+   public static EventCancellable call(EventCancellable event) {
+      List<EventManager.MethodData> dataList = REGISTRY_MAP.get(event.getClass());
+      if (dataList != null) {
+         for (EventManager.MethodData datax : dataList) {
+            invoke(datax, event);
+         }
+      }
+      return event;
+   }
+
+   private static void invoke(EventManager.MethodData data, EventCancellable argument) {
       try {
          data.getTarget().invoke(data.getSource(), argument);
       } catch (IllegalArgumentException | IllegalAccessException var4) {

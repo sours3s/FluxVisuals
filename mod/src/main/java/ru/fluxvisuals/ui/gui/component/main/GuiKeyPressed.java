@@ -19,6 +19,9 @@ public class GuiKeyPressed extends GuiScreen {
             GuiScreen.activeModuleBind.binding = false;
             GuiScreen.getModuleBindAnimation(GuiScreen.activeModuleBind).run(0.0, 0.2F, Easings.SINE_OUT);
             GuiScreen.activeModuleBind = null;
+            if (FluxVisualsClient.get.manager != null) {
+               FluxVisualsClient.get.manager.invalidateCaches();
+            }
             if (FluxVisualsClient.get.configManager != null) {
                FluxVisualsClient.get.configManager.autoSave();
             }
@@ -27,6 +30,9 @@ public class GuiKeyPressed extends GuiScreen {
             GuiScreen.activeModuleBind.binding = false;
             GuiScreen.getModuleBindAnimation(GuiScreen.activeModuleBind).run(1.0, 0.2F, Easings.SINE_OUT);
             GuiScreen.activeModuleBind = null;
+            if (FluxVisualsClient.get.manager != null) {
+               FluxVisualsClient.get.manager.invalidateCaches();
+            }
             if (FluxVisualsClient.get.configManager != null) {
                FluxVisualsClient.get.configManager.autoSave();
             }

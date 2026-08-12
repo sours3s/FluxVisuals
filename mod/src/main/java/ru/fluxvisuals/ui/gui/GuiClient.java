@@ -247,6 +247,7 @@ public class GuiClient extends Screen {
       GuiScreen.x = 480.0F - GuiScreen.width / 2.0F;
       GuiScreen.y = 260.0F - GuiScreen.height / 2.0F;
       GuiScreen.mainAnimation.reset();
+      GuiScreen.categoryAnimation.reset();
       if (FluxVisualsClient.get.guiManager == null) {
          FluxVisualsClient.get.guiManager = new GuiManager();
          FluxVisualsClient.get.guiManager.init();

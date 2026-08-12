@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Obfuscator>
+  <Module file="D:\FluxVisuals\loader\bin\Release\publish-singlefile\FluxVisualsLoader.exe">
+    <Rename mode="normal" />
+    <Rename mode="letters" />
+  </Module>
+</Obfuscator>

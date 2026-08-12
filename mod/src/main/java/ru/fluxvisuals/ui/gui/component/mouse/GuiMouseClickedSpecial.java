@@ -1,8 +1,10 @@
 package ru.fluxvisuals.ui.gui.component.mouse;
 
+import java.io.File;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import ru.fluxvisuals.cfg.ConfigManager;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.module.api.Category;
 import ru.fluxvisuals.module.api.Theme;
@@ -88,8 +90,8 @@ public class GuiMouseClickedSpecial extends GuiScreen {
          return true;
       }
 
-      // Кнопки действий (Save / Load / Reset).
-      for (int i = 0; i < 3; i++) {
+      // Кнопки действий (Save / Load / Reset / Dir).
+      for (int i = 0; i < 4; i++) {
          float bx = x + i * (btnW + gap);
          if (!GuiRenderMain.isHovered(mouseX, mouseY, bx, btnY, btnW, btnH)) {
             continue;
@@ -100,9 +102,17 @@ public class GuiMouseClickedSpecial extends GuiScreen {
                FluxVisualsClient.get.configManager.saveConfig(name);
             } else if (i == 1) {
                FluxVisualsClient.get.configManager.loadConfig(name);
-            } else {
-               // Reset: перечитываем сохранённое состояние выбранного конфига с диска.
-               FluxVisualsClient.get.configManager.loadConfig(name);
+            } else if (i == 2) {
+               // Reset: полный сброс всего клиента
+               FluxVisualsClient.get.configManager.resetAll();
+            } else if (i == 3) {
+               // Dir: открыть папку конфигов в проводнике
+               File configDir = ConfigManager.getConfigDirectoryPath();
+               if (configDir.exists()) {
+                  try {
+                     java.awt.Desktop.getDesktop().open(configDir);
+                  } catch (Exception ignored) {}
+               }
             }
          }
          return true;

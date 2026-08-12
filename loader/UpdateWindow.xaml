@@ -1,0 +1,51 @@
+<Window x:Class="FluxVisualsLoader.UpdateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Обновление лоадера"
+        Width="460" Height="290"
+        WindowStyle="None" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True"
+        Background="#0d1117">
+    <Window.Resources>
+        <SolidColorBrush x:Key="TextBrush" Color="#E6EDF3"/>
+        <SolidColorBrush x:Key="SubBrush" Color="#8B949E"/>
+        <LinearGradientBrush x:Key="AccentBrush" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#A855F7" Offset="0"/>
+            <GradientStop Color="#EC4899" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#151221" Offset="0"/>
+                <GradientStop Color="#0d1117" Offset="0.55"/>
+                <GradientStop Color="#2d0a2e" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <StackPanel Margin="34,26" VerticalAlignment="Center">
+            <TextBlock FontSize="22" FontWeight="Bold">
+                <Run Text="FLUX" Foreground="{StaticResource TextBrush}"/><Run Text="VISUALS" Foreground="{StaticResource AccentBrush}"/>
+            </TextBlock>
+
+            <TextBlock x:Name="TitleText" Text="Обновление лоадера"
+                       FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextBrush}"
+                       Margin="0,22,0,6"/>
+            <TextBlock x:Name="MessageText" Text="Проверка обновлений…"
+                       FontSize="13" Foreground="{StaticResource SubBrush}" TextWrapping="Wrap"/>
+
+            <ProgressBar x:Name="Progress" Height="6" Margin="0,20,0,8"
+                         Background="#21262d" BorderThickness="0" Maximum="100"
+                         Foreground="{StaticResource AccentBrush}"/>
+            <TextBlock x:Name="PercentText" Text="0%" FontSize="12"
+                       Foreground="{StaticResource SubBrush}" HorizontalAlignment="Right"/>
+
+            <Button x:Name="SkipButton" Content="Запустить без обновления" Visibility="Collapsed"
+                    HorizontalAlignment="Left" Margin="0,20,0,0" Padding="14,7"
+                    Background="#21262d" Foreground="{StaticResource TextBrush}" BorderThickness="0"
+                    FontSize="12.5" Cursor="Hand" Click="OnSkip"/>
+        </StackPanel>
+    </Grid>
+</Window>
