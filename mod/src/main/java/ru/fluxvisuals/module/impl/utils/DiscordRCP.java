@@ -22,8 +22,8 @@ public class DiscordRCP extends Module {
    private long lastReconnect = 0L;
 
    public DiscordRCP() {
-      // Не авто-включаем — пользователь включает через ClickGUI
-      this.enable = false;
+      // По умолчанию включен
+      this.enable = true;
    }
 
    @EventInit
