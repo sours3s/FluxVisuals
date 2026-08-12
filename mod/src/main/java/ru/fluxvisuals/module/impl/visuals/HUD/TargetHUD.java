@@ -48,7 +48,7 @@ public final class TargetHUD {
    public static final BooleanSetting showItems = new BooleanSetting("TargetHUD Items", true);
    public static final BooleanSetting showOnHover = new BooleanSetting("TargetHUD Show on hover", true);
    public static final BooleanSetting particles = new BooleanSetting("TargetHUD Particles", true);
-   public static final SliderSetting scale = new SliderSetting("TargetHUD Scale", 5.0F, 0.5F, 6.0F, 0.05F, false);
+   public static final SliderSetting scale = new SliderSetting("TargetHUD Scale", 4.5F, 0.5F, 6.0F, 0.05F, false);
 
    // === Advantage indicator ===
    public static final BooleanSetting advantage = new BooleanSetting("Combat Advantage", true);
@@ -60,12 +60,13 @@ public final class TargetHUD {
    // === Константы макета ===
    private static final float ITEM_BOX = 14.5F;
    private static final float SPACING = 1.5F;
-   private static final float MAIN_HEIGHT = 28.0F;   // высота основной панели
+   private static final float MAIN_HEIGHT = 32.0F;   // высота основной панели (увеличена для HP текста)
    private static final float HEAD_SIZE = 20.0F;     // размер головы
    private static final float WIDTH = 104.0F;        // ширина панели
 
    // === Состояние ===
    private static final Animation openAnimation = new Animation();
+   private static final Animation openSlideAnimation = new Animation(); // slide from top like Binds
    private static final Particles2DEngine particlesEngine = new Particles2DEngine();
    private static final ComboTracker comboTracker = new ComboTracker();
    private static LivingEntity prevTarget = null;
@@ -128,6 +129,12 @@ public final class TargetHUD {
       openAnimation.update();
       openAnimation.run(shown ? 1.0 : 0.0, 0.4F, Easings.CIRC_OUT);
       float anim = (float) openAnimation.get();
+
+      // Slide animation (like Binds)
+      openSlideAnimation.update();
+      openSlideAnimation.run(shown ? 0.0 : -30.0, 0.4F, Easings.EXPO_OUT);
+      float slideY = (float) openSlideAnimation.get();
+
       if (anim < 0.01F) return;
 
       // Minimal mode uses crosshair-center positioning, skip drag
@@ -166,7 +173,7 @@ public final class TargetHUD {
       DraggableManager.DragSession session = DraggableManager.getInstance()
             .beginDrag("targetHUD", defX, defY, WIDTH * s, panelH);
       float x = session.positionX();
-      float y = session.positionY();
+      float y = session.positionY() + slideY; // apply slide animation
       float hudScale = session.scale(); // this includes Ctrl+scroll persisted scale
       s = hudScale; // use persisted scale for layout
 
@@ -266,7 +273,7 @@ public final class TargetHUD {
          particlesEngine.render(r2);
       }
 
-      // HP-текст (компактно, под баром внутри панели)
+      // HP-текст (под баром, чуть ниже для читаемости)
       float hValue = (float) (Math.round(healthAnim * 10.0F) / 10.0F);
       float aValue = (float) (Math.round(absorptionAnim * 10.0F) / 10.0F);
       String hStr = hValue + "";
@@ -275,7 +282,7 @@ public final class TargetHUD {
       float hpTextSize = 9.0F * s;
       float fullTextW = r2.measureText(FontRegistry.INTER_MEDIUM, hStr + aStr + suffix, hpTextSize).width;
       float drawX = barX + barW - fullTextW;
-      float drawY = barY + barH + 2.0F * s;
+      float drawY = barY + barH + 5.0F * s;  // опущено ниже (было 2.0F)
       r2.text(FontRegistry.INTER_MEDIUM, drawX, drawY, hpTextSize, hStr, HP_TEXT_COLOR);
       float off = r2.measureText(FontRegistry.INTER_MEDIUM, hStr, hpTextSize).width;
       if (aValue > 0) {
