@@ -24,11 +24,11 @@ public class AppConfig
     [JsonPropertyName("accent")] public int Accent { get; set; } = unchecked((int)0xFFA855F7);
     [JsonPropertyName("accentSecond")] public int AccentSecond { get; set; } = unchecked((int)0xFFEC4899);
     [JsonPropertyName("modules")] public Dictionary<string, bool> Modules { get; set; } = new();
-    [JsonPropertyName("modDownloadUrl")] public string ModDownloadUrl { get; set; } = "https://github.com/sours3s/FluxVisuals/releases/download/v1.0.12/fluxvisuals-mod-1.0.12.jar";
+    [JsonPropertyName("modDownloadUrl")] public string ModDownloadUrl { get; set; } = Defaults.ModDownloadUrl;
     [JsonPropertyName("modVersion")] public string ModVersion { get; set; } = "";
     /// <summary>Иконки установленных файлов: fileName -> URL иконки (для «Моих файлов»).</summary>
     [JsonPropertyName("modIcons")] public Dictionary<string, string> ModIcons { get; set; } = new();
-    [JsonPropertyName("authServerUrl")] public string AuthServerUrl { get; set; } = "https://fluxvisuals-server.onrender.com";
+    [JsonPropertyName("authServerUrl")] public string AuthServerUrl { get; set; } = Defaults.AuthServerUrl;
     [JsonPropertyName("authToken")] public string AuthToken { get; set; } = "";
     [JsonPropertyName("updateCheckUrl")] public string UpdateCheckUrl { get; set; } = UpdateService.DefaultUpdateCheckUrl;
     [JsonPropertyName("updateCheckEnabled")] public bool UpdateCheckEnabled { get; set; } = true;

@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>FluxVisualsLoader</AssemblyName>
+    <RootNamespace>FluxVisualsLoader</RootNamespace>
+    <ApplicationIcon>Resources\FluxVisuals.ico</ApplicationIcon>
+    <Version>1.0.10</Version>
+    <!-- Self-contained single-file publish defaults -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
+    <PackageReference Include="System.Management" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System" />
+    <Using Include="System.IO" />
+    <Using Include="System.Linq" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="System.Threading" />
+    <Using Include="System.Threading.Tasks" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\FluxVisuals.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <EmbeddedResource Include="Resources\logo.png" LogicalName="Resources.logo.png" />
+  </ItemGroup>
+
+  <!-- UI — встроены как EmbeddedResource (не отдельные файлы) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Web\index.html" LogicalName="Web.index.html" />
+    <EmbeddedResource Include="Web\js\app.js" LogicalName="Web.app.js" />
+    <EmbeddedResource Include="Web\css\style.css" LogicalName="Web.style.css" />
+  </ItemGroup>
+
+</Project>
