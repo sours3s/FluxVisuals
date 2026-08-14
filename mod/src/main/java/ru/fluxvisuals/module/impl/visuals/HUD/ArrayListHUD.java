@@ -6,6 +6,7 @@ import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ChatScreen;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.module.api.Category;
 import ru.fluxvisuals.module.api.Module;
@@ -73,7 +74,12 @@ public class ArrayListHUD {
             visible.add(m);
          }
       }
+
+      boolean chatOpen = MinecraftClient.getInstance().currentScreen instanceof ChatScreen;
       if (visible.isEmpty()) {
+         if (chatOpen) {
+            renderEmptyPlaceholder(r2);
+         }
          return;
       }
 
@@ -154,5 +160,19 @@ public class ArrayListHUD {
          return min;
       }
       return value > max ? max : value;
+   }
+
+   private static void renderEmptyPlaceholder(Renderer2D r2) {
+      float w = 88.0F;
+      float h = 22.0F;
+      float preferredX = 20.0F;
+      float preferredY = 120.0F;
+      DraggableManager.DragSession session = DraggableManager.getInstance()
+            .beginDrag("arrayList", preferredX, preferredY, w, h);
+      float x = session.positionX();
+      float y = session.positionY();
+      Hud.drawClientRectLight(r2, x, y, w, h, 6.0F, 1.0F, 1.0F);
+      r2.text(FontRegistry.INTER_MEDIUM, x + 10.0F, y + 6.0F, 11.0F, "ArrayList", 0x55FFFFFF);
+      DraggableManager.getInstance().endDrag(session);
    }
 }

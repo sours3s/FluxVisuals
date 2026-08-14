@@ -55,6 +55,28 @@ public class HotBarHUD {
       }
    }
 
+   /** Always has content in-game (health, armor, food, etc.), but in chat we still show empty placeholder for positioning. */
+   public static boolean hasContent() {
+      return mc.player != null && mc.world != null;
+   }
+
+   /** Empty placeholder for chat screen positioning - shows "Hotbar" header like other HUD elements. */
+   public static void renderEmpty(Renderer2D r2) {
+      boolean chatOpen = mc.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen;
+      float w = 200.0F;
+      float h = 50.0F;
+      float preferredX = (mc.getWindow().getWidth() - w) / 2.0F;
+      float preferredY = mc.getWindow().getHeight() - 80.0F;
+      DraggableManager.DragSession session = DraggableManager.getInstance()
+            .beginDrag("hotbar", preferredX, preferredY, w, h);
+      float x = session.positionX();
+      float y = session.positionY();
+      Hud.drawClientRect(r2, x, y, w, h, 11.0F, 1.0F, 1.0F);
+      r2.text(ru.fluxvisuals.util.render.text.FontRegistry.INTER_MEDIUM, x + 14.0F, y + 28.0F, 28.0F, "Hotbar",
+            ru.fluxvisuals.util.color.ColorUtil.replAlpha(ru.fluxvisuals.util.render.core.Renderer2D.ColorUtil.getTextColor(1, 1), 1.0F));
+      DraggableManager.getInstance().endDrag(session);
+   }
+
    public static void hotbar(Renderer2D r2, DrawContext drawContext) {
       if (mc.player != null && mc.world != null) {
          float guiScale = (float)mc.getWindow().getScaleFactor();
@@ -71,69 +93,75 @@ public class HotBarHUD {
          float screenWidth = mc.getWindow().getWidth();
          float screenHeight = mc.getWindow().getHeight();
          float preferredX = (screenWidth - hotbarWidth) / 2.0F;
-         float preferredY = screenHeight - hotbarHeight - 10.0F;
+         // Match vanilla hotbar position: (guiHeight - 22) * guiScale in framebuffer pixels
+         // guiHeight = screenHeight / guiScale
+         // vanilla Y = (screenHeight / guiScale - 22) * guiScale = screenHeight - 22 * guiScale
+         float preferredY = screenHeight - 22.0F * guiScale;
          DraggableManager.DragSession session = DraggableManager.getInstance()
                .beginDrag("hotbar", preferredX, preferredY, hotbarWidth, hotbarHeight);
          float x = session.positionX();
          float y = session.positionY();
          float hudScale = session.scale();
 
-         Hud.drawClientRect(r2, x, y, hotbarWidth, hotbarHeight, 11.0F, 1.0F, 1.0F);
-         int slots = 9;
-         float cellWidth = hotbarWidth / slots;
-         float normalSlotSize = 24.0F;
-         float selectedSlotSize = 30.0F;
-         int selectedSlot = mc.player.getInventory().getSelectedSlot();
-
-         for (int i = 0; i < slots; i++) {
-            float cellLeft = x + i * cellWidth;
-            float slotCenterX = cellLeft + cellWidth / 2.0F;
-            boolean isSelected = i == selectedSlot;
-            float currentSlotSize = isSelected ? selectedSlotSize : normalSlotSize;
-            float slotX = slotCenterX - currentSlotSize / 2.0F;
-            float slotY = y + (hotbarHeight - currentSlotSize) / 2.0F;
-            if (isSelected) {
-               r2.rectOutline(
-                  slotX + 1.0F, slotY, currentSlotSize, currentSlotSize, 11.0F, 1, Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), 20)
-               );
-               r2.rect(
-                  slotX, slotY, currentSlotSize, currentSlotSize, 11.0F, Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), 15)
-               );
-            }
-
-            ItemStack stack = mc.player.getInventory().getStack(i);
-            if (!stack.isEmpty()) {
-               float itemRenderSize = 16.0F;
-               float itemX = (slotCenterX - itemRenderSize / 2.0F) / guiScale;
-               float itemY = (y + (hotbarHeight - itemRenderSize) / 2.0F) / guiScale;
-               pendingItems.add(new HotBarHUD.PendingItemRender(stack, itemX, itemY, i, 1.0F));
-            }
-         }
-
-         renderOffhandSlot(r2, drawContext, x, y, hotbarWidth, hotbarHeight, selectedSlotSize, guiScale);
-
-         // Apply the user HUD scale to every DrawContext-driven element (items, hearts,
-         // armor, food, air, experience level) by transforming the matrix around the
-         // HUD top-left, mirroring what r2.pushScale already does for renderer2D draws.
-         drawContext.getMatrices().pushMatrix();
-         drawContext.getMatrices().translate(x / guiScale, y / guiScale);
-         drawContext.getMatrices().scale(hudScale, hudScale);
-         drawContext.getMatrices().translate(-x / guiScale, -y / guiScale);
-
          try {
-            float scaledHotbarX = x / guiScale;
-            float scaledHotbarY = y / guiScale;
-            float scaledHotbarWidth = hotbarWidth / guiScale;
-            renderExperienceLevel(drawContext, scaledHotbarY);
-            if (mc.interactionManager != null && mc.interactionManager.hasStatusBars()) {
-               renderStatusBars(drawContext, scaledHotbarX, scaledHotbarY, scaledHotbarWidth);
-            }
-            renderPendingItems(drawContext);
-         } finally {
-            drawContext.getMatrices().popMatrix();
-         }
+            Hud.drawClientRect(r2, x, y, hotbarWidth, hotbarHeight, 11.0F, 1.0F, 1.0F);
+            int slots = 9;
+            float cellWidth = hotbarWidth / slots;
+            float normalSlotSize = 24.0F;
+            float selectedSlotSize = 30.0F;
+            int selectedSlot = mc.player.getInventory().getSelectedSlot();
 
-         DraggableManager.getInstance().endDrag(session);
+            for (int i = 0; i < slots; i++) {
+               float cellLeft = x + i * cellWidth;
+               float slotCenterX = cellLeft + cellWidth / 2.0F;
+               boolean isSelected = i == selectedSlot;
+               float currentSlotSize = isSelected ? selectedSlotSize : normalSlotSize;
+               float slotX = slotCenterX - currentSlotSize / 2.0F;
+               float slotY = y + (hotbarHeight - currentSlotSize) / 2.0F;
+               if (isSelected) {
+                  // Выделение выбранного слота: яркая обводка + заполнение основным цветом
+                  r2.rectOutline(
+                     slotX, slotY, currentSlotSize, currentSlotSize, 11.0F, 2, Renderer2D.ColorUtil.getMainColor(1, 1)
+                  );
+                  r2.rect(
+                     slotX, slotY, currentSlotSize, currentSlotSize, 11.0F, Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), 40)
+                  );
+               }
+
+               ItemStack stack = mc.player.getInventory().getStack(i);
+               if (!stack.isEmpty()) {
+                  float itemRenderSize = 16.0F;
+                  float itemX = (slotCenterX - itemRenderSize / 2.0F) / guiScale;
+                  float itemY = (y + (hotbarHeight - itemRenderSize) / 2.0F) / guiScale;
+                  pendingItems.add(new HotBarHUD.PendingItemRender(stack, itemX, itemY, i, 1.0F));
+               }
+            }
+
+            renderOffhandSlot(r2, drawContext, x, y, hotbarWidth, hotbarHeight, selectedSlotSize, guiScale);
+
+            // Apply the user HUD scale to every DrawContext-driven element (items, hearts,
+            // armor, food, air, experience level) by transforming the matrix around the
+            // HUD top-left, mirroring what r2.pushScale already does for renderer2D draws.
+            drawContext.getMatrices().pushMatrix();
+            try {
+               drawContext.getMatrices().translate(x / guiScale, y / guiScale);
+               drawContext.getMatrices().scale(hudScale, hudScale);
+               drawContext.getMatrices().translate(-x / guiScale, -y / guiScale);
+
+               float scaledHotbarX = x / guiScale;
+               float scaledHotbarY = y / guiScale;
+               float scaledHotbarWidth = hotbarWidth / guiScale;
+               renderExperienceLevel(drawContext, scaledHotbarY);
+               if (mc.interactionManager != null && mc.interactionManager.hasStatusBars()) {
+                  renderStatusBars(drawContext, scaledHotbarX, scaledHotbarY, scaledHotbarWidth);
+               }
+               renderPendingItems(drawContext);
+            } finally {
+               drawContext.getMatrices().popMatrix();
+            }
+         } finally {
+            DraggableManager.getInstance().endDrag(session);
+         }
       }
    }
 

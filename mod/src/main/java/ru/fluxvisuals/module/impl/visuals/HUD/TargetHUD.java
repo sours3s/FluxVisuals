@@ -11,7 +11,6 @@ import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.SkinTextures;
@@ -60,9 +59,9 @@ public final class TargetHUD {
    // === Константы макета ===
    private static final float ITEM_BOX = 14.5F;
    private static final float SPACING = 1.5F;
-   private static final float MAIN_HEIGHT = 32.0F;   // высота основной панели (увеличена для HP текста)
-   private static final float HEAD_SIZE = 20.0F;     // размер головы
-   private static final float WIDTH = 104.0F;        // ширина панели
+   private static final float MAIN_HEIGHT = 28.0F;
+   private static final float HEAD_SIZE = 20.0F;
+   private static final float WIDTH = 110.0F;
 
    // === Состояние ===
    private static final Animation openAnimation = new Animation();
@@ -71,6 +70,7 @@ public final class TargetHUD {
    private static final ComboTracker comboTracker = new ComboTracker();
    private static LivingEntity prevTarget = null;
    private static LivingEntity lastHoveredEntity = null;
+   private static LivingEntity hpSourceEntity = null; // сущность, для которой инициализированы healthAnim/absorptionAnim
    private static long lastHoverTime = 0L;
    private static float healthAnim = 0.0F;
    private static float absorptionAnim = 0.0F;
@@ -103,6 +103,13 @@ public final class TargetHUD {
    public static void onAttack(LivingEntity target) {
       if (target != null) {
          comboTracker.onHit(target);
+         // Мгновенное обновление HP при ударе для отзывчивости:
+         // обновляем, если бьём текущую цель в таргетхуде или наведённую сущность
+         if (target == prevTarget || target == lastHoveredEntity || target == hpSourceEntity) {
+            healthAnim = target.getHealth();
+            absorptionAnim = target.getAbsorptionAmount();
+            hpSourceEntity = target;
+         }
       }
    }
 
@@ -110,6 +117,17 @@ public final class TargetHUD {
       if (mc == null || mc.player == null || mc.world == null || mc.getWindow() == null) {
          return;
       }
+      try {
+         targetHUDInternal(r2, drawContext);
+      } catch (Throwable t) {
+         // Сбой внутри TargetHUD не должен валить остальной HUD (в частности кастомный
+         // хотбар рисуется последним и ранее пропадал при наведении на сущность).
+         System.err.println("[TargetHUD] render error: " + t);
+         t.printStackTrace();
+      }
+   }
+
+   private static void targetHUDInternal(Renderer2D r2, DrawContext drawContext) {
       // Start drag first to get the session with persisted scale
       boolean isInChat = mc.currentScreen instanceof ChatScreen;
       LivingEntity hovered = getHoveredEntity();
@@ -122,9 +140,23 @@ public final class TargetHUD {
       boolean isHovering = showOnHover.get() && lastHoveredEntity != null && (now - lastHoverTime < 2000L);
       boolean shown = isInChat || hovered != null || isHovering;
 
-      if (hovered != null) prevTarget = hovered;
-      else if (isHovering) prevTarget = lastHoveredEntity;
-      else if (isInChat || prevTarget == null) prevTarget = mc.player;
+      // Обновляем prevTarget только при валидной наведённой сущности или в начальном состоянии
+      if (hovered != null) {
+         // Сбрасываем анимацию HP при смене цели, чтобы не было кросс-фейда между сущностями
+         if (hpSourceEntity != hovered) {
+            healthAnim = hovered.getHealth();
+            absorptionAnim = hovered.getAbsorptionAmount();
+            hpSourceEntity = hovered;
+         }
+         prevTarget = hovered;
+      } else if (isHovering && lastHoveredEntity != null) {
+         // Продолжаем показывать последнюю наведённую сущность во время grace-периода
+         prevTarget = lastHoveredEntity;
+      } else if (isInChat && prevTarget == null) {
+         // Только в чате и при отсутствии цели — показываем игрока для первичного позиционирования
+         prevTarget = mc.player;
+      }
+      // If not shown and no valid target, prevTarget keeps its last value but won't be rendered (anim → 0)
 
       openAnimation.update();
       openAnimation.run(shown ? 1.0 : 0.0, 0.4F, Easings.CIRC_OUT);
@@ -137,7 +169,7 @@ public final class TargetHUD {
 
       if (anim < 0.01F) return;
 
-      // Minimal mode uses crosshair-center positioning, skip drag
+      // For Minimal mode, we don't need drag session - it uses crosshair positioning
       if (targetMode.is("Minimal")) {
          float s = scale.get();
          renderMinimal(r2, anim, s, prevTarget);
@@ -187,122 +219,126 @@ public final class TargetHUD {
       float guiScale = (float) mc.getWindow().getScaleFactor();
       if (guiScale <= 0.0F) guiScale = 1.0F;
       drawContext.getMatrices().pushMatrix();
-      drawContext.getMatrices().translate(x / guiScale, y / guiScale);
-      drawContext.getMatrices().scale(hudScale, hudScale);
-      drawContext.getMatrices().translate(-x / guiScale, -y / guiScale);
+      try {
+         drawContext.getMatrices().translate(x / guiScale, y / guiScale);
+         drawContext.getMatrices().scale(hudScale, hudScale);
+         drawContext.getMatrices().translate(-x / guiScale, -y / guiScale);
 
-      r2.pushAlpha(anim);
-
-      // Предметы сверху
-      if (showItems.get() && !items.isEmpty()) {
-         float itemStartX = x + (width / 2.0F) - (totalItemsW / 2.0F);
-         for (int i = 0; i < items.size(); i++) {
-            float ix = itemStartX + i * (ITEM_BOX * s + SPACING * s);
-            drawStyle(r2, ix, y + itemStartY, ITEM_BOX * s, ITEM_BOX * s, anim);
-            if (drawContext != null) {
-               renderItem(drawContext, items.get(i), ix + 2.0F * s, y + itemStartY + 2.0F * s, ITEM_BOX * s - 4.0F * s);
+         r2.pushAlpha(anim);
+         try {
+            // Предметы сверху
+            if (showItems.get() && !items.isEmpty()) {
+               float itemStartX = x + (width / 2.0F) - (totalItemsW / 2.0F);
+               for (int i = 0; i < items.size(); i++) {
+                  float ix = itemStartX + i * (ITEM_BOX * s + SPACING * s);
+                  drawStyle(r2, ix, y + itemStartY, ITEM_BOX * s, ITEM_BOX * s, anim);
+                  if (drawContext != null) {
+                     renderItem(drawContext, items.get(i), ix + 2.0F * s, y + itemStartY + 2.0F * s, ITEM_BOX * s - 4.0F * s);
+                  }
+               }
             }
+
+            // Основная панель
+            drawStyle(r2, x, boxY, width, mainHeight, anim);
+
+            // Голова (плоский скин, логические GUI-координаты — безопасно при F5)
+            float headX = x + 4.0F * s;
+            float headY = boxY + 4.0F * s;
+            drawHead(r2, drawContext, prevTarget, headX, headY, headSize, anim);
+
+            // Имя со скроллом
+            String name = prevTarget instanceof CreeperEntity ? "Грустный крипер" : prevTarget.getName().getString();
+            float nameX = headX + headSize + 5.0F * s;
+            float nameW = width - (headSize + 15.0F * s);
+            float nameSize = 7.5F * s;
+            float tWidth = r2.measureText(FontRegistry.INTER_MEDIUM, name, nameSize).width;
+
+            if (scrollDelay == 0L) scrollDelay = System.currentTimeMillis();
+            if (System.currentTimeMillis() - scrollDelay > 1000L) {
+               scrollDelay = System.currentTimeMillis();
+               scrollDir = -scrollDir;
+            }
+            float targetOffset = scrollDir > 0 ? Math.max(0.0F, tWidth - nameW) : 0.0F;
+            scrollAnim = AnimationMath.animation(scrollAnim, targetOffset, 0.05F);
+
+            // r2.text принимает BASELINE. Раньше baseline стоял в 4.5s от верха рамки —
+            // верх глифов (ascent ~10.5s) уезжал за верхнюю границу. Опускаем так, чтобы
+            // верх текста оставался внутри панели и не наезжал на HP-бар ниже.
+            r2.pushClipRect((int) nameX, (int) boxY, (int) nameW, (int) mainHeight);
+            r2.text(FontRegistry.INTER_MEDIUM, nameX - scrollAnim, boxY + 4.5F * s, nameSize, name, -1);
+            r2.popClipRect();
+
+            // HP-бар
+            float barX = nameX;
+            float barY = boxY + mainHeight - 8.5F * s;
+            float barW = nameW;
+            float barH = 3.5F * s;
+
+            float maxHp = prevTarget.getMaxHealth();
+            float hpFactor = Math.min(Math.max(healthAnim / maxHp, 0.0F), 1.0F);
+
+            // Фон бара
+            r2.rect(barX, barY, barW, barH, 1.5F * s, Renderer2D.ColorUtil.replAlpha(0xFF000000, (int) (60 * anim)));
+
+            // Градиент клиентского цвета
+            int c1 = Renderer2D.ColorUtil.getMainColor(1, 0);
+            int c2 = Renderer2D.ColorUtil.getMainColor(1, 40);
+            drawHpGradient(r2, barX, barY, barW * hpFactor, barH, c1, c2, anim);
+            if (particles.get() && hpFactor > 0.0F) {
+               spawnHealthParticles(barX + barW * hpFactor, barY + barH / 2.0F, c1);
+            }
+
+            // Абсорбция (золото, от правого края)
+            float absWidth = 0.0F;
+            if (absorptionAnim > 0.1F) {
+               float absFactor = Math.min(Math.max(absorptionAnim / maxHp, 0.0F), 1.0F);
+               absWidth = barW * absFactor;
+               int gold1 = Renderer2D.ColorUtil.replAlpha(0xFFFFD700, (int) (200 * anim));
+               int gold2 = Renderer2D.ColorUtil.replAlpha(0xFFFFA500, (int) (180 * anim));
+               drawHpGradient(r2, barX + barW - absWidth, barY, absWidth, barH, gold1, gold2, anim);
+               if (particles.get()) {
+                  spawnHealthParticles(barX + barW - absWidth, barY + barH / 2.0F, gold1);
+               }
+            }
+
+            // Частицы
+            if (particles.get()) {
+               particlesEngine.render(r2);
+            }
+
+            // HP-текст (под баром, чуть ниже для читаемости)
+            float hValue = (float) (Math.round(healthAnim * 10.0F) / 10.0F);
+            float aValue = (float) (Math.round(absorptionAnim * 10.0F) / 10.0F);
+            String hStr = hValue + "";
+            String aStr = aValue > 0 ? " + (" + aValue + ")" : "";
+            String suffix = " HP";
+            float hpTextSize = 6.0F * s;
+            float fullTextW = r2.measureText(FontRegistry.INTER_MEDIUM, hStr + aStr + suffix, hpTextSize).width;
+            float drawX = barX + barW - fullTextW;
+            float drawY = barY - 7.5F * s;  // выше бара (как в доноре)
+            r2.text(FontRegistry.INTER_MEDIUM, drawX, drawY, hpTextSize, hStr, HP_TEXT_COLOR);
+            float off = r2.measureText(FontRegistry.INTER_MEDIUM, hStr, hpTextSize).width;
+            if (aValue > 0) {
+               r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, aStr, ABSORPTION_COLOR);
+               off += r2.measureText(FontRegistry.INTER_MEDIUM, aStr, hpTextSize).width;
+            }
+            r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, suffix,
+                  Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, (int) (180 * anim)));
+
+            // Advantage indicator (под панелью)
+            if (advantage.get() && prevTarget != mc.player) {
+               renderAdvantage(r2, x, y, width, mainHeight, anim, prevTarget);
+            }
+
+            // Плавное движение значений к реальным (быстрее для реактивности)
+            healthAnim = AnimationMath.animation(healthAnim, prevTarget.getHealth(), 0.25F);
+            absorptionAnim = AnimationMath.animation(absorptionAnim, prevTarget.getAbsorptionAmount(), 0.25F);
+         } finally {
+            r2.popAlpha();
          }
+      } finally {
+         drawContext.getMatrices().popMatrix();
       }
-
-      // Основная панель
-      drawStyle(r2, x, boxY, width, mainHeight, anim);
-
-      // Голова (плоский скин, логические GUI-координаты — безопасно при F5)
-      float headX = x + 4.0F * s;
-      float headY = boxY + 4.0F * s;
-      drawHead(r2, drawContext, prevTarget, headX, headY, headSize, anim);
-
-      // Имя со скроллом
-      String name = prevTarget instanceof CreeperEntity ? "Грустный крипер" : prevTarget.getName().getString();
-      float nameX = headX + headSize + 5.0F * s;
-      float nameW = width - (headSize + 15.0F * s);
-      float nameSize = 14.0F * s;
-      float tWidth = r2.measureText(FontRegistry.INTER_MEDIUM, name, nameSize).width;
-
-      if (scrollDelay == 0L) scrollDelay = System.currentTimeMillis();
-      if (System.currentTimeMillis() - scrollDelay > 1000L) {
-         scrollDelay = System.currentTimeMillis();
-         scrollDir = -scrollDir;
-      }
-      float targetOffset = scrollDir > 0 ? Math.max(0.0F, tWidth - nameW) : 0.0F;
-      scrollAnim = AnimationMath.animation(scrollAnim, targetOffset, 0.05F);
-
-      // r2.text принимает BASELINE. Раньше baseline стоял в 4.5s от верха рамки —
-      // верх глифов (ascent ~10.5s) уезжал за верхнюю границу. Опускаем так, чтобы
-      // верх текста оставался внутри панели и не наезжал на HP-бар ниже.
-      r2.pushClipRect((int) nameX, (int) boxY, (int) nameW, (int) mainHeight);
-      r2.text(FontRegistry.INTER_MEDIUM, nameX - scrollAnim, boxY + 12.0F * s, nameSize, name, -1);
-      r2.popClipRect();
-
-      // HP-бар
-      float barX = nameX;
-      float barY = boxY + mainHeight - 8.5F * s;
-      float barW = nameW;
-      float barH = 3.5F * s;
-
-      float maxHp = prevTarget.getMaxHealth();
-      float hpFactor = Math.min(Math.max(healthAnim / maxHp, 0.0F), 1.0F);
-
-      // Фон бара
-      r2.rect(barX, barY, barW, barH, 4.0F * s, Renderer2D.ColorUtil.replAlpha(0xFF000000, (int) (60 * anim)));
-
-      // Градиент клиентского цвета
-      int c1 = Renderer2D.ColorUtil.getMainColor(1, 0);
-      int c2 = Renderer2D.ColorUtil.getMainColor(1, 40);
-      drawHpGradient(r2, barX, barY, barW * hpFactor, barH, c1, c2, anim);
-      if (particles.get() && hpFactor > 0.0F) {
-         spawnHealthParticles(barX + barW * hpFactor, barY + barH / 2.0F, c1);
-      }
-
-      // Абсорбция (золото, от правого края)
-      float absWidth = 0.0F;
-      if (absorptionAnim > 0.1F) {
-         float absFactor = Math.min(Math.max(absorptionAnim / maxHp, 0.0F), 1.0F);
-         absWidth = barW * absFactor;
-         int gold1 = Renderer2D.ColorUtil.replAlpha(0xFFFFD700, (int) (200 * anim));
-         int gold2 = Renderer2D.ColorUtil.replAlpha(0xFFFFA500, (int) (180 * anim));
-         drawHpGradient(r2, barX + barW - absWidth, barY, absWidth, barH, gold1, gold2, anim);
-         if (particles.get()) {
-            spawnHealthParticles(barX + barW - absWidth, barY + barH / 2.0F, gold1);
-         }
-      }
-
-      // Частицы
-      if (particles.get()) {
-         particlesEngine.render(r2);
-      }
-
-      // HP-текст (под баром, чуть ниже для читаемости)
-      float hValue = (float) (Math.round(healthAnim * 10.0F) / 10.0F);
-      float aValue = (float) (Math.round(absorptionAnim * 10.0F) / 10.0F);
-      String hStr = hValue + "";
-      String aStr = aValue > 0 ? " + (" + aValue + ")" : "";
-      String suffix = " HP";
-      float hpTextSize = 9.0F * s;
-      float fullTextW = r2.measureText(FontRegistry.INTER_MEDIUM, hStr + aStr + suffix, hpTextSize).width;
-      float drawX = barX + barW - fullTextW;
-      float drawY = barY + barH + 5.0F * s;  // опущено ниже (было 2.0F)
-      r2.text(FontRegistry.INTER_MEDIUM, drawX, drawY, hpTextSize, hStr, HP_TEXT_COLOR);
-      float off = r2.measureText(FontRegistry.INTER_MEDIUM, hStr, hpTextSize).width;
-      if (aValue > 0) {
-         r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, aStr, ABSORPTION_COLOR);
-         off += r2.measureText(FontRegistry.INTER_MEDIUM, aStr, hpTextSize).width;
-      }
-      r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, suffix,
-            Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, (int) (180 * anim)));
-
-      // Advantage indicator (под панелью)
-      if (advantage.get() && prevTarget != mc.player) {
-         renderAdvantage(r2, x, y, width, mainHeight, anim, prevTarget);
-      }
-
-      // Плавное движение значений к реальным
-      healthAnim = AnimationMath.animation(healthAnim, prevTarget.getHealth(), 0.1F);
-      absorptionAnim = AnimationMath.animation(absorptionAnim, prevTarget.getAbsorptionAmount(), 0.1F);
-
-      drawContext.getMatrices().popMatrix();
-      r2.popAlpha();
       DraggableManager.getInstance().endDrag(session);
    }
 
@@ -406,8 +442,8 @@ public final class TargetHUD {
    private static void drawHpGradient(Renderer2D r2, float x, float y, float w, float h, int c1, int c2, float anim) {
       if (w <= 0.0F || h <= 0.0F) return;
       float mid = w / 2.0F;
-      r2.rect(x, y, mid, h, 4.0F, Renderer2D.ColorUtil.replAlpha(c1, (int) (255 * anim)));
-      r2.rect(x + mid, y, w - mid, h, 4.0F, Renderer2D.ColorUtil.replAlpha(c2, (int) (255 * anim)));
+      r2.rect(x, y, mid, h, 1.5F, Renderer2D.ColorUtil.replAlpha(c1, (int) (255 * anim)));
+      r2.rect(x + mid, y, w - mid, h, 1.5F, Renderer2D.ColorUtil.replAlpha(c2, (int) (255 * anim)));
    }
 
    private static void renderItem(DrawContext drawContext, ItemStack stack, float ix, float iy, float size) {
@@ -566,15 +602,15 @@ public final class TargetHUD {
    }
 
    private static float getDamageScore(LivingEntity entity) {
-      float attr = (float) entity.getAttributeValue(EntityAttributes.ATTACK_DAMAGE);
+      float attr = (float) entity.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.ATTACK_DAMAGE);
       ItemStack stack = entity.getMainHandStack();
       float weapon = stack != null && !stack.isEmpty() ? (float) stack.getDamage() : 0.0F;
       return attr + weapon;
    }
 
    private static float getArmorScore(LivingEntity entity) {
-      float armor = (float) entity.getAttributeValue(EntityAttributes.ARMOR);
-      float toughness = (float) entity.getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS);
+      float armor = (float) entity.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.ARMOR);
+      float toughness = (float) entity.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.ARMOR_TOUGHNESS);
       float total = 0.0F;
       for (EquipmentSlot slot : EquipmentSlot.values()) {
          if (slot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
