@@ -225,11 +225,19 @@ public class Hud extends Module {
             }
 
             if (element.get("Keybind List")) {
-               KeyBindHUD.keybind(r2);
+               if (KeyBindHUD.hasContent()) {
+                  KeyBindHUD.keybind(r2);
+               } else if (chatOpen) {
+                  KeyBindHUD.renderEmpty(r2);
+               }
             }
 
             if (element.get("Hotbar Binds")) {
-               HotBarHUD.hotbar(r2, e.drawContext());
+               if (HotBarHUD.hasContent()) {
+                  HotBarHUD.hotbar(r2, e.drawContext());
+               } else if (chatOpen) {
+                  HotBarHUD.renderEmpty(r2);
+               }
             }
 
             renderEditHints(r2, e.viewportWidth(), e.viewportHeight());
