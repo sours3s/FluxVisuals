@@ -21,13 +21,20 @@ public partial class MainWindow : Window
         Core.LauncherLog.Info($"Пути: processPath={Environment.ProcessPath}, baseDir={AppDomain.CurrentDomain.BaseDirectory}, " +
             $"config={Core.AppConfig.ConfigPath} (exists={File.Exists(Core.AppConfig.ConfigPath)})");
 
+        // WebView2 UserDataFolder — в %LOCALAPPDATA%\FluxVisuals\WebView2 (не рядом с exe)
+        string webViewDataDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "FluxVisuals", "WebView2");
+        Directory.CreateDirectory(webViewDataDir);
+        var env = await CoreWebView2Environment.CreateAsync(userDataFolder: webViewDataDir);
+
         // Автообновление лоадера: проверка GitHub на старте. Если есть новая версия —
         // показываем окно «Обновление лоадера», качаем, заменяем exe и перезапускаемся.
         CheckForUpdate();
 
         try
         {
-            await WebView.EnsureCoreWebView2Async();
+            await WebView.EnsureCoreWebView2Async(env);
         }
         catch (Exception ex)
         {

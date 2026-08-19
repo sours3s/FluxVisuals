@@ -36,6 +36,17 @@ public class BindingManager {
             return;
          }
 
+         MinecraftClient client = MinecraftClient.getInstance();
+         if (client != null && client.currentScreen != null) {
+            // Don't process key binds when a screen is open (chat, inventory, clickgui, etc.)
+            // Also avoid processing media keys (Fn+F1/F2) that might trigger system actions
+            int key = event.key();
+            if (key == 290 || key == 291) { // F1=290, F2=291 (media keys on some keyboards)
+               return;
+            }
+            return;
+         }
+
          Module[] modules = FluxVisualsClient.get.manager.getBind(event.key());
          if (modules != null) {
             for (Module module : modules) {

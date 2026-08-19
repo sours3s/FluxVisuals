@@ -307,24 +307,7 @@ public class GameSession
     {
         _launchTicket = null;
         _launchChallenge = null;
-        _authServerUrl = _cfg.AuthServerUrl?.TrimEnd('/') ?? "";
-
-        // Валидация URL — защита от кривых конфигов (дубль /api, лишние слеши, пустая строка)
-        if (string.IsNullOrWhiteSpace(_authServerUrl))
-        {
-            throw new Exception("AuthServerUrl не задан в конфиге. Удалите config.json и перезапустите лоадер.");
-        }
-        if (!_authServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-            && !_authServerUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new Exception($"AuthServerUrl некорректен: '{_authServerUrl}'. Должен начинаться с http:// или https://");
-        }
-        if (_authServerUrl.Contains("/api/", StringComparison.OrdinalIgnoreCase))
-        {
-            // Пользователь случайно вписал /api в URL — убираем дубль
-            _authServerUrl = _authServerUrl.Substring(0, _authServerUrl.IndexOf("/api/", StringComparison.OrdinalIgnoreCase));
-            _authServerUrl = _authServerUrl.TrimEnd('/');
-        }
+        _authServerUrl = _cfg.AuthServerUrl.TrimEnd('/');
 
         if (string.IsNullOrWhiteSpace(_cfg.AuthToken)) return;
 
@@ -337,9 +320,7 @@ public class GameSession
                     .TrimEnd('=').Replace('+', '-').Replace('/', '_');
                 var payload = JsonSerializer.Serialize(new { challenge, hwid });
                 using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-                string requestUrl = _authServerUrl + "/api/launch/issue";
-                System.Diagnostics.Debug.WriteLine($"[Launch] POST {requestUrl}");
-                using var req = new HttpRequestMessage(HttpMethod.Post, requestUrl)
+                using var req = new HttpRequestMessage(HttpMethod.Post, _authServerUrl + "/api/launch/issue")
                 {
                     Content = new StringContent(payload, Encoding.UTF8, "application/json")
                 };

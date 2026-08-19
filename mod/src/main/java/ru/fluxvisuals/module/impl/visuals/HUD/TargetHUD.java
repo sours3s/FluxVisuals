@@ -116,14 +116,21 @@ public final class TargetHUD {
 
       boolean isInChat = mc.currentScreen instanceof ChatScreen;
       boolean isHovering = showOnHover.get() && lastHoveredEntity != null && (now - lastHoverTime < 2000L);
-      boolean shown = isInChat || target != null || isHovering;
 
-      // Обновляем prevTarget (как в доноре)
+      // Логика показа:
+      // - В чате: показываем последнюю зафиксированную цель (lastHoveredEntity), если есть
+      // - В игре: показываем цель под прицелом (target) или при наведении (isHovering)
+      boolean shown = (isInChat && lastHoveredEntity != null) || target != null || isHovering;
+
+      // Обновляем prevTarget
       if (target != null) {
          prevTarget = target;
       } else if (isHovering) {
          prevTarget = lastHoveredEntity;
-      } else if (isInChat || prevTarget == null) {
+      } else if (isInChat) {
+         // В чате показываем последнюю зафиксированную цель, НЕ игрока
+         prevTarget = lastHoveredEntity;
+      } else if (prevTarget == null) {
          prevTarget = mc.player;
       }
 
@@ -208,7 +215,7 @@ public final class TargetHUD {
             String name = prevTarget instanceof CreeperEntity ? "Грустный крипер" : prevTarget.getName().getString();
             float nameX = headX + headSize + 5.0F * hudScale;
             float nameW = width - (headSize + 15.0F * hudScale);
-            float nameSize = 6.5F * hudScale; // Уменьшен текст имени
+            float nameSize = 9.0F * hudScale; // Увеличен текст имени
 
             // Текст метрики
             float tWidth = r2.measureText(FontRegistry.INTER_MEDIUM, name, nameSize).width;
@@ -278,17 +285,17 @@ public final class TargetHUD {
             String hStr = hValue + "";
             String aStr = aValue > 0 ? " +" + aValue : "";
             String suffix = " HP";
-            float hpTextSize = 5.5F * hudScale; // Mеньше текст
+            float hpTextSize = 8.0F * hudScale; // Увеличен текст HP
             float fullTextW = r2.measureText(FontRegistry.INTER_MEDIUM, hStr + aStr + suffix, hpTextSize).width;
             float drawX = barX + barW - fullTextW;
-            float drawY = barY - 7.0F * hudScale;
+            float drawY = barY - 8.5F * hudScale;
             r2.text(FontRegistry.INTER_MEDIUM, drawX, drawY, hpTextSize, hStr, 0xFFE0E0E0);
             float off = r2.measureText(FontRegistry.INTER_MEDIUM, hStr, hpTextSize).width;
             if (aValue > 0) {
                r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, aStr, 0xFFFFD700);
                off += r2.measureText(FontRegistry.INTER_MEDIUM, aStr, hpTextSize).width;
             }
-            r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, suffix, Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, (int) (150 * anim)));
+            r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, suffix, Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, (int) (180 * anim)));
          } finally {
             r2.popAlpha();
          }
