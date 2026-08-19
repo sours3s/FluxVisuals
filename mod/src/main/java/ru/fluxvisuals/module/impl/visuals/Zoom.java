@@ -13,7 +13,7 @@ import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
  * Zoom — плавное оптическое приближение с настраиваемой клавишей.
  * ZoomFOV обрабатывается в GameRendererMixin через this.getCurrentZoom().
  */
-@IModule(name = "Zoom", description = "Плавное оптическое приближение (bind клавиши)", category = Category.Visuals, bind = 46)
+@IModule(name = "Zoom", description = "Плавное оптическое приближение (bind клавиши)", category = Category.Visuals, bind = -1)
 @Environment(EnvType.CLIENT)
 public class Zoom extends Module {
    private static final MinecraftClient mc = MinecraftClient.getInstance();

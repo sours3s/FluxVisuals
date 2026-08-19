@@ -25,7 +25,7 @@ import ru.fluxvisuals.util.render.text.FontRegistry;
 
 /**
  * HotBar HUD — полная реализация из GodWeer (HotbarElement)
- * <p>Кастомный хотбар с рендерингом слотов, оффхенда, брони, голода, воздуха, опыта.
+ * <p>Кастомный хотбар с рендерингом слотов, оффхенда, брони, голода, воздуха, опыта, HP, голод, уровень.
  */
 @Environment(EnvType.CLIENT)
 public class HotBarHUD {
@@ -36,20 +36,21 @@ public class HotBarHUD {
    private static final float SLOT_OFFSET = 2.0F;
    private static final float HOTBAR_WIDTH = 198.0F;
    private static final float HOTBAR_HEIGHT = SLOT_SIZE - 2.0F;
-   private static final float HOTBAR_OFFSET = 25.0F;
+   // Vanilla hotbar is at height - 22 (for 1080p), scale accordingly
+   private static final float HOTBAR_OFFSET = 22.0F;
    private static final float ITEM_OFFSET = -4.0F;
    private static final float ROUND_SMALL = 4.0F;
    private static final float SMOOTH = 1.0F;
 
-   // Статус бары
-   private static final float STATUS_HEIGHT = 8.0F;
+   // Статус бары (HP, голод, воздух, броня, XP)
+   private static final float STATUS_HEIGHT = 5.0F;
    private static final float STATUS_OFFSET = 2.0F;
    private static final float STATUS_CENTER_OFFSET = 30.0F;
    private static final float STATUS_WIDTH = (HOTBAR_WIDTH - STATUS_CENTER_OFFSET) / 2.0F;
-   private static final float STATUS_TEXT_SIZE = 7.0F;
-   private static final float EXP_OFFSET = 12.0F;
-   private static final float EXP_HEIGHT = STATUS_HEIGHT;
-   private static final float EXP_TEXT_SIZE = STATUS_TEXT_SIZE;
+   private static final float STATUS_TEXT_SIZE = 6.0F;
+   private static final float EXP_OFFSET = 8.0F;
+   private static final float EXP_HEIGHT = 4.0F;
+   private static final float EXP_TEXT_SIZE = 6.0F;
 
    // Анимации
    private static float slotChangeAnim = 0.0F;
@@ -57,7 +58,7 @@ public class HotBarHUD {
    private static float[] statusAnims = new float[4];
    private static float tooltipAnim = 0.0F;
 
-   // Health animation (как в доноре)
+   // Health animation
    private static int ticks = 0;
    private static long lastTickTime = 0L;
    private static int lastHealthValue = 0;
@@ -129,6 +130,8 @@ public class HotBarHUD {
             // Выбранный слот индикатор (как в доноре)
             float selectedSlotX = halfWidth - HOTBAR_WIDTH / 2.0F + ((SLOT_SIZE - SLOT_OFFSET) * slotChangeAnim);
             int selectedColor = Renderer2D.ColorUtil.getMainColor(1, 0);
+            // Более заметный индикатор выбранного слота
+            r2.rectOutline(selectedSlotX, finalY, SLOT_SIZE - 2.0F, HOTBAR_HEIGHT, 2.0F, selectedColor, 1.5F);
             r2.rect(selectedSlotX + 1.0F, finalY + 1.5F, SLOT_SIZE - 4.0F, 2.5F, 1.0F, selectedColor);
 
             // Оффхенд слот (как в доноре)
@@ -149,6 +152,9 @@ public class HotBarHUD {
                float itemY = finalY + (HOTBAR_HEIGHT - 16.0F) / 2.0F;
                renderHotbarItem(drawContext, itemX, itemY, offhandStack, 10);
             }
+
+            // Отображение HP, голод, XP над хотбаром
+            renderStats(r2, finalX, finalY);
 
             // 9 слотов хотбара (как в доноре)
             for (int m = 0; m < 9; ++m) {
@@ -176,6 +182,48 @@ public class HotBarHUD {
       int outAlpha = (int) Math.min(Math.max(25 * alpha, 0), 255);
       int outColor = Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, outAlpha);
       r2.rectOutline(rx, ry, rw, rh, round, outColor, 0.4F);
+   }
+
+   /**
+    * Рендерит HP, голод, уровень XP, броню над хотбаром.
+    */
+   private static void renderStats(Renderer2D r2, float hotbarX, float hotbarY) {
+      if (mc.player == null) return;
+
+      float statsY = hotbarY - STATUS_HEIGHT - 8.0F;
+      float leftX = hotbarX;
+      float rightX = hotbarX + HOTBAR_WIDTH - STATUS_WIDTH;
+
+      // HP слева
+      int hpColor = 0xFF44FF44; // Green
+      int hpTextColor = 0xFFFFFFFF;
+      r2.rect(leftX, statsY, STATUS_WIDTH, STATUS_HEIGHT, 2.0F, Renderer2D.ColorUtil.replAlpha(0xFF222222, 150));
+      int hpFill = (int) (STATUS_WIDTH * MathHelper.clamp(mc.player.getHealth() / mc.player.getMaxHealth(), 0.0F, 1.0F));
+      r2.rect(leftX, statsY, hpFill, STATUS_HEIGHT, 2.0F, hpColor);
+      String hpText = String.format("%.0f/%.0f", mc.player.getHealth(), mc.player.getMaxHealth());
+      float hpTextW = r2.measureText(FontRegistry.INTER_MEDIUM, hpText, STATUS_TEXT_SIZE).width;
+      r2.text(FontRegistry.INTER_MEDIUM, leftX + STATUS_WIDTH / 2.0F - hpTextW / 2.0F, statsY + STATUS_HEIGHT / 2.0F - STATUS_TEXT_SIZE / 2.0F, STATUS_TEXT_SIZE, hpText, hpTextColor);
+
+      // Голод справа
+      int hungerColor = 0xFFFFAA00; // Orange
+      r2.rect(rightX, statsY, STATUS_WIDTH, STATUS_HEIGHT, 2.0F, Renderer2D.ColorUtil.replAlpha(0xFF222222, 150));
+      int hungerFill = (int) (STATUS_WIDTH * MathHelper.clamp(mc.player.getHungerManager().getFoodLevel() / 20.0F, 0.0F, 1.0F));
+      r2.rect(rightX, statsY, hungerFill, STATUS_HEIGHT, 2.0F, hungerColor);
+      String hungerText = String.format("%d/20", mc.player.getHungerManager().getFoodLevel());
+      float hungerTextW = r2.measureText(FontRegistry.INTER_MEDIUM, hungerText, STATUS_TEXT_SIZE).width;
+      r2.text(FontRegistry.INTER_MEDIUM, rightX + STATUS_WIDTH / 2.0F - hungerTextW / 2.0F, statsY + STATUS_HEIGHT / 2.0F - STATUS_TEXT_SIZE / 2.0F, STATUS_TEXT_SIZE, hungerText, hpTextColor);
+
+      // XP level (центр, над статус-барами)
+      int xpLevel = mc.player.experienceLevel;
+      String xpText = "Lv " + xpLevel;
+      float xpTextW = r2.measureText(FontRegistry.INTER_MEDIUM, xpText, STATUS_TEXT_SIZE).width;
+      float xpTextX = hotbarX + HOTBAR_WIDTH / 2.0F - xpTextW / 2.0F;
+      r2.text(FontRegistry.INTER_MEDIUM, xpTextX, statsY - STATUS_TEXT_SIZE - 2.0F, STATUS_TEXT_SIZE, xpText, 0xFF88FF88);
+
+      // XP bar (под статус-барами)
+      r2.rect(hotbarX, statsY - 4.0F, HOTBAR_WIDTH, 2.0F, 1.0F, Renderer2D.ColorUtil.replAlpha(0xFF222222, 150));
+      int xpFill = (int) (HOTBAR_WIDTH * mc.player.experienceProgress);
+      r2.rect(hotbarX, statsY - 4.0F, xpFill, 2.0F, 1.0F, 0xFF99FF44);
    }
 
    private static boolean isImportantItem(ItemStack stack) {

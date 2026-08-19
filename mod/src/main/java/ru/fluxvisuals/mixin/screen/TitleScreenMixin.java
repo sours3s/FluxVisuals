@@ -23,6 +23,9 @@ public class TitleScreenMixin extends Screen {
             return;
         }
 
+        // Ensure renderer is initialized before showing custom title screen
+        ru.fluxvisuals.client.FluxVisualsClient.ensureRendererInitialized();
+
         MinecraftClient.getInstance().setScreen(new ru.fluxvisuals.screen.screens.main.TitleScreen());
     }
 }

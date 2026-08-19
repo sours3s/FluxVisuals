@@ -26,7 +26,7 @@ public final class CrosshairSettings {
 
    // Поля
    public String style = "Cross";
-   public boolean enabled = true;
+   public boolean enabled = false;
    public float size = 6.0F;
    public float thickness = 1.5F;
    public float gap = 3.0F;
