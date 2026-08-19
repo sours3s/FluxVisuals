@@ -5,7 +5,6 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import org.lwjgl.glfw.GLFW;
 import ru.fluxvisuals.event.EventInit;
 import ru.fluxvisuals.module.api.Category;
 import ru.fluxvisuals.module.api.IModule;
@@ -20,7 +19,7 @@ import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
  * - модуль включен
  * - нажата клавиша F3 (или бинд) — работает только пока зажата клавиша
  */
-@IModule(name = "Better F3", description = "Замена стандартного экрана отладки F3 на чистый оверлей", category = Category.Utils, bind = GLFW.GLFW_KEY_F3)
+@IModule(name = "Better F3", description = "Замена стандартного экрана отладки F3 на чистый оверлей", category = Category.Utils, bind = -1)
 @Environment(EnvType.CLIENT)
 public class BetterF3 extends Module {
    private static final MinecraftClient mc = MinecraftClient.getInstance();

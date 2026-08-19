@@ -208,7 +208,7 @@ public final class TargetHUD {
             String name = prevTarget instanceof CreeperEntity ? "Грустный крипер" : prevTarget.getName().getString();
             float nameX = headX + headSize + 5.0F * hudScale;
             float nameW = width - (headSize + 15.0F * hudScale);
-            float nameSize = 7.5F * hudScale;
+            float nameSize = 6.5F * hudScale; // Уменьшен текст имени
 
             // Текст метрики
             float tWidth = r2.measureText(FontRegistry.INTER_MEDIUM, name, nameSize).width;
@@ -270,23 +270,25 @@ public final class TargetHUD {
                particlesEngine.render(r2);
             }
 
-            // HP текст
-            float hValue = (float) (Math.round(healthAnim * 10.0F) / 10.0F);
-            float aValue = (float) (Math.round(absorptionAnim * 10.0F) / 10.0F);
+            // HP текст — используем реальное здоровье, не анимированное
+            float currentHealth = prevTarget.getHealth();
+            float currentAbsorption = prevTarget.getAbsorptionAmount();
+            float hValue = (float) (Math.round(currentHealth * 10.0F) / 10.0F);
+            float aValue = (float) (Math.round(currentAbsorption * 10.0F) / 10.0F);
             String hStr = hValue + "";
-            String aStr = aValue > 0 ? " + (" + aValue + ")" : "";
+            String aStr = aValue > 0 ? " +" + aValue : "";
             String suffix = " HP";
-            float hpTextSize = 6.0F * hudScale;
+            float hpTextSize = 5.5F * hudScale; // Mеньше текст
             float fullTextW = r2.measureText(FontRegistry.INTER_MEDIUM, hStr + aStr + suffix, hpTextSize).width;
             float drawX = barX + barW - fullTextW;
-            float drawY = barY - 7.5F * hudScale;
-            r2.text(FontRegistry.INTER_MEDIUM, drawX, drawY, hpTextSize, hStr, 0xFFC8C8C8);
+            float drawY = barY - 7.0F * hudScale;
+            r2.text(FontRegistry.INTER_MEDIUM, drawX, drawY, hpTextSize, hStr, 0xFFE0E0E0);
             float off = r2.measureText(FontRegistry.INTER_MEDIUM, hStr, hpTextSize).width;
             if (aValue > 0) {
                r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, aStr, 0xFFFFD700);
                off += r2.measureText(FontRegistry.INTER_MEDIUM, aStr, hpTextSize).width;
             }
-            r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, suffix, Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, (int) (180 * anim)));
+            r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, suffix, Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, (int) (150 * anim)));
          } finally {
             r2.popAlpha();
          }

@@ -5,38 +5,41 @@ import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ChargedProjectilesComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.registry.tag.ItemTags;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.event.EventInit;
-import ru.fluxvisuals.event.render.RenderEvent;
+import ru.fluxvisuals.event.impl.EventScreen;
 import ru.fluxvisuals.module.api.Category;
 import ru.fluxvisuals.module.api.IModule;
 import ru.fluxvisuals.module.api.Module;
 import ru.fluxvisuals.module.api.setting.Setting;
 import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
+import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
 import ru.fluxvisuals.ui.draggable.DraggableManager;
 import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.text.FontRegistry;
 
-@IModule(name = "Inventory HUD", description = "Мини-инвентарь на экране + счётчики тотемов и стрел.", category = Category.Visuals, bind = -1)
+@IModule(name = "Inventory HUD", description = "Мини-инвентарь на экране + счётчики тотемов и стрел. Количество стрел показывается на слоте со стрелами.", category = Category.Visuals, bind = -1)
 @Environment(EnvType.CLIENT)
 public class InventoryHUD extends Module {
    public final BooleanSetting renderInventory = new BooleanSetting("Render Inventory", true);
    public final BooleanSetting renderTotems = new BooleanSetting("Render Totems", true);
    public final BooleanSetting renderArrows = new BooleanSetting("Render Arrows", true);
-   public final BooleanSetting compact = new BooleanSetting("Compact Mode", false);
+   public final ModeSetting position = new ModeSetting("Position", "Top Right", "Top Right", "Top Left", "Bottom Right", "Bottom Left");
+   public final BooleanSetting showCounts = new BooleanSetting("Show Counts", true);
 
    private int cachedTotems = -1;
-   private String cachedArrowInfo = "";
+   private int cachedArrows = 0;
+   private int cachedSpectralArrows = 0;
+   private int cachedTippedArrows = 0;
    private long lastRefresh = 0L;
 
    @EventInit
-   public void onRender(RenderEvent e) {
+   public void onRender(EventScreen e) {
       if (!enable || mc.player == null || mc.currentScreen instanceof ChatScreen) return;
       long now = System.currentTimeMillis();
       if (now - lastRefresh > 250L) { // 4×/s
@@ -45,121 +48,118 @@ public class InventoryHUD extends Module {
       }
 
       Renderer2D r2 = e.renderer();
-      int fbW = mc.getWindow().getFramebufferWidth();
-      int fbH = mc.getWindow().getFramebufferHeight();
+      DraggableManager.DragSession session = null;
+      float x = 10.0F, y = 10.0F;
 
-      // Панель справа-сверху
-      float panelW = compact.get() ? 120.0F : 170.0F;
-      float panelH = 120.0F;
-      DraggableManager.DragSession session = DraggableManager.getInstance()
-         .beginDrag("inventoryHUD", fbW - panelW - 20.0F, 20.0F, panelW, panelH);
-      float x = session.positionX();
-      float y = session.positionY();
-
-      int bg = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getBackGroundColor(1, 1), 200);
-      r2.rect(x, y, panelW, panelH, 8.0F, bg);
-      int outline = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), 60);
-      r2.rectOutline(x, y, panelW, panelH, 8.0F, outline, 1.0F);
-
-      float tx = x + 8.0F;
-      float ty = y + 8.0F;
-      int textCol = Renderer2D.ColorUtil.getTextColor(1, 1);
-      int mainCol = Renderer2D.ColorUtil.getMainColor(1, 1);
-
-      // Totems
-      if (renderTotems.get()) {
-         r2.text(FontRegistry.INTER_MEDIUM, tx, ty, 16.0F, "Тотемы: " + cachedTotems, textCol);
-         ty += 20.0F;
-      }
-
-      // Arrows
-      if (renderArrows.get()) {
-         r2.text(FontRegistry.INTER_MEDIUM, tx, ty, 16.0F, cachedArrowInfo, textCol);
-         ty += 20.0F;
-      }
-
-      // Мини-инвентарь (сверху)
       if (renderInventory.get()) {
-         ty += 4.0F;
-         int cell = compact.get() ? 18 : 22;
+         int cell = 20;
          int gap = 2;
-         int startX = (int) (x + 8);
-         int startY = (int) ty;
-         // Hotbar (9) + 3 ряда по 9 = 36 слотов (для компакта 2 ряда)
-         int rows = compact.get() ? 2 : 4;
+         int cols = 9;
+         int rows = 3;
+         float panelW = cols * (cell + gap) + 16.0F;
+         float panelH = rows * (cell + gap) + 16.0F + 20.0F;
+
+         // Position based on setting
+         int fbW = mc.getWindow().getScaledWidth();
+         int fbH = mc.getWindow().getScaledHeight();
+         float px = switch (position.get()) {
+            case "Top Left" -> 10.0F;
+            case "Bottom Right" -> fbW - panelW - 10.0F;
+            case "Bottom Left" -> 10.0F;
+            case "Top Right" -> fbW - panelW - 10.0F;
+            default -> fbW - panelW - 10.0F;
+         };
+         float py = switch (position.get()) {
+            case "Top Left", "Top Right" -> 10.0F;
+            case "Bottom Right", "Bottom Left" -> fbH - panelH - 10.0F;
+            default -> 10.0F;
+         };
+
+         session = DraggableManager.getInstance().beginDrag("inventoryHUD", px, py, panelW, panelH);
+         x = session.positionX();
+         y = session.positionY();
+
+         DrawContext ctx = e.drawContext();
+         int bg = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getBackGroundColor(1, 1), 200);
+         r2.rect(x, y, panelW, panelH, 8.0F, bg);
+         int outline = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), 60);
+         r2.rectOutline(x, y, panelW, panelH, 8.0F, outline, 1.0F);
+
+         // Title
+         r2.text(FontRegistry.INTER_MEDIUM, x + 8.0F, y + 6.0F, 11.0F, "Inventory", Renderer2D.ColorUtil.getTextColor(1, 1));
+
+         // Inventory grid (3 rows, 9 cols) starting from slot 9 (skip hotbar)
+         int startX = (int) (x + 8.0F);
+         int startY = (int) (y + 22.0F);
          for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < 9; col++) {
-               int slot = row * 9 + col;
-               if (slot >= 36) break; // player inventory size
+            for (int col = 0; col < cols; col++) {
+               int slot = 9 + row * 9 + col; // Skip slots 0-8 (hotbar)
                int cx = startX + col * (cell + gap);
                int cy = startY + row * (cell + gap);
+
                r2.rect(cx, cy, cell, cell, 3.0F, Renderer2D.ColorUtil.replAlpha(0xFF1A1A1A, 200));
-               r2.rectOutline(cx, cy, cell, cell, 3.0F, Renderer2D.ColorUtil.replAlpha(outline, 100), 0.5F);
+               r2.rectOutline(cx, cy, cell, cell, 3.0F, Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, 30), 0.5F);
+
                ItemStack stack = mc.player.getInventory().getStack(slot);
-               if (!stack.isEmpty()) {
-                  // Рендер итема — упрощённо через DrawContext недоступен здесь,
-                  // но можно нарисовать иконку через рендерेर если есть текстура.
-                  // Placeholder: просто имя.
-                  r2.text(FontRegistry.INTER_MEDIUM, cx + 2, cy + cell - 4, 10.0F,
-                     stack.getCount() > 1 ? String.valueOf(stack.getCount()) : "", mainCol);
+               if (!stack.isEmpty() && ctx != null) {
+                  // Draw item icon + count
+                  ctx.drawItem(mc.player, stack, cx + 2, cy + 2, 0);
+                  if (stack.getCount() > 1) {
+                     ctx.drawStackOverlay(mc.textRenderer, stack, cx + 2, cy + 2);
+                  }
+                  // Also show total arrow count on arrow slot
+                  if (stack.isOf(Items.ARROW) || stack.isOf(Items.SPECTRAL_ARROW) || stack.isOf(Items.TIPPED_ARROW)) {
+                     int totalArrows = cachedArrows + cachedSpectralArrows + cachedTippedArrows;
+                     if (showCounts.get() && totalArrows > 0) {
+                        String arrowText = String.valueOf(totalArrows);
+                        float textSize = 9.0F;
+                        float textW = r2.measureText(FontRegistry.INTER_MEDIUM, arrowText, textSize).width;
+                        r2.text(FontRegistry.INTER_MEDIUM, cx + cell - textW - 2.0F, cy + cell - textSize - 2.0F, textSize, arrowText, 0xFFFFFFFF);
+                     }
+                  }
                }
             }
          }
       }
 
-      DraggableManager.getInstance().endDrag(session);
+      // Totems and arrows info (right side or above inventory)
+      if (renderTotems.get() || renderArrows.get()) {
+         float infoX = x + 8.0F;
+         float infoY = y + (renderInventory.get() ? 0 : 0) + 8.0F;
+
+         if (renderTotems.get() && cachedTotems >= 0) {
+            r2.text(FontRegistry.INTER_MEDIUM, infoX, infoY, 11.0F, "Totems: " + cachedTotems, Renderer2D.ColorUtil.getTextColor(1, 1));
+            infoY += 14.0F;
+         }
+
+         if (renderArrows.get()) {
+            StringBuilder sb = new StringBuilder();
+            if (cachedArrows > 0) sb.append("Arrows: ").append(cachedArrows);
+            if (cachedSpectralArrows > 0) sb.append(sb.length() > 0 ? ", " : "Spectral: ").append(cachedSpectralArrows);
+            if (cachedTippedArrows > 0) sb.append(sb.length() > 0 ? ", " : "Tipped: ").append(cachedTippedArrows);
+            if (sb.length() == 0) sb.append("Arrows: 0");
+            r2.text(FontRegistry.INTER_MEDIUM, infoX, infoY, 11.0F, sb.toString(), Renderer2D.ColorUtil.getTextColor(1, 1));
+         }
+      }
+
+      if (session != null) {
+         DraggableManager.getInstance().endDrag(session);
+      }
    }
 
    private void refreshCounters() {
       if (mc.player == null) return;
-      // Totems
-      int totems = 0;
+      cachedTotems = 0;
+      cachedArrows = 0;
+      cachedSpectralArrows = 0;
+      cachedTippedArrows = 0;
+
       for (int i = 0; i < mc.player.getInventory().size(); i++) {
          ItemStack s = mc.player.getInventory().getStack(i);
-         if (s.isOf(Items.TOTEM_OF_UNDYING)) totems += s.getCount();
+         if (s.isOf(Items.TOTEM_OF_UNDYING)) cachedTotems += s.getCount();
+         else if (s.isOf(Items.ARROW)) cachedArrows += s.getCount();
+         else if (s.isOf(Items.SPECTRAL_ARROW)) cachedSpectralArrows += s.getCount();
+         else if (s.isOf(Items.TIPPED_ARROW)) cachedTippedArrows += s.getCount();
       }
-      cachedTotems = totems;
-
-      // Arrows
-      int normal = 0, spectral = 0, tipped = 0;
-      for (int i = 0; i < mc.player.getInventory().size(); i++) {
-         ItemStack s = mc.player.getInventory().getStack(i);
-         if (s.isOf(Items.ARROW)) normal += s.getCount();
-         else if (s.isOf(Items.SPECTRAL_ARROW)) spectral += s.getCount();
-         else if (s.getItem() == Items.TIPPED_ARROW) tipped += s.getCount();
-      }
-
-      // Определить заряженный снаряд в арбалете
-      ItemStack main = mc.player.getMainHandStack();
-      String loaded = "";
-      if (!main.isEmpty() && main.getItem() == Items.CROSSBOW) {
-         ChargedProjectilesComponent charged = main.get(DataComponentTypes.CHARGED_PROJECTILES);
-         if (charged != null) {
-            var projectiles = charged.getProjectiles();
-            if (!projectiles.isEmpty()) {
-               ItemStack proj = projectiles.get(0);
-               if (proj.isOf(Items.ARROW)) loaded = "Обычная";
-               else if (proj.isOf(Items.SPECTRAL_ARROW)) loaded = "Призрачная";
-               else if (proj.getItem() == Items.TIPPED_ARROW) loaded = "Наложенная";
-               else loaded = proj.getName().getString();
-            } else {
-               loaded = "Пусто";
-            }
-         }
-      } else if (!main.isEmpty() && main.getItem() == Items.BOW) {
-         // Лук автовыбирает стрелы из инвентаря
-         if (normal > 0) loaded = "Обычная (Лук)";
-         else if (spectral > 0) loaded = "Призрачная (Лук)";
-         else if (tipped > 0) loaded = "Наложенная (Лук)";
-         else loaded = "Без стрел";
-      }
-
-      StringBuilder sb = new StringBuilder("Стрелы: ");
-      boolean first = true;
-      if (normal > 0) { sb.append(first ? "" : ", ").append("Обычные: ").append(normal); first = false; }
-      if (spectral > 0) { sb.append(first ? "" : ", ").append("Призрачные: ").append(spectral); first = false; }
-      if (tipped > 0) { sb.append(first ? "" : ", ").append("Наложенные: ").append(tipped); first = false; }
-      if (!loaded.isEmpty()) sb.append("  ▶ ").append(loaded);
-      cachedArrowInfo = sb.toString();
    }
 }

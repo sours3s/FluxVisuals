@@ -58,6 +58,17 @@ public class TitleScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        // Ensure renderer is initialized (especially when returning from world/server)
+        if (Client.RENDERER == null) {
+            ru.fluxvisuals.client.FluxVisualsClient.ensureRendererInitialized();
+        }
+        if (Client.RENDERER == null || Client.FONTS == null) {
+            // Fallback to vanilla rendering if still not initialized
+            context.drawTexture(RenderPipelines.GUI_TEXTURED, BACKGROUND_TEXTURE, 0, 0, 0.0f, 0.0f, width, height, width, height);
+            super.render(context, mouseX, mouseY, delta);
+            return;
+        }
+
         updateAnimations(delta);
 
         context.drawTexture(RenderPipelines.GUI_TEXTURED, BACKGROUND_TEXTURE, 0, 0, 0.0f, 0.0f, width, height, width, height);
@@ -270,6 +281,9 @@ public class TitleScreen extends Screen {
 
     @Override
     protected void init() {
+        // Ensure renderer is initialized when returning to main menu from world/server
+        ru.fluxvisuals.client.FluxVisualsClient.ensureRendererInitialized();
+
         super.init();
         fadeInProgress = 0f;
         fadingIn = true;
