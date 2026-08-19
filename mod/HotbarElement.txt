@@ -1,0 +1,232 @@
+package gg.godweer.vse.shutki.screen.hud.ui.impl.main;
+
+import gg.godweer.vse.shutki.module.modules.impl.render.Interface;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import gg.godweer.Client;
+import gg.godweer.api.render.system.TextureUse;
+import gg.godweer.vse.shutki.screen.hud.ui.HudElement;
+import gg.godweer.vse.utils.client.client.ClientColors;
+import gg.godweer.vse.utils.client.client.ClientSettings;
+import gg.godweer.vse.utils.math.MathUtility;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.hud.bar.Bar;
+import net.minecraft.client.gui.hud.bar.ExperienceBar;
+import net.minecraft.client.gui.hud.bar.JumpBar;
+import net.minecraft.client.gui.hud.bar.LocatorBar;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Arm;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.math.MathHelper;
+import org.joml.Vector2f;
+import org.joml.Vector4f;
+
+import java.awt.*;
+
+public class HotbarElement extends HudElement {
+    public static final HotbarElement INSTANCE = new HotbarElement();
+
+
+    private HotbarElement() {
+        super("Hotbar", null);
+    }
+
+    @Override
+    public void render(int mouseX, int mouseY) {
+    }
+
+    static float slotChangeAnim = 0f;
+    static final float roundSmall = 4f, smooth = 1;
+
+    public static void renderHotbar(DrawContext context, RenderTickCounter tickCounter) {
+        int slot = mc.player.getInventory().getSelectedSlot();
+        slotChangeAnim = MathUtility.linear(slotChangeAnim, slot, 0.41f);
+
+        float halfWidth = mc.getWindow().getScaledWidth() / 2f;
+        float x = halfWidth - hotbarWidth / 2f;
+        float y = mc.getWindow().getScaledHeight() - hotbarOffset;
+
+        ClientPlayerEntity player = mc.player;
+
+        drawHotbarStyle(x, y, hotbarWidth, hotbarHeight, 6f, 1f);
+
+        float selectedSlotX = halfWidth - hotbarWidth / 2f + ((slotSize - slotOffset) * slotChangeAnim);
+        Color selectedColor = ClientSettings.INSTANCE.getColor(0);
+        Client.RENDERER.rect(selectedSlotX + 1, y + 1.5f, slotSize - 4, 2.5f, new Vector4f(1), smooth, selectedColor, selectedColor, selectedColor, selectedColor);
+
+        ItemStack offhandStack = player.getOffHandStack();
+        Arm offhand = player.getMainArm().getOpposite();
+
+        if (!offhandStack.isEmpty()) {
+            float offhandGap = 10;
+            float offhandSlotWidth = slotSize - 3;
+
+            float offhandX = offhand == Arm.LEFT
+                    ? x - offhandSlotWidth - offhandGap
+                    : x + hotbarWidth + offhandGap;
+
+            drawHotbarStyle(offhandX, y, offhandSlotWidth, hotbarHeight, 6f, 1f);
+
+            float itemX = offhandX + (offhandSlotWidth - 16) / 2f;
+            float itemY = y + (hotbarHeight - 16) / 2f;
+
+            renderHotbarItem(context, itemX, itemY, tickCounter, offhandStack, 10);
+        }
+
+        for (int m = 0; m < 9; ++m) {
+            float n = x + (m * (slotSize - slotOffset)) + 4;
+            float o = y + (hotbarHeight - 16) / 2f;
+            renderHotbarItem(context, n, o, tickCounter, player.getInventory().getStack(m), m);
+        }
+    }
+
+    private static void drawHotbarStyle(float rx, float ry, float rw, float rh, float round, float alpha) {
+        Vector4f roundVec = new Vector4f(round);
+        Client.RENDERER.blur(rx, ry, rw, rh, roundVec, 15f, alpha);
+
+        if (Interface.INSTANCE.style.is(Interface.Style.DARK)) {
+            Color bg = new Color(20, 20, 25, (int) (180 * alpha));
+            Client.RENDERER.rect(rx, ry, rw, rh, roundVec, 1, bg, bg, bg, bg);
+            Color out = new Color(255, 255, 255, (int) (15 * alpha));
+            Client.RENDERER.outline(rx, ry, rw, rh, 0.4f, roundVec, new Vector2f(1), out, out, out, out);
+        } else {
+            Color bg = new Color(62, 62, 71, 0);
+            Client.RENDERER.rect(rx, ry, rw, rh, roundVec, 1, bg, bg, bg, bg);
+            int outAlpha = MathHelper.clamp((int) (25 * alpha), 0, 255);
+            Color out = new Color(255, 255, 255, outAlpha);
+            Client.RENDERER.outline(rx, ry, rw, rh, 0.4f, roundVec, new Vector2f(1), out, out, out, out);
+        }
+    }
+
+    static final float slotSize = 24, slotOffset = 2, hotbarWidth = 198, hotbarHeight = slotSize - 2, hotbarOffset = 25, itemOffset = -4;
+
+    private static void renderHotbarItem(DrawContext context, float x, float y, RenderTickCounter tickCounter, ItemStack stack, int seed) {
+        if (!stack.isEmpty()) {
+            boolean isImportantItem = isImportantItem(stack);
+            if (isImportantItem) {
+                context.drawItem(mc.player, stack, (int) x, (int) y, seed);
+                context.drawStackOverlay(mc.textRenderer, stack, (int) x, (int) y);
+                return;
+            }
+            float f = (float) stack.getBobbingAnimationTime() - tickCounter.getTickProgress(false);
+            if (f > 0.0F) {
+                float g = 1.0F + f / 5.0F;
+                context.getMatrices().pushMatrix();
+                context.getMatrices().translate(x + 8, y + 12);
+                context.getMatrices().scale(1.0F / g, (g + 1.0F) / 2.0F);
+                context.getMatrices().translate(-(x + 8), -(y + 12));
+            }
+            context.drawItem(mc.player, stack, (int) x, (int) y, seed);
+            if (f > 0.0F) context.getMatrices().popMatrix();
+            context.drawStackOverlay(mc.textRenderer, stack, (int) x, (int) y);
+        }
+    }
+
+    private static boolean isImportantItem(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        Item item = stack.getItem();
+        if (stack.contains(DataComponentTypes.EQUIPPABLE) || stack.contains(DataComponentTypes.FOOD)) return true;
+        return item == Items.POTION || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION ||
+                item == Items.GOLDEN_APPLE || item == Items.ENCHANTED_GOLDEN_APPLE || item == Items.TOTEM_OF_UNDYING ||
+                item == Items.ENDER_PEARL || item == Items.SHIELD || item == Items.MILK_BUCKET || item == Items.EXPERIENCE_BOTTLE;
+    }
+
+    static final float statusHeight = 8, statusOffset = 2, statusCenterOffset = 30, statusWidth = (hotbarWidth - statusCenterOffset) / 2f, statusTextSize = 7;
+    static final float expOffset = 12, expHeight = statusHeight, expTextSize = statusTextSize;
+    static float expAnim = 0;
+
+    public static void renderBar(Bar bar, DrawContext context, RenderTickCounter tickCounter) {
+        switch (bar) {
+            case ExperienceBar ignored -> {
+                float x = (mc.getWindow().getScaledWidth() - hotbarWidth) / 2f;
+                float y = mc.getWindow().getScaledHeight() - hotbarOffset - expOffset;
+
+                drawHotbarStyle(x, y, hotbarWidth, expHeight, roundSmall, 1f);
+
+                expAnim = MathUtility.linear(expAnim, mc.player.experienceProgress, 0.5f);
+                if (mc.player.getNextLevelExperience() > 0) {
+                    float l = expAnim * hotbarWidth;
+                    if (l > 0) {
+                        Client.RENDERER.rect(x, y, l, expHeight, new Vector4f(roundSmall), smooth, ClientColors.ENABLED, ClientColors.ENABLED, ClientColors.ENABLED, ClientColors.ENABLED);
+                    }
+                }
+                String text = String.valueOf(mc.player.experienceLevel);
+                float textWidth = Client.RENDERER.textWidth(text, TextureUse.SFMEDIUM, expTextSize);
+                Client.RENDERER.text(text, x + Math.max(1, hotbarWidth * expAnim - textWidth - 2), y - expHeight / 2f + 4, TextureUse.SFMEDIUM, expTextSize, expAnim > 0.01f ? Color.BLACK : Color.WHITE);
+            }
+            case LocatorBar locator -> locator.renderBar(context, tickCounter);
+            case JumpBar jump -> jump.renderBar(context, tickCounter);
+            default -> bar.renderBar(context, tickCounter);
+        }
+    }
+
+    static float[] statusAnims = new float[]{0f, 0f, 0f, 0f, 0f};
+    public static float renderStatusBars(DrawContext context) {
+        float halfWidth = mc.getWindow().getScaledWidth() / 2f;
+        float x = halfWidth - hotbarWidth / 2f;
+        float y = mc.getWindow().getScaledHeight() - hotbarOffset - hotbarHeight - 2;
+        float yl = y, yr = y;
+
+        renderStatusBar(x, yl, ClientColors.HEALTH_COLOR, mc.player.getHealth(), mc.player.getMaxHealth(), 0, false);
+        if (mc.player.getAbsorptionAmount() > 0) {
+            yl -= statusHeight + statusOffset;
+            renderStatusBar(x, yl, ClientColors.GOLDEN_HP, mc.player.getAbsorptionAmount(), Math.max(mc.player.getAbsorptionAmount(), mc.player.getMaxAbsorption()), 1, false);
+        }
+        if (mc.player.getArmor() > 0) {
+            yl -= statusHeight + statusOffset;
+            renderStatusBar(x, yl, ClientColors.ARMOR_COLOR, mc.player.getArmor(), 20, 3, false);
+        }
+        renderStatusBar(x, yr, ClientColors.HUNGER_COLOR, mc.player.getHungerManager().getFoodLevel(), 20, 2, true);
+        if (mc.player.getAir() < mc.player.getMaxAir()) {
+            yr -= statusHeight + statusOffset;
+            renderStatusBar(x, yr, ClientColors.LIGHT_BLUE, mc.player.getAir(), mc.player.getMaxAir(), 4, true);
+        }
+        return Math.min(yl, yr) - statusHeight;
+    }
+
+    private static void renderStatusBar(float x, float y, Color color, float value, float max, int i, boolean reverse) {
+        if (reverse) x += statusWidth + statusCenterOffset;
+        float progress = statusAnims[i] = MathUtility.linear(statusAnims[i], MathHelper.clamp(value, 0, max) / max, 0.5f);
+        String text = value % 1 == 0 ? String.valueOf(Math.round(value)) : String.format("%.1f", value);
+        float textWidth = Client.RENDERER.textWidth(text, TextureUse.SFMEDIUM, statusTextSize);
+
+        drawHotbarStyle(x, y, statusWidth, statusHeight, roundSmall, 1f);
+        Client.RENDERER.rect(reverse ? x + statusWidth * (1f - progress) : x, y, statusWidth * progress, statusHeight, new Vector4f(roundSmall), smooth, color, color, color, color);
+
+        Client.RENDERER.text(text, x + (reverse ? statusWidth * Math.min(0.88f, (1f - progress)) : Math.max(1, statusWidth * progress - textWidth - 2)), y, TextureUse.SFMEDIUM, statusTextSize, Color.WHITE);
+    }
+
+    static final float tooltipOffset = 6, tooltipTextSize = 8, tooltipPadding = 4;
+
+    public static void renderTooltipAndOverlay(float statusY, int ticks, Text overlayMessage, int overlayRemaining, RenderTickCounter tickCounter) {
+        ItemStack currentStack = mc.player.getMainHandStack();
+        float y = statusY;
+
+        if (ticks > 0 && !currentStack.isEmpty()) {
+            y -= tooltipOffset;
+            MutableText text = Text.empty().append(currentStack.getName()).formatted(currentStack.getRarity().getFormatting());
+            if (currentStack.contains(DataComponentTypes.CUSTOM_NAME)) text.formatted(Formatting.ITALIC);
+            float textWidth = Client.RENDERER.textWidth(Formatting.strip(text.getString()), TextureUse.SFMEDIUM, tooltipTextSize);
+            float anim = MathHelper.clamp((float) ticks / 10f, 0, 1);
+
+            drawHotbarStyle(mc.getWindow().getScaledWidth() / 2f - textWidth / 2f - tooltipPadding, y - 2, textWidth + tooltipPadding * 2, tooltipTextSize + tooltipPadding + 1, roundSmall, anim);
+            Client.RENDERER.text(text, mc.getWindow().getScaledWidth() / 2f - textWidth / 2f, y, TextureUse.SFMEDIUM, tooltipTextSize);
+        }
+
+        if (overlayMessage != null && overlayRemaining > 0) {
+            y -= tooltipOffset + tooltipTextSize + tooltipPadding;
+            float textWidth = Client.RENDERER.textWidth(Formatting.strip(overlayMessage.getString()), TextureUse.SFMEDIUM, tooltipTextSize);
+            float anim = MathHelper.clamp((overlayRemaining - tickCounter.getTickProgress(true)) / 20f, 0, 1);
+
+            drawHotbarStyle(mc.getWindow().getScaledWidth() / 2f - textWidth / 2f - tooltipPadding, y - 2, textWidth + tooltipPadding * 2, tooltipTextSize + tooltipPadding + 1, roundSmall, anim);
+            Client.RENDERER.text(overlayMessage, mc.getWindow().getScaledWidth() / 2f - textWidth / 2f, y, TextureUse.SFMEDIUM, tooltipTextSize);
+        }
+    }
+
+
+}

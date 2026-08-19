@@ -12,11 +12,11 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("FluxVisualsLoader")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
-[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.8.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.8+d42406fce2423a66b96d4ffbbeb67e3f55f992a0")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.10.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.10+72f5cf49abaa0c8a3b840ba132cd790410f12b5c")]
 [assembly: System.Reflection.AssemblyProductAttribute("FluxVisualsLoader")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FluxVisualsLoader")]
-[assembly: System.Reflection.AssemblyVersionAttribute("1.0.8.0")]
+[assembly: System.Reflection.AssemblyVersionAttribute("1.0.10.0")]
 [assembly: System.Runtime.Versioning.TargetPlatformAttribute("Windows7.0")]
 [assembly: System.Runtime.Versioning.SupportedOSPlatformAttribute("Windows7.0")]
 

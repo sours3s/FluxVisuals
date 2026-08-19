@@ -33,16 +33,17 @@ public class AppConfig
     [JsonPropertyName("updateCheckUrl")] public string UpdateCheckUrl { get; set; } = UpdateService.DefaultUpdateCheckUrl;
     [JsonPropertyName("updateCheckEnabled")] public bool UpdateCheckEnabled { get; set; } = true;
 
-    /// <summary>config.json всегда лежит рядом с запущенным exe (Environment.ProcessPath).
-    /// Это единственный стабильный путь в single-file сборке и он переживает автообновление:
-    /// updater.bat заменяет exe на том же месте, поэтому config.json остаётся на месте.</summary>
+    /// <summary>config.json лежит в %LOCALAPPDATA%\FluxVisuals — стабильное место,
+    /// не зависящее от расположения exe (рабочий стол, загрузки и т.п.).
+    /// Переживает автообновление и перенос exe.</summary>
     public static string ConfigPath
     {
         get
         {
-            string? exeDir = Path.GetDirectoryName(Environment.ProcessPath);
-            if (!string.IsNullOrEmpty(exeDir)) return Path.Combine(exeDir, "config.json");
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string configDir = Path.Combine(localAppData, "FluxVisuals");
+            Directory.CreateDirectory(configDir);
+            return Path.Combine(configDir, "config.json");
         }
     }
 

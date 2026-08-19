@@ -103,20 +103,11 @@ public class HotBarHUD {
          int slot = mc.player.getInventory().getSelectedSlot();
          slotChangeAnim = AnimationMath.animation(slotChangeAnim, slot, 0.41F);
 
-         // Позиции (как в доноре)
+         // Фиксированная позиция (как ванильный) — НЕ перетаскиваемый
          float halfWidth = mc.getWindow().getScaledWidth() / 2.0F;
-         float x = halfWidth - HOTBAR_WIDTH / 2.0F;
-         float y = mc.getWindow().getScaledHeight() - HOTBAR_OFFSET;
-
-         DraggableManager.DragSession session = DraggableManager.getInstance()
-               .beginDrag("hotbar", x, y, HOTBAR_WIDTH, HOTBAR_HEIGHT);
-         float dragX = session.positionX();
-         float dragY = session.positionY();
-         float hudScale = session.scale();
-
-         float finalX = dragX;
-         float finalY = dragY;
-         float finalScale = hudScale;
+         float finalX = halfWidth - HOTBAR_WIDTH / 2.0F;
+         float finalY = mc.getWindow().getScaledHeight() - HOTBAR_OFFSET;
+         float finalScale = 1.0F;
 
          drawContext.getMatrices().pushMatrix();
          try {
@@ -127,8 +118,8 @@ public class HotBarHUD {
             // Рендерим хотбар (как в доноре)
             drawHotbarStyle(r2, finalX, finalY, HOTBAR_WIDTH, HOTBAR_HEIGHT, ROUND_SMALL, 1.0F);
 
-            // Выбранный слот индикатор (как в доноре)
-            float selectedSlotX = halfWidth - HOTBAR_WIDTH / 2.0F + ((SLOT_SIZE - SLOT_OFFSET) * slotChangeAnim);
+            // Выбранный слот индикатор — используем finalX, не halfWidth
+            float selectedSlotX = finalX + ((SLOT_SIZE - SLOT_OFFSET) * slotChangeAnim);
             int selectedColor = Renderer2D.ColorUtil.getMainColor(1, 0);
             // Более заметный индикатор выбранного слота
             r2.rectOutline(selectedSlotX, finalY, SLOT_SIZE - 2.0F, HOTBAR_HEIGHT, 2.0F, selectedColor, 1.5F);
@@ -166,7 +157,6 @@ public class HotBarHUD {
          } finally {
             drawContext.getMatrices().popMatrix();
          }
-         DraggableManager.getInstance().endDrag(session);
       }
    }
 

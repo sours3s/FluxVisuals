@@ -108,7 +108,7 @@ public class FluxVisualsClient implements ClientModInitializer {
       }
 
       this.guiClient = new GuiClient();
-      RenderHandler.register();
+      GuiClient.registerEventHandlers();
       // Register Dynamic Lights world renderer
       try {
          EventManager.register(new ru.fluxvisuals.module.impl.visuals.DynamicLightsWorldRenderer());

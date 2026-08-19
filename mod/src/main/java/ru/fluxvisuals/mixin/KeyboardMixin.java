@@ -27,7 +27,14 @@ public class KeyboardMixin {
       if (FluxVisualsClient.isModInitialized() && FluxVisualsClient.get != null) {
          MinecraftClient client = MinecraftClient.getInstance();
          if (client != null && client.getWindow() != null && client.currentScreen == null) {
-            KeyInputEvent event = new KeyInputEvent(window, input.comp_4795(), input.comp_4796(), action, input.comp_4797());
+            int keyCode = input.comp_4795();
+
+            // Ignore media keys (Fn+F1=290, Fn+F2=291) that can trigger system actions
+            if (keyCode == 290 || keyCode == 291) {
+               return;
+            }
+
+            KeyInputEvent event = new KeyInputEvent(window, keyCode, input.comp_4796(), action, input.comp_4797());
             EventManager.call(event);
             if (event.action() == 1 && client.currentScreen == null) {
                MenuSettingsModule module = MenuSettingsModule.getInstanceIfAvailable();

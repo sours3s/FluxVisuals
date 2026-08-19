@@ -1,0 +1,272 @@
+package gg.godweer.vse.shutki.screen.hud.ui.impl.main;
+
+import com.mojang.authlib.GameProfile;
+import gg.godweer.Client;
+import gg.godweer.MinecraftHolder;
+import gg.godweer.api.drags.Drag;
+import gg.godweer.api.events.EventBus;
+import gg.godweer.api.events.list.EventAttack;
+import gg.godweer.api.render.system.TextureUse;
+import gg.godweer.api.render.system.sys2d.CRenderSystem;
+import gg.godweer.api.ui.particles.Particles2DEngine;
+import gg.godweer.vse.shutki.module.modules.impl.misc.NameProtect;
+import gg.godweer.vse.shutki.module.settings.EnumChoice;
+import gg.godweer.vse.shutki.module.settings.impl.enumsetting.EnumSetting;
+import gg.godweer.vse.shutki.screen.hud.ui.HudElement;
+import gg.godweer.vse.shutki.module.settings.impl.checkbox.CheckBox;
+import gg.godweer.vse.utils.animations.Direction;
+import gg.godweer.vse.utils.animations.impl.SmoothStepAnimation;
+import gg.godweer.vse.utils.client.client.ClientSettings;
+import gg.godweer.vse.utils.client.get.HealthUtility;
+import gg.godweer.vse.utils.client.targets.TargetsUtility;
+import gg.godweer.vse.utils.math.MathUtility;
+import gg.godweer.vse.utils.math.TimeUtility;
+import gg.godweer.vse.utils.network.NetworkUtility;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.PlayerSkinDrawer;
+import net.minecraft.client.gui.screen.ChatScreen;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.SkinTextures;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
+import org.joml.Vector2f;
+import org.joml.Vector4f;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class TargetHudElement extends HudElement implements MinecraftHolder {
+    private final EnumSetting<Style> style = settings.enumSetting("Style", Style.GLASS);
+    private final CheckBox showItems = settings.checkbox("Show items", true);
+    private final CheckBox showOnHover = settings.checkbox("Show on hover", true);
+    private final CheckBox particles = settings.checkbox("Particles", true);
+    private static final float ITEM_BOX = 14.5f;
+    private static final float SPACING = 1.5f;
+    private final Particles2DEngine particlesEngine = new Particles2DEngine();
+
+    public TargetHudElement(Drag drag) {
+        super("TargetHud", drag);
+        Client.EVENTS.register(this);
+        animation.setDuration(400);
+    }
+    private int particlesToSpawn = 0;
+    float healthAnim = 0, absorptionAnim = 0, health_factor = 0;
+    private LivingEntity lastHoveredEntity = null;
+    private long lastHoverTime = 0;
+    LivingEntity prevTarget = null;
+    TimeUtility scrollDelay = new TimeUtility();
+    SmoothStepAnimation scrollAnimation = new SmoothStepAnimation(1000, 1);
+
+    EventBus<EventAttack> onAttack = event -> {
+        if (TargetsUtility.getTarget() != null && event.target == TargetsUtility.getTarget()) {
+            health_factor = MathUtility.random(0f, 20f);
+        }
+    };
+    EventBus<EventAttack> events = event -> {
+        if (TargetsUtility.getTarget() != null && event.target == TargetsUtility.getTarget()) {
+            health_factor = MathUtility.random(0f, 20f);
+
+            if (particles.get()) {
+                particlesToSpawn += 10;
+            }
+        }
+    };
+
+    @Override
+    public void render(int mouseX, int mouseY) {
+
+        LivingEntity target = TargetsUtility.getTarget();
+        LivingEntity hoveredEntity = (mc.targetedEntity instanceof LivingEntity living) ? living : null;
+
+        if (hoveredEntity != null) {
+            lastHoverTime = System.currentTimeMillis();
+            lastHoveredEntity = hoveredEntity;
+        }
+
+        boolean isInChat = (mc.currentScreen instanceof ChatScreen);
+        boolean isHovering = showOnHover.get() && lastHoveredEntity != null && (System.currentTimeMillis() - lastHoverTime < 2000);
+        boolean shown = isInChat || target != null || isHovering;
+
+        if (target != null) prevTarget = target;
+        else if (isHovering) prevTarget = lastHoveredEntity;
+        else if (isInChat || prevTarget == null) prevTarget = mc.player;
+
+        animation.setDirection(shown ? Direction.BACKWARDS : Direction.FORWARDS);
+        float anim = MathHelper.clamp(1f - (float)animation.getOutput(), 0f, 1f);
+        if (anim < 0.01f) return;
+
+        CRenderSystem system = Client.RENDERER.getCrenderSystem();
+        float prevAlpha = system.alpha();
+        system.alpha(anim * prevAlpha);
+
+        List<ItemStack> items = new ArrayList<>();
+        if (showItems.get()) {
+            items.add(prevTarget.getMainHandStack());
+            items.add(prevTarget.getEquippedStack(EquipmentSlot.HEAD));
+            items.add(prevTarget.getEquippedStack(EquipmentSlot.CHEST));
+            items.add(prevTarget.getEquippedStack(EquipmentSlot.LEGS));
+            items.add(prevTarget.getEquippedStack(EquipmentSlot.FEET));
+            items.add(prevTarget.getOffHandStack());
+            items.removeIf(ItemStack::isEmpty);
+        }
+
+        float totalItemsW = items.size() * ITEM_BOX + (items.size() - 1) * SPACING;
+        float itemStartY = y;
+        float mainBoxY = showItems.get() && !items.isEmpty() ? y + ITEM_BOX + 2f : y;
+
+        if (showItems.get() && !items.isEmpty()) {
+            float itemStartX = x + (width / 2f) - (totalItemsW / 2f);
+            for (int i = 0; i < items.size(); i++) {
+                float ix = itemStartX + i * (ITEM_BOX + SPACING);
+                drawStyle(ix, itemStartY, ITEM_BOX, ITEM_BOX, anim);
+                renderItem(items.get(i), ix + 2f, itemStartY + 2f, ITEM_BOX - 4f);
+            }
+        }
+        float mainHeight = 28f;
+        drawStyle(x, mainBoxY, width, mainHeight, anim);
+
+
+
+        float headSize = 20f;
+        float headX = x + 4f;
+        float headY = mainBoxY + 4f;
+        if (prevTarget instanceof PlayerEntity player) {
+            SkinTextures textures = mc.getSkinProvider().supplySkinTextures(player.getGameProfile(), true).get();
+
+            Client.RENDERER.renderHead(textures, headX, headY, headSize);
+        } else {
+            Identifier currentPhoto = ClientSettings.INSTANCE.customizeSetting.photomode.get().getIdentifier();
+            Client.RENDERER.texture(currentPhoto, headX, headY, headSize, headSize, 1.5F, new Vector4f(0.04F, 0.038F, 0.345F, 0.5F), new Vector4f(2), Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE);
+        }
+
+        String name = NameProtect.INSTANCE.getEntityName(prevTarget);
+        float nameX = headX + headSize + 5f;
+        float nameW = width - (headSize + 15f);
+        system.push(nameX, mainBoxY, nameW, mainHeight);
+        float tWidth = Client.RENDERER.textWidth(name, TextureUse.SFMEDIUM, 7.5f);
+        if (scrollAnimation.isDone() && scrollDelay.reached(1000)) {
+            scrollDelay.reset();
+            scrollAnimation.changeDirection();
+        }
+        float offset = Math.max(0, tWidth - nameW) * (float)scrollAnimation.getOutput();
+        Client.RENDERER.text(name, nameX - offset, mainBoxY + 4.5f, TextureUse.SFMEDIUM, 7.5f, Color.WHITE);
+        system.pop();
+
+        float barX = nameX;
+        float barY = mainBoxY + mainHeight - 8.5f;
+        float barW = nameW;
+        float barH = 3.5f;
+
+        Client.RENDERER.rect(barX, barY, barW, barH, new Vector4f(1.5f), 1, new Color(0,0,0, 60), new Color(0,0,0, 60), new Color(0,0,0, 60), new Color(0,0,0, 60));
+
+        float maxHp = prevTarget.getMaxHealth();
+        float hpFactor = MathHelper.clamp(healthAnim / maxHp, 0, 1);
+
+        Color c1 = ClientSettings.INSTANCE.getColor(0);
+        Color c2 = ClientSettings.INSTANCE.getColor(40);
+        Client.RENDERER.rect(barX, barY, barW * hpFactor, barH, new Vector4f(1.5f), 1, c1, c1, c2, c2);
+
+        if (particles.get() && hpFactor > 0) {
+            spawnHealthParticles(barX + barW * hpFactor, barY + barH / 2f, c1);
+        }
+
+        float absWidth = 0;
+        if (absorptionAnim > 0.1f) {
+            float absFactor = MathHelper.clamp(absorptionAnim / maxHp, 0, 1);
+            absWidth = barW * absFactor;
+            Color gold1 = new Color(255, 215, 0, 200);
+            Color gold2 = new Color(255, 165, 0, 180);
+            Client.RENDERER.rect(barX + barW - absWidth, barY, absWidth, barH, new Vector4f(1.5f), 1,
+                    gold1, gold1, gold2, gold2);
+            if (particles.get()) {
+                spawnHealthParticles(barX + barW - absWidth, barY + barH / 2f, gold1);
+            }
+        }
+
+        particlesEngine.render();
+
+        float hValue = (float) (Math.round(healthAnim * 10f) / 10f);
+        float aValue = (float) (Math.round(absorptionAnim * 10f) / 10f);
+        String hStr = hValue + "";
+        String aStr = aValue > 0 ? " + (" + aValue + ")" : "";
+        String suffix = " HP";
+        float fullTextW = Client.RENDERER.textWidth(hStr + aStr + suffix, TextureUse.SFMEDIUM, 6f);
+        float drawX = barX + barW - fullTextW;
+        float drawY = barY - 7.5f;
+
+        Client.RENDERER.text(hStr, drawX, drawY, TextureUse.SFMEDIUM, 6f, Color.WHITE);
+        float off = Client.RENDERER.textWidth(hStr, TextureUse.SFMEDIUM, 6f);
+        if (aValue > 0) {
+            Client.RENDERER.text(aStr, drawX + off, drawY, TextureUse.SFMEDIUM, 6f, new Color(255, 215, 0));
+            off += Client.RENDERER.textWidth(aStr, TextureUse.SFMEDIUM, 6f);
+        }
+        Client.RENDERER.text(suffix, drawX + off, drawY, TextureUse.SFMEDIUM, 6f, new Color(255, 255, 255, 180));
+
+        healthAnim = MathUtility.linearFps(healthAnim, HealthUtility.get(prevTarget), 10f);
+        absorptionAnim = MathUtility.linearFps(absorptionAnim, prevTarget.getAbsorptionAmount(), 10f);
+
+        drag.width = width = 110f;
+        drag.height = height = (mainBoxY + mainHeight) - y;
+        system.alpha(prevAlpha);
+    }
+
+
+    private void spawnHealthParticles(float x, float y, Color color) {
+        if (Math.random() > 0.8) {
+            Vector2f pos = new Vector2f(x, y);
+            Vector2f vel = new Vector2f(
+                    (float) (Math.random() - 0.5f) * 0.5f,
+                    (float) (Math.random() - 0.2f) * 0.5f
+            );
+            float dir = (float) Math.random() * 360f;
+            float roll = (float) (Math.random() - 0.5f) * 5f;
+            long alive = 500 + (long)(Math.random() * 500);
+            particlesEngine.addParticle(pos, vel, dir, roll, alive);
+        }
+    }
+    private void drawStyle(float rx, float ry, float rw, float rh, float alpha) {
+        Vector4f round = new Vector4f(5f);
+        Client.RENDERER.blur(rx, ry, rw, rh, round, 15f, alpha);
+        if (style.get() == Style.DARK) {
+            Color bgColor = new Color(20, 20, 25, (int) (180 * alpha));
+            Client.RENDERER.rect(rx, ry, rw, rh, round, 1, bgColor, bgColor, bgColor, bgColor);
+            Color outColor = new Color(255, 255, 255, (int) (15 * alpha));
+            Client.RENDERER.outline(rx, ry, rw, rh, 0.4f, round, new Vector2f(1), outColor, outColor, outColor, outColor);
+        } else {
+            Color bgColor = new Color(62, 62, 71, 0);
+            Client.RENDERER.rect(rx, ry, rw, rh, round, 1, bgColor, bgColor, bgColor, bgColor);
+            int outAlpha = MathHelper.clamp((int) (25 * alpha), 0, 255);
+            Color outColor = new Color(255, 255, 255, outAlpha);
+            Client.RENDERER.outline(rx, ry, rw, rh, 0.4f, round, new Vector2f(1), outColor, outColor, outColor, outColor);
+        }
+    }
+
+    private void renderItem(ItemStack stack, float ix, float iy, float size) {
+        Client.RENDERER.queueTask(() -> {
+            DrawContext context = Client.RENDERER.getDrawContext();
+            if (context != null) {
+                var matrices = context.getMatrices();
+                matrices.pushMatrix();
+                matrices.translate(ix, iy);
+                float scale = size / 16f;
+                matrices.scale(scale, scale);
+                context.drawItem(stack, 0, 0);
+                matrices.popMatrix();
+            }
+        });
+    }
+
+    @AllArgsConstructor
+    enum Style implements EnumChoice {
+        DARK("Dark"), GLASS("Glass");
+        @Getter final String renderName;
+    }
+}
