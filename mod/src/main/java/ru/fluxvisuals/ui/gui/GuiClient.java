@@ -18,6 +18,7 @@ import ru.fluxvisuals.event.EventInit;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.render.RenderEvent;
 import ru.fluxvisuals.module.api.Category;
+import ru.fluxvisuals.util.render.math.animation.Direction;
 import ru.fluxvisuals.module.api.Manager;
 import ru.fluxvisuals.module.api.Theme;
 import ru.fluxvisuals.module.api.setting.impl.HueSetting;
@@ -253,7 +254,9 @@ public class GuiClient extends Screen {
       GuiScreen.x = 480.0F - GuiScreen.width / 2.0F;
       GuiScreen.y = 260.0F - GuiScreen.height / 2.0F;
       GuiScreen.mainAnimation.reset();
+      GuiScreen.mainAnimation.setDirection(Direction.FORWARDS);
       GuiScreen.categoryAnimation.reset();
+      GuiScreen.categoryAnimation.setDirection(Direction.FORWARDS);
       if (FluxVisualsClient.get.guiManager == null) {
          FluxVisualsClient.get.guiManager = new GuiManager();
          FluxVisualsClient.get.guiManager.init();
