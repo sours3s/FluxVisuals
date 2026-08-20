@@ -51,7 +51,7 @@ public class ShaderFog extends Module {
    @Override
    public void onDisable() {
       startMillis = -1;
-      if (mc.worldRenderer != null) mc.worldRenderer.reload();
+      try { if (mc.worldRenderer != null) mc.worldRenderer.reload(); } catch (Exception ignored) {}
    }
 
    public void renderShader() {

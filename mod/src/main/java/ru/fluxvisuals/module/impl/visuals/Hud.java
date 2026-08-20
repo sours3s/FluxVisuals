@@ -100,7 +100,6 @@ public class Hud extends Module {
       this.addSettings(new Setting[]{
          element, notify, blur, healthThreshold, durabilityThreshold,
          InformationHUD.metrics, ArrayListHUD.sortByWidth, ArrayListHUD.smooth,
-         TargetHUD.targetMode, TargetHUD.style, TargetHUD.showItems, TargetHUD.showOnHover, TargetHUD.particles, TargetHUD.scale,
          PotionsHUD.scale
       });
    }
@@ -113,7 +112,7 @@ public class Hud extends Module {
    public void onAttack(AttackEvent e) {
       if (!this.enable || mc.player == null) return;
       if (e.getTarget() instanceof net.minecraft.entity.LivingEntity le) {
-         TargetHUD.onAttack(le);
+         // TargetHUD particles/health factor handled internally in render
       }
    }
 
@@ -157,9 +156,6 @@ public class Hud extends Module {
             }
          }
       }
-
-      // Кастомный хотбар (предметы/бары) — обновление анимаций раз в тик.
-      HotBarHUD.tick();
    }
 
    @EventInit
@@ -205,7 +201,9 @@ public class Hud extends Module {
             }
 
             if (element.get("TargetHUD")) {
-               TargetHUD.targetHUD(r2, e.drawContext());
+               int mouseX = (int) mc.mouse.getScaledX(mc.getWindow());
+               int mouseY = (int) mc.mouse.getScaledY(mc.getWindow());
+               TargetHUD.renderTargetHUD(e.drawContext(), mouseX, mouseY);
             }
 
             if (element.get("ArrayList")) {
@@ -233,10 +231,8 @@ public class Hud extends Module {
             }
 
             if (element.get("Hotbar Binds")) {
-               if (HotBarHUD.hasContent()) {
-                  HotBarHUD.hotbar(r2, e.drawContext());
-               } else if (chatOpen) {
-                  HotBarHUD.renderEmpty(r2);
+               if (mc.player != null && mc.world != null) {
+                  HotBarHUD.renderHotbar(e.drawContext(), mc.getRenderTickCounter());
                }
             }
 

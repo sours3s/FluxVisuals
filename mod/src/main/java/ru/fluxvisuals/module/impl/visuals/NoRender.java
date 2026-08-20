@@ -72,9 +72,11 @@ public class NoRender extends Module {
     }
 
     private void reloadChunks() {
-        if (mc != null && mc.world != null && mc.worldRenderer != null) {
-            mc.worldRenderer.reload();
-        }
+        try {
+            if (mc != null && mc.world != null && mc.worldRenderer != null) {
+                mc.worldRenderer.reload();
+            }
+        } catch (Exception ignored) {}
     }
 }
 

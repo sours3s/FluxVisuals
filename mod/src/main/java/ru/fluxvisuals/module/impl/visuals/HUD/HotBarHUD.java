@@ -1,249 +1,129 @@
 package ru.fluxvisuals.module.impl.visuals.HUD;
 
-import java.util.ArrayList;
-import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.hud.bar.Bar;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.util.Arm;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
 import org.joml.Vector4f;
-import ru.fluxvisuals.module.impl.visuals.Hud;
-import ru.fluxvisuals.ui.draggable.DraggableManager;
+import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.animation.AnimationMath;
-import ru.fluxvisuals.util.render.text.FontRegistry;
+import ru.fluxvisuals.util.render.math.ScaleHelper;
+import java.awt.Color;
 
 /**
  * HotBar HUD — полная реализация из GodWeer (HotbarElement)
- * <p>Кастомный хотбар с рендерингом слотов, оффхенда, брони, голода, воздуха, опыта, HP, голод, уровень.
+ * <p>Кастомный хотбар с рендерингом слотов, оффхенда, HP, голод, уровень XP.
+ * Не перетаскиваемый, позиция ванильная.
  */
 @Environment(EnvType.CLIENT)
 public class HotBarHUD {
-   private static final MinecraftClient mc = MinecraftClient.getInstance();
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-   // Константы из донора (HotbarElement)
-   private static final float SLOT_SIZE = 24.0F;
-   private static final float SLOT_OFFSET = 2.0F;
-   private static final float HOTBAR_WIDTH = 198.0F;
-   private static final float HOTBAR_HEIGHT = SLOT_SIZE - 2.0F;
-   // Vanilla hotbar is at height - 22 (for 1080p), scale accordingly
-   private static final float HOTBAR_OFFSET = 22.0F;
-   private static final float ITEM_OFFSET = -4.0F;
-   private static final float ROUND_SMALL = 4.0F;
-   private static final float SMOOTH = 1.0F;
+    // Константы из донора (HotbarElement)
+    private static final float SLOT_SIZE = 24.0F;
+    private static final float SLOT_OFFSET = 2.0F;
+    private static final float HOTBAR_WIDTH = 198.0F;
+    private static final float HOTBAR_HEIGHT = SLOT_SIZE - 2.0F; // 22f
+    private static final float HOTBAR_OFFSET = 22.0F;
+    private static final float ROUND_SMALL = 4.0F;
+    private static final float SMOOTH = 1.0F;
 
-   // Статус бары (HP, голод, воздух, броня, XP)
-   private static final float STATUS_HEIGHT = 5.0F;
-   private static final float STATUS_OFFSET = 2.0F;
-   private static final float STATUS_CENTER_OFFSET = 30.0F;
-   private static final float STATUS_WIDTH = (HOTBAR_WIDTH - STATUS_CENTER_OFFSET) / 2.0F;
-   private static final float STATUS_TEXT_SIZE = 6.0F;
-   private static final float EXP_OFFSET = 8.0F;
-   private static final float EXP_HEIGHT = 4.0F;
-   private static final float EXP_TEXT_SIZE = 6.0F;
+    // Анимация выбранного слота (как в доноре)
+    private static float slotChangeAnim = 0f;
 
-   // Анимации
-   private static float slotChangeAnim = 0.0F;
-   private static float expAnim = 0.0F;
-   private static float[] statusAnims = new float[4];
-   private static float tooltipAnim = 0.0F;
+    /**
+     * Рендерит хотбар — вызывается из InGameHudMixin (как в доноре)
+     */
+    public static void renderHotbar(DrawContext context, RenderTickCounter tickCounter) {
+        if (!FluxVisualsClient.isModInitialized()) return;
+        if (mc.player == null || mc.world == null) return;
 
-   // Health animation
-   private static int ticks = 0;
-   private static long lastTickTime = 0L;
-   private static int lastHealthValue = 0;
-   private static int renderHealthValue = 0;
-   private static long lastHealthCheckTime = 0L;
-   private static long heartJumpEndTick = 0L;
-   private static int lastBurstBubble = 0;
+        // Анимация выбранного слота (как в доноре)
+        int slot = mc.player.getInventory().getSelectedSlot();
+        slotChangeAnim = AnimationMath.animation(slotChangeAnim, slot, 0.41f);
 
-   public static void tick() {
-      long currentTime = System.currentTimeMillis();
-      if (currentTime - lastTickTime >= 50L) {
-         ticks++;
-         lastTickTime = currentTime;
-      }
-   }
+        // Позиции (как в доноре) — ванильная позиция
+        float halfWidth = mc.getWindow().getScaledWidth() / 2.0F;
+        float x = halfWidth - HOTBAR_WIDTH / 2.0F;
+        float y = mc.getWindow().getScaledHeight() - HOTBAR_OFFSET;
 
-   public static boolean hasContent() {
-      return mc.player != null && mc.world != null;
-   }
+        Renderer2D r2 = FluxVisualsClient.getRenderer();
+        if (r2 == null) return;
 
-   public static void renderEmpty(Renderer2D r2) {
-      float w = HOTBAR_WIDTH;
-      float h = HOTBAR_HEIGHT + 40.0F;
-      float preferredX = (mc.getWindow().getScaledWidth() - w) / 2.0F;
-      float preferredY = mc.getWindow().getScaledHeight() - HOTBAR_OFFSET - h;
-      DraggableManager.DragSession session = DraggableManager.getInstance()
-            .beginDrag("hotbar", preferredX, preferredY, w, h);
-      float x = session.positionX();
-      float y = session.positionY();
-      Hud.drawClientRect(r2, x, y, w, h, 11.0F, 1.0F, 1.0F);
-      r2.text(FontRegistry.INTER_MEDIUM, x + 14.0F, y + 28.0F, 28.0F, "Hotbar",
-            Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getTextColor(1, 1), 255));
-      DraggableManager.getInstance().endDrag(session);
-   }
+        // Рендерим стиль хотбара
+        drawHotbarStyle(r2, x, y, HOTBAR_WIDTH, HOTBAR_HEIGHT, ROUND_SMALL, 1.0F);
 
-   public static void hotbar(Renderer2D r2, DrawContext drawContext) {
-      if (mc.player != null && mc.world != null) {
-         float guiScaleFactor = (float) mc.getWindow().getScaleFactor();
-         if (guiScaleFactor <= 0.0F) guiScaleFactor = 1.0F;
+        // Индикатор выбранного слота (как в доноре)
+        float selectedSlotX = halfWidth - HOTBAR_WIDTH / 2.0F + ((SLOT_SIZE - SLOT_OFFSET) * slotChangeAnim);
+        int selectedColor = Renderer2D.ColorUtil.getMainColor(1, 0);
+        // Renderer2D.rect не поддерживает Vector4f, используем прямоугольник с rounding
+        r2.rect(selectedSlotX + 1, y + 1.5f, SLOT_SIZE - 4, 2.5f, 1, selectedColor);
 
-         // Анимация выбранного слота (как в доноре)
-         int slot = mc.player.getInventory().getSelectedSlot();
-         slotChangeAnim = AnimationMath.animation(slotChangeAnim, slot, 0.41F);
+        // Оффхенд слот (как в доноре)
+        ClientPlayerEntity player = mc.player;
+        ItemStack offhandStack = player.getOffHandStack();
+        Arm offhand = player.getMainArm().getOpposite();
 
-         // Фиксированная позиция (как ванильный) — НЕ перетаскиваемый
-         float halfWidth = mc.getWindow().getScaledWidth() / 2.0F;
-         float finalX = halfWidth - HOTBAR_WIDTH / 2.0F;
-         float finalY = mc.getWindow().getScaledHeight() - HOTBAR_OFFSET;
-         float finalScale = 1.0F;
+        if (!offhandStack.isEmpty()) {
+            float offhandGap = 10;
+            float offhandSlotWidth = SLOT_SIZE - 3;
 
-         drawContext.getMatrices().pushMatrix();
-         try {
-            drawContext.getMatrices().translate(finalX / guiScaleFactor, finalY / guiScaleFactor);
-            drawContext.getMatrices().scale(finalScale, finalScale);
-            drawContext.getMatrices().translate(-finalX / guiScaleFactor, -finalY / guiScaleFactor);
+            float offhandX = offhand == Arm.LEFT
+                    ? x - offhandSlotWidth - offhandGap
+                    : x + HOTBAR_WIDTH + offhandGap;
 
-            // Рендерим хотбар (как в доноре)
-            drawHotbarStyle(r2, finalX, finalY, HOTBAR_WIDTH, HOTBAR_HEIGHT, ROUND_SMALL, 1.0F);
+            drawHotbarStyle(r2, offhandX, y, offhandSlotWidth, HOTBAR_HEIGHT, ROUND_SMALL, 1.0F);
 
-            // Выбранный слот индикатор — используем finalX, не halfWidth
-            float selectedSlotX = finalX + ((SLOT_SIZE - SLOT_OFFSET) * slotChangeAnim);
-            int selectedColor = Renderer2D.ColorUtil.getMainColor(1, 0);
-            // Более заметный индикатор выбранного слота
-            r2.rectOutline(selectedSlotX, finalY, SLOT_SIZE - 2.0F, HOTBAR_HEIGHT, 2.0F, selectedColor, 1.5F);
-            r2.rect(selectedSlotX + 1.0F, finalY + 1.5F, SLOT_SIZE - 4.0F, 2.5F, 1.0F, selectedColor);
+            float itemX = offhandX + (offhandSlotWidth - 16) / 2.0F;
+            float itemY = y + (HOTBAR_HEIGHT - 16) / 2.0F;
 
-            // Оффхенд слот (как в доноре)
-            ItemStack offhandStack = mc.player.getOffHandStack();
-            Arm offhand = mc.player.getMainArm().getOpposite();
+            renderHotbarItem(context, itemX, itemY, tickCounter, offhandStack, 10);
+        }
 
-            if (!offhandStack.isEmpty()) {
-               float offhandGap = 10.0F;
-               float offhandSlotWidth = SLOT_SIZE - 3.0F;
+        // 9 слотов хотбара (как в доноре)
+        for (int m = 0; m < 9; ++m) {
+            float n = x + (m * (SLOT_SIZE - SLOT_OFFSET)) + 4;
+            float o = y + (HOTBAR_HEIGHT - 16) / 2.0F;
+            renderHotbarItem(context, n, o, tickCounter, player.getInventory().getStack(m), m);
+        }
+    }
 
-               float offhandX = offhand == Arm.LEFT
-                       ? finalX - offhandSlotWidth - offhandGap
-                       : finalX + HOTBAR_WIDTH + offhandGap;
+    /**
+     * Рисует стиль хотбара (glass/blur)
+     */
+    private static void drawHotbarStyle(Renderer2D r2, float rx, float ry, float rw, float rh, float round, float alpha) {
+        if (ru.fluxvisuals.module.impl.visuals.Hud.blur.get("HUD")) {
+            r2.prepareBlur(23.0F);
+            r2.blur(rx, ry, rw, rh, round, alpha);
+        }
 
-               drawHotbarStyle(r2, offhandX, finalY, offhandSlotWidth, HOTBAR_HEIGHT, ROUND_SMALL, 1.0F);
+        // Glass style (как в доноре GLASS)
+        int bgColor = Renderer2D.ColorUtil.replAlpha(0xFF3E3E47, 0);
+        r2.rect(rx, ry, rw, rh, round, bgColor);
 
-               float itemX = offhandX + (offhandSlotWidth - 16.0F) / 2.0F;
-               float itemY = finalY + (HOTBAR_HEIGHT - 16.0F) / 2.0F;
-               renderHotbarItem(drawContext, itemX, itemY, offhandStack, 10);
-            }
+        int outAlpha = (int) Math.min(Math.max(25 * alpha, 0), 255);
+        int outColor = Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, outAlpha);
+        r2.rectOutline(rx, ry, rw, rh, round, outColor, 0.4F);
+    }
 
-            // Отображение HP, голод, XP над хотбаром
-            renderStats(r2, finalX, finalY);
+    /**
+     * Рендерит предмет в слоте хотбара (как в доноре)
+     */
+    private static void renderHotbarItem(DrawContext context, float x, float y, RenderTickCounter tickCounter, ItemStack stack, int slotIndex) {
+        if (stack.isEmpty()) return;
 
-            // 9 слотов хотбара (как в доноре)
-            for (int m = 0; m < 9; ++m) {
-               float n = finalX + (m * (SLOT_SIZE - SLOT_OFFSET)) + 4.0F;
-               float o = finalY + (HOTBAR_HEIGHT - 16.0F) / 2.0F;
-               renderHotbarItem(drawContext, n, o, mc.player.getInventory().getStack(m), m);
-            }
-
-         } finally {
-            drawContext.getMatrices().popMatrix();
-         }
-      }
-   }
-
-   private static void drawHotbarStyle(Renderer2D r2, float rx, float ry, float rw, float rh, float round, float alpha) {
-      Vector4f roundVec = new Vector4f(round);
-      if (Hud.blur.get("HUD")) {
-         r2.prepareBlur(23.0F);
-         r2.blur(rx, ry, rw, rh, round, alpha);
-      }
-      // Glass style (как в доноре GLASS)
-      int bgColor = Renderer2D.ColorUtil.replAlpha(0xFF3E3E47, 0);
-      r2.rect(rx, ry, rw, rh, round, bgColor);
-      int outAlpha = (int) Math.min(Math.max(25 * alpha, 0), 255);
-      int outColor = Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, outAlpha);
-      r2.rectOutline(rx, ry, rw, rh, round, outColor, 0.4F);
-   }
-
-   /**
-    * Рендерит HP, голод, уровень XP, броню над хотбаром.
-    */
-   private static void renderStats(Renderer2D r2, float hotbarX, float hotbarY) {
-      if (mc.player == null) return;
-
-      float statsY = hotbarY - STATUS_HEIGHT - 8.0F;
-      float leftX = hotbarX;
-      float rightX = hotbarX + HOTBAR_WIDTH - STATUS_WIDTH;
-
-      // HP слева
-      int hpColor = 0xFF44FF44; // Green
-      int hpTextColor = 0xFFFFFFFF;
-      r2.rect(leftX, statsY, STATUS_WIDTH, STATUS_HEIGHT, 2.0F, Renderer2D.ColorUtil.replAlpha(0xFF222222, 150));
-      int hpFill = (int) (STATUS_WIDTH * MathHelper.clamp(mc.player.getHealth() / mc.player.getMaxHealth(), 0.0F, 1.0F));
-      r2.rect(leftX, statsY, hpFill, STATUS_HEIGHT, 2.0F, hpColor);
-      String hpText = String.format("%.0f/%.0f", mc.player.getHealth(), mc.player.getMaxHealth());
-      float hpTextW = r2.measureText(FontRegistry.INTER_MEDIUM, hpText, STATUS_TEXT_SIZE).width;
-      r2.text(FontRegistry.INTER_MEDIUM, leftX + STATUS_WIDTH / 2.0F - hpTextW / 2.0F, statsY + STATUS_HEIGHT / 2.0F - STATUS_TEXT_SIZE / 2.0F, STATUS_TEXT_SIZE, hpText, hpTextColor);
-
-      // Голод справа
-      int hungerColor = 0xFFFFAA00; // Orange
-      r2.rect(rightX, statsY, STATUS_WIDTH, STATUS_HEIGHT, 2.0F, Renderer2D.ColorUtil.replAlpha(0xFF222222, 150));
-      int hungerFill = (int) (STATUS_WIDTH * MathHelper.clamp(mc.player.getHungerManager().getFoodLevel() / 20.0F, 0.0F, 1.0F));
-      r2.rect(rightX, statsY, hungerFill, STATUS_HEIGHT, 2.0F, hungerColor);
-      String hungerText = String.format("%d/20", mc.player.getHungerManager().getFoodLevel());
-      float hungerTextW = r2.measureText(FontRegistry.INTER_MEDIUM, hungerText, STATUS_TEXT_SIZE).width;
-      r2.text(FontRegistry.INTER_MEDIUM, rightX + STATUS_WIDTH / 2.0F - hungerTextW / 2.0F, statsY + STATUS_HEIGHT / 2.0F - STATUS_TEXT_SIZE / 2.0F, STATUS_TEXT_SIZE, hungerText, hpTextColor);
-
-      // XP level (центр, над статус-барами)
-      int xpLevel = mc.player.experienceLevel;
-      String xpText = "Lv " + xpLevel;
-      float xpTextW = r2.measureText(FontRegistry.INTER_MEDIUM, xpText, STATUS_TEXT_SIZE).width;
-      float xpTextX = hotbarX + HOTBAR_WIDTH / 2.0F - xpTextW / 2.0F;
-      r2.text(FontRegistry.INTER_MEDIUM, xpTextX, statsY - STATUS_TEXT_SIZE - 2.0F, STATUS_TEXT_SIZE, xpText, 0xFF88FF88);
-
-      // XP bar (под статус-барами)
-      r2.rect(hotbarX, statsY - 4.0F, HOTBAR_WIDTH, 2.0F, 1.0F, Renderer2D.ColorUtil.replAlpha(0xFF222222, 150));
-      int xpFill = (int) (HOTBAR_WIDTH * mc.player.experienceProgress);
-      r2.rect(hotbarX, statsY - 4.0F, xpFill, 2.0F, 1.0F, 0xFF99FF44);
-   }
-
-   private static boolean isImportantItem(ItemStack stack) {
-      if (stack.isEmpty()) return false;
-      Item item = stack.getItem();
-      if (stack.contains(DataComponentTypes.EQUIPPABLE) || stack.contains(DataComponentTypes.FOOD)) return true;
-      return item == Items.POTION || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION ||
-            item == Items.GOLDEN_APPLE || item == Items.ENCHANTED_GOLDEN_APPLE || item == Items.TOTEM_OF_UNDYING ||
-            item == Items.ENDER_PEARL || item == Items.SHIELD || item == Items.MILK_BUCKET || item == Items.EXPERIENCE_BOTTLE;
-   }
-
-   private static void renderHotbarItem(DrawContext context, float x, float y, ItemStack stack, int seed) {
-      if (stack.isEmpty()) return;
-      float guiScale = (float) mc.getWindow().getScaleFactor();
-      if (isImportantItem(stack)) {
-         context.drawItem(mc.player, stack, (int) x, (int) y, seed);
-         context.drawStackOverlay(mc.textRenderer, stack, (int) x, (int) y);
-         return;
-      }
-      float f = (float) stack.getBobbingAnimationTime() - 0.0F; // tickCounter не доступен, упрощаем
-      if (f > 0.0F) {
-         float g = 1.0F + f / 5.0F;
-         context.getMatrices().pushMatrix();
-         context.getMatrices().translate(x + 8.0F, y + 12.0F);
-         context.getMatrices().scale(g, g);
-         context.getMatrices().translate(-x - 8.0F, -y - 12.0F);
-      }
-      context.drawItem(mc.player, stack, (int) x, (int) y, seed);
-      if (f > 0.0F) {
-         context.getMatrices().popMatrix();
-      }
-   }
+        context.getMatrices().pushMatrix();
+        try {
+            context.getMatrices().translate(x, y);
+            context.drawItem(stack, 0, 0);
+            context.drawStackOverlay(mc.textRenderer, stack, 0, 0);
+        } finally {
+            context.getMatrices().popMatrix();
+        }
+    }
 }

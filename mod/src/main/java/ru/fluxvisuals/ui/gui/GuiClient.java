@@ -48,31 +48,37 @@ public class GuiClient extends Screen {
    public static void registerEventHandlers() {
       if (!eventsRegistered) {
          eventsRegistered = true;
-         EventManager.register(new Object() {
-            @EventInit
-            public void onRender(RenderEvent event) {
-               MinecraftClient client = event.client();
-               if (client != null && client.currentScreen instanceof GuiClient) {
-                  double[] mouseX = new double[1];
-                  double[] mouseY = new double[1];
-                  if (client.getWindow() != null) {
-                     GLFW.glfwGetCursorPos(client.getWindow().getHandle(), mouseX, mouseY);
-                     if (client.mouse != null) {
-                        client.mouse.unlockCursor();
-                     }
-                  }
-
-                  int mouseXInt = (int)mouseX[0];
-                  int mouseYInt = (int)mouseY[0];
-                  DrawContext drawContext = null;
-                  GuiRender.render(event.renderer(), drawContext, mouseXInt, mouseYInt, client.getRenderTickCounter().getDynamicDeltaTicks());
-               }
-            }
-         });
+         // Event handlers are now registered through Screen lifecycle methods (render, mouseClicked, etc.)
+         // No need for separate event registration since GuiClient extends Screen
       }
    }
 
+   @Override
    public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+      if (!FluxVisualsClient.isModInitialized()) {
+         return;
+      }
+
+      MinecraftClient client = MinecraftClient.getInstance();
+      if (client == null || client.getWindow() == null) {
+         return;
+      }
+
+      Renderer2D renderer = FluxVisualsClient.getRenderer();
+      if (renderer != null) {
+         int width = client.getWindow().getFramebufferWidth();
+         int height = client.getWindow().getFramebufferHeight();
+         if (width > 0 && height > 0) {
+            try {
+               renderer.begin(width, height);
+               // Render background blur and GUI
+               GuiRender.render(renderer, context, mouseX, mouseY, deltaTicks);
+            } finally {
+               renderer.end();
+            }
+         }
+      }
+      // Do NOT call super.render() - this is a fully custom GUI, no vanilla widgets
    }
 
    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {

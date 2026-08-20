@@ -10,6 +10,7 @@ import ru.fluxvisuals.event.input.KeyInputEvent;
 import ru.fluxvisuals.event.input.MouseButtonEvent;
 import ru.fluxvisuals.module.api.Module;
 import ru.fluxvisuals.module.api.setting.Setting;
+import ru.fluxvisuals.module.impl.visuals.MenuSettingsModule;
 import ru.fluxvisuals.util.render.utils.KeyUtil;
 
 @Environment(EnvType.CLIENT)
@@ -32,22 +33,43 @@ public class BindingManager {
    @EventInit
    public void onKeyInput(KeyInputEvent event) {
       if (event.action() == 1 && !this.awaitingCapture) {
-         if (FluxVisualsClient.get.manager == null) {
+         if (!FluxVisualsClient.isModInitialized() || FluxVisualsClient.get.manager == null) {
             return;
          }
 
          MinecraftClient client = MinecraftClient.getInstance();
          if (client != null && client.currentScreen != null) {
             // Don't process key binds when a screen is open (chat, inventory, clickgui, etc.)
-            // Also avoid processing media keys (Fn+F1/F2) that might trigger system actions
-            int key = event.key();
-            if (key == 290 || key == 291) { // F1=290, F2=291 (media keys on some keyboards)
-               return;
-            }
             return;
          }
 
-         Module[] modules = FluxVisualsClient.get.manager.getBind(event.key());
+         int key = event.key();
+
+         // Ignore invalid keys
+         if (key <= 0) {
+            return;
+         }
+
+         // Ignore media keys and function keys that can trigger system actions
+         // F1=290, F2=291, F3=292, F4=293, etc. up to F12=301
+         // Also ignore media keys 349+ if present
+         if (key >= 290 && key <= 301) { // F1-F12
+            return;
+         }
+
+         // Ignore the menu key (Right Shift by default) to prevent toggling modules when opening ClickGUI
+         MenuSettingsModule menuModule = MenuSettingsModule.getInstanceIfAvailable();
+         int menuKey = menuModule != null && menuModule.bind != -1 ? menuModule.bind : 344;
+         if (key == menuKey) {
+            return;
+         }
+
+         // Don't toggle modules bound to -1 (no bind)
+         if (key == -1) {
+            return;
+         }
+
+         Module[] modules = FluxVisualsClient.get.manager.getBind(key);
          if (modules != null) {
             for (Module module : modules) {
                module.toggle();

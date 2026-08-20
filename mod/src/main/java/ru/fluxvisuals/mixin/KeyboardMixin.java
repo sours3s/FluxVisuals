@@ -24,37 +24,43 @@ public class KeyboardMixin {
       cancellable = true
    )
    private void handleMenuKeyEvent(long window, int action, KeyInput input, CallbackInfo ci) {
-      if (FluxVisualsClient.isModInitialized() && FluxVisualsClient.get != null) {
-         MinecraftClient client = MinecraftClient.getInstance();
-         if (client != null && client.getWindow() != null && client.currentScreen == null) {
-            int keyCode = input.comp_4795();
+      if (!FluxVisualsClient.isModInitialized() || FluxVisualsClient.get == null) return;
 
-            // Ignore media keys (Fn+F1=290, Fn+F2=291) that can trigger system actions
-            if (keyCode == 290 || keyCode == 291) {
+      MinecraftClient client = MinecraftClient.getInstance();
+      if (client == null || client.getWindow() == null) return;
+
+      int keyCode = input.comp_4795();
+
+      // Ignore all function keys F1-F12 (290-301) and media keys that can trigger system actions
+      // This prevents system actions like opening file explorer, brightness control, etc.
+      if (keyCode >= 290 && keyCode <= 301) {
+         ci.cancel(); // Prevent vanilla handling too
+         return;
+      }
+
+      // Check for menu key FIRST before firing event to other handlers
+      if (action == 1 && client.currentScreen == null) {
+         MenuSettingsModule module = MenuSettingsModule.getInstanceIfAvailable();
+         int menuKey = module != null && module.bind != -1 ? module.bind : 344; // DEFAULT: Right Shift
+         if (menuKey != -1 && keyCode == menuKey) {
+            GuiClient gui = FluxVisualsClient.get.guiClient;
+            if (gui != null) {
+               client.setScreen(gui);
+               if (client.mouse != null) {
+                  client.mouse.unlockCursor();
+               }
+               ci.cancel(); // Cancel vanilla processing AND prevent event propagation
                return;
             }
+         }
+      }
 
-            KeyInputEvent event = new KeyInputEvent(window, keyCode, input.comp_4796(), action, input.comp_4797());
-            EventManager.call(event);
-            if (event.action() == 1 && client.currentScreen == null) {
-               MenuSettingsModule module = MenuSettingsModule.getInstanceIfAvailable();
-               int menuKey = module != null && module.bind != -1 ? module.bind : 344;
-               if (menuKey != -1 && event.key() == menuKey) {
-                  GuiClient gui = FluxVisualsClient.get.guiClient;
-                  if (gui != null) {
-                     client.setScreen(gui);
-                     if (client.mouse != null) {
-                        client.mouse.unlockCursor();
-                     }
-
-                     event.cancel();
-                  }
-               }
-            }
-
-            if (event.isCancelled()) {
-               ci.cancel();
-            }
+      // Fire event for other handlers (BindingManager, etc.)
+      if (client.currentScreen == null) {
+         KeyInputEvent event = new KeyInputEvent(window, keyCode, input.comp_4796(), action, input.comp_4797());
+         EventManager.call(event);
+         if (event.isCancelled()) {
+            ci.cancel();
          }
       }
    }
