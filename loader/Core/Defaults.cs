@@ -8,7 +8,7 @@ public static class Defaults
 {
     public static string ModDownloadUrl => Build(
         "https://", "github", ".com/sour", "s3s/Flux", "Visuals/releases/",
-        "download/", "v1.0.13/", "fluxvisuals-", "mod-1.0.13.jar");
+        "download/", "v1.0.17/", "fluxvisuals-", "1.0.17.jar");
 
     public static string AuthServerUrl => Build(
         "https://flux", "visuals-se", "rver.onre", "nder.com");

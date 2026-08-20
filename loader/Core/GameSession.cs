@@ -169,12 +169,13 @@ public class GameSession
 
         // ---- Мод (скачивание с удалённого хоста + автообновление) ----
         _progress("mod", 76, "Мод FluxVisuals...");
-        string modFileName = "fluxvisuals-mod-1.0.12.jar";
+        string modFileName = "fluxvisuals-1.0.17.jar";
         string modDst = Path.Combine(modsDir, modFileName);
 
         // Проверка обновлений мода через AuthServer
         string remoteVersion = "";
         string remoteFileName = modFileName;
+        string remoteUrl = "";
         try
         {
             using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
@@ -182,7 +183,7 @@ public class GameSession
             var response = await httpClient.GetStringAsync(modInfoUrl);
             using var modDoc = JsonDocument.Parse(response);
             var modRoot = modDoc.RootElement;
-            string remoteUrl = modRoot.GetProperty("downloadUrl").GetString() ?? "";
+            remoteUrl = modRoot.GetProperty("downloadUrl").GetString() ?? "";
             remoteVersion = modRoot.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
             remoteFileName = modRoot.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? "" : modFileName;
             if (!string.IsNullOrWhiteSpace(remoteUrl))
@@ -194,7 +195,48 @@ public class GameSession
         }
         catch (Exception ex)
         {
-            LauncherLog.Warn($"Mod version check failed: {ex.Message}");
+            LauncherLog.Warn($"Mod version check from AuthServer failed: {ex.Message}");
+        }
+
+        // Fallback: Check GitHub Releases if AuthServer didn't provide version info
+        if (string.IsNullOrEmpty(remoteVersion))
+        {
+            try
+            {
+                using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+                httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("FluxVisualsLoader/1.0");
+                httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+                var githubUrl = "https://api.github.com/repos/sours3s/FluxVisuals/releases/latest";
+                var response = await httpClient.GetStringAsync(githubUrl);
+                using var ghDoc = JsonDocument.Parse(response);
+                var ghRoot = ghDoc.RootElement;
+                var tagName = ghRoot.GetProperty("tag_name").GetString() ?? "";
+                if (tagName.StartsWith("v"))
+                {
+                    remoteVersion = tagName.Substring(1); // Remove 'v' prefix
+                    // Find the .jar asset
+                    foreach (var asset in ghRoot.GetProperty("assets").EnumerateArray())
+                    {
+                        var name = asset.GetProperty("name").GetString() ?? "";
+                        if (name.EndsWith(".jar"))
+                        {
+                            remoteFileName = name;
+                            remoteUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
+                            if (!string.IsNullOrWhiteSpace(remoteUrl))
+                            {
+                                _cfg.ModDownloadUrl = remoteUrl;
+                                _cfg.Save();
+                                LauncherLog.Info($"Updated mod URL from GitHub: {remoteUrl}");
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LauncherLog.Warn($"Mod version check from GitHub failed: {ex.Message}");
+            }
         }
 
         // Update destination filename if server provides one
