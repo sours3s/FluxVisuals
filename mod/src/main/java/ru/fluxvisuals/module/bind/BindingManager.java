@@ -50,13 +50,6 @@ public class BindingManager {
             return;
          }
 
-         // Ignore media keys and function keys that can trigger system actions
-         // F1=290, F2=291, F3=292, F4=293, etc. up to F12=301
-         // Also ignore media keys 349+ if present
-         if (key >= 290 && key <= 301) { // F1-F12
-            return;
-         }
-
          // Ignore the menu key (Right Shift by default) to prevent toggling modules when opening ClickGUI
          MenuSettingsModule menuModule = MenuSettingsModule.getInstanceIfAvailable();
          int menuKey = menuModule != null && menuModule.bind != -1 ? menuModule.bind : 344;

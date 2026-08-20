@@ -9,7 +9,7 @@
     <AssemblyName>FluxVisualsLoader</AssemblyName>
     <RootNamespace>FluxVisualsLoader</RootNamespace>
     <ApplicationIcon>Resources\FluxVisuals.ico</ApplicationIcon>
-    <Version>1.0.12</Version>
+    <Version>1.0.13</Version>
     <!-- Self-contained single-file publish defaults -->
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
