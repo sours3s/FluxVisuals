@@ -169,12 +169,10 @@ public class GameSession
 
         // ---- Мод (скачивание с удалённого хоста + автообновление) ----
         _progress("mod", 76, "Мод FluxVisuals...");
-        string modFileName = "fluxvisuals-1.0.17.jar";
-        string modDst = Path.Combine(modsDir, modFileName);
 
         // Сначала проверяем GitHub (приоритет) - там всегда актуальная версия
         string remoteVersion = "";
-        string remoteFileName = modFileName;
+        string remoteFileName = "fluxvisuals-1.0.17.jar"; // fallback
         string remoteUrl = "";
         try
         {
@@ -225,7 +223,7 @@ public class GameSession
                 var modRoot = modDoc.RootElement;
                 remoteUrl = modRoot.GetProperty("downloadUrl").GetString() ?? "";
                 remoteVersion = modRoot.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
-                remoteFileName = modRoot.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? "" : modFileName;
+                remoteFileName = modRoot.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? "" : remoteFileName;
                 if (!string.IsNullOrWhiteSpace(remoteUrl))
                 {
                     _cfg.ModDownloadUrl = remoteUrl;
@@ -239,11 +237,23 @@ public class GameSession
             }
         }
 
-        // Update destination filename if server provides one
-        if (!string.IsNullOrWhiteSpace(remoteFileName) && remoteFileName != modFileName)
+        string modDst = Path.Combine(modsDir, remoteFileName);
+
+        // Удаляем ВСЕ старые версии мода из папки mods (fluxvisuals-*.jar, fluxvisuals-mod-*.jar)
+        try
         {
-            modFileName = remoteFileName;
-            modDst = Path.Combine(modsDir, modFileName);
+            foreach (var oldMod in Directory.GetFiles(modsDir, "fluxvisuals*.jar"))
+            {
+                if (!oldMod.Equals(modDst, StringComparison.OrdinalIgnoreCase))
+                {
+                    File.Delete(oldMod);
+                    LauncherLog.Info($"Deleted old mod: {Path.GetFileName(oldMod)}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LauncherLog.Warn($"Could not clean old mods: {ex.Message}");
         }
 
         string modUrl = _cfg.ModDownloadUrl;

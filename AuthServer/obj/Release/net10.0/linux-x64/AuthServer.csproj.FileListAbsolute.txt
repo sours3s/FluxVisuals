@@ -518,9 +518,9 @@ D:\FluxVisuals\AuthServer\bin\Release\net10.0\linux-x64\deploy\linux-x64\publish
 D:\FluxVisuals\AuthServer\bin\Release\net10.0\linux-x64\deploy\linux-x64\publish\deploy\win-x64\deploy\linux-x64\deploy\win-x64\deploy\linux-x64\deploy\win-x64\appsettings.json
 D:\FluxVisuals\AuthServer\bin\Release\net10.0\linux-x64\deploy\linux-x64\publish\deploy\win-x64\deploy\linux-x64\deploy\win-x64\deploy\linux-x64\deploy\win-x64\AuthServer.staticwebassets.endpoints.json
 D:\FluxVisuals\AuthServer\obj\Release\net10.0\linux-x64\compressed\5zdyegssej-{0}-eq8ll0mgqv-eq8ll0mgqv.gz
-D:\FluxVisuals\AuthServer\obj\Release\net10.0\linux-x64\compressed\39vpcmrnpf-{0}-hxnspkrga7-hxnspkrga7.gz
 D:\FluxVisuals\AuthServer\obj\Release\net10.0\linux-x64\compressed\lxi251gmz9-{0}-97310ctg5v-97310ctg5v.gz
 D:\FluxVisuals\AuthServer\obj\Release\net10.0\linux-x64\compressed\tlzaj9fr7l-{0}-owmvmg6esh-owmvmg6esh.gz
 D:\FluxVisuals\AuthServer\obj\Release\net10.0\linux-x64\compressed\c5k41jdzsj-{0}-t8xwfq42bs-t8xwfq42bs.gz
 D:\FluxVisuals\AuthServer\obj\Release\net10.0\linux-x64\compressed\cf8o0wf8ux-{0}-6ogja587xe-6ogja587xe.gz
 D:\FluxVisuals\AuthServer\obj\Release\net10.0\linux-x64\compressed\sjxvi5kdq6-{0}-vl5m5d2khg-vl5m5d2khg.gz
+D:\FluxVisuals\AuthServer\obj\Release\net10.0\linux-x64\compressed\39vpcmrnpf-{0}-fvq4z6f7v3-fvq4z6f7v3.gz

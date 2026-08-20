@@ -31,10 +31,10 @@ public class KeyboardMixin {
 
       int keyCode = input.comp_4795();
 
-      // Ignore all function keys F1-F12 (290-301) and media keys that can trigger system actions
-      // This prevents system actions like opening file explorer, brightness control, etc.
-      if (keyCode >= 290 && keyCode <= 301) {
-         ci.cancel(); // Prevent vanilla handling too
+      // Only ignore Fn+F1, Fn+F2, Fn+F3 (290-292) which trigger system actions on some laptops
+      // Allow F4-F12 to work normally for keybinds
+      if (keyCode >= 290 && keyCode <= 292) {
+         ci.cancel(); // Prevent vanilla handling for these specific keys
          return;
       }
 
