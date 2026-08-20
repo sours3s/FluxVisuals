@@ -172,70 +172,70 @@ public class GameSession
         string modFileName = "fluxvisuals-1.0.17.jar";
         string modDst = Path.Combine(modsDir, modFileName);
 
-        // Проверка обновлений мода через AuthServer
+        // Сначала проверяем GitHub (приоритет) - там всегда актуальная версия
         string remoteVersion = "";
         string remoteFileName = modFileName;
         string remoteUrl = "";
         try
         {
-            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
-            var modInfoUrl = _cfg.AuthServerUrl.TrimEnd('/') + "/api/mod/version";
-            var response = await httpClient.GetStringAsync(modInfoUrl);
-            using var modDoc = JsonDocument.Parse(response);
-            var modRoot = modDoc.RootElement;
-            remoteUrl = modRoot.GetProperty("downloadUrl").GetString() ?? "";
-            remoteVersion = modRoot.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
-            remoteFileName = modRoot.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? "" : modFileName;
-            if (!string.IsNullOrWhiteSpace(remoteUrl))
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("FluxVisualsLoader/1.0");
+            httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+            var githubUrl = "https://api.github.com/repos/sours3s/FluxVisuals/releases/latest";
+            var response = await httpClient.GetStringAsync(githubUrl);
+            using var ghDoc = JsonDocument.Parse(response);
+            var ghRoot = ghDoc.RootElement;
+            var tagName = ghRoot.GetProperty("tag_name").GetString() ?? "";
+            if (tagName.StartsWith("v"))
             {
-                _cfg.ModDownloadUrl = remoteUrl;
-                _cfg.Save();
-                LauncherLog.Info($"Updated mod URL from server: {remoteUrl}");
+                remoteVersion = tagName.Substring(1); // Remove 'v' prefix
+                // Find the .jar asset
+                foreach (var asset in ghRoot.GetProperty("assets").EnumerateArray())
+                {
+                    var name = asset.GetProperty("name").GetString() ?? "";
+                    if (name.EndsWith(".jar"))
+                    {
+                        remoteFileName = name;
+                        remoteUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
+                        if (!string.IsNullOrWhiteSpace(remoteUrl))
+                        {
+                            _cfg.ModDownloadUrl = remoteUrl;
+                            _cfg.Save();
+                            LauncherLog.Info($"Updated mod URL from GitHub: {remoteUrl}");
+                        }
+                        break;
+                    }
+                }
             }
         }
         catch (Exception ex)
         {
-            LauncherLog.Warn($"Mod version check from AuthServer failed: {ex.Message}");
+            LauncherLog.Warn($"Mod version check from GitHub failed: {ex.Message}");
         }
 
-        // Fallback: Check GitHub Releases if AuthServer didn't provide version info
+        // Fallback: проверяем AuthServer если GitHub недоступен
         if (string.IsNullOrEmpty(remoteVersion))
         {
             try
             {
-                using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-                httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("FluxVisualsLoader/1.0");
-                httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-                var githubUrl = "https://api.github.com/repos/sours3s/FluxVisuals/releases/latest";
-                var response = await httpClient.GetStringAsync(githubUrl);
-                using var ghDoc = JsonDocument.Parse(response);
-                var ghRoot = ghDoc.RootElement;
-                var tagName = ghRoot.GetProperty("tag_name").GetString() ?? "";
-                if (tagName.StartsWith("v"))
+                using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+                var modInfoUrl = _cfg.AuthServerUrl.TrimEnd('/') + "/api/mod/version";
+                var response = await httpClient.GetStringAsync(modInfoUrl);
+                using var modDoc = JsonDocument.Parse(response);
+                var modRoot = modDoc.RootElement;
+                remoteUrl = modRoot.GetProperty("downloadUrl").GetString() ?? "";
+                remoteVersion = modRoot.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
+                remoteFileName = modRoot.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? "" : modFileName;
+                if (!string.IsNullOrWhiteSpace(remoteUrl))
                 {
-                    remoteVersion = tagName.Substring(1); // Remove 'v' prefix
-                    // Find the .jar asset
-                    foreach (var asset in ghRoot.GetProperty("assets").EnumerateArray())
-                    {
-                        var name = asset.GetProperty("name").GetString() ?? "";
-                        if (name.EndsWith(".jar"))
-                        {
-                            remoteFileName = name;
-                            remoteUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
-                            if (!string.IsNullOrWhiteSpace(remoteUrl))
-                            {
-                                _cfg.ModDownloadUrl = remoteUrl;
-                                _cfg.Save();
-                                LauncherLog.Info($"Updated mod URL from GitHub: {remoteUrl}");
-                            }
-                            break;
-                        }
-                    }
+                    _cfg.ModDownloadUrl = remoteUrl;
+                    _cfg.Save();
+                    LauncherLog.Info($"Updated mod URL from AuthServer: {remoteUrl}");
                 }
             }
             catch (Exception ex)
             {
-                LauncherLog.Warn($"Mod version check from GitHub failed: {ex.Message}");
+                LauncherLog.Warn($"Mod version check from AuthServer failed: {ex.Message}");
             }
         }
 
