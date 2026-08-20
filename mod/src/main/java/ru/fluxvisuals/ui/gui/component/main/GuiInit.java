@@ -3,6 +3,7 @@ package ru.fluxvisuals.ui.gui.component.main;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import ru.fluxvisuals.ui.gui.GuiScreen;
+import ru.fluxvisuals.util.render.math.animation.Direction;
 import ru.fluxvisuals.util.render.math.animation.anim.util.Easings;
 
 @Environment(EnvType.CLIENT)
@@ -13,7 +14,9 @@ public class GuiInit extends GuiScreen {
       GuiScreen.alphaPC.run(1.0, 0.55F, Easings.EXPO_OUT);
       GuiScreen.exit = false;
       GuiScreen.mainAnimation.reset();
+      GuiScreen.mainAnimation.setDirection(Direction.FORWARDS);
       GuiScreen.categoryAnimation.reset();
+      GuiScreen.categoryAnimation.setDirection(Direction.FORWARDS);
       GuiScreen.alpha.run(1.0);
    }
 }
