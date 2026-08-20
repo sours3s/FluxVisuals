@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "plqMeziL3s4=",
+  "dgSpecHash": "gHmlCiuycKA=",
   "success": true,
   "projectFilePath": "D:\\FluxVisuals\\AuthServer\\AuthServer.csproj",
   "expectedPackageFiles": [
@@ -63,10 +63,7 @@
     "C:\\Users\\swattowner\\.nuget\\packages\\system.security.cryptography.pkcs\\9.0.0\\system.security.cryptography.pkcs.9.0.0.nupkg.sha512",
     "C:\\Users\\swattowner\\.nuget\\packages\\system.security.cryptography.protecteddata\\9.0.0\\system.security.cryptography.protecteddata.9.0.0.nupkg.sha512",
     "C:\\Users\\swattowner\\.nuget\\packages\\system.security.permissions\\9.0.0\\system.security.permissions.9.0.0.nupkg.sha512",
-    "C:\\Users\\swattowner\\.nuget\\packages\\system.windows.extensions\\9.0.0\\system.windows.extensions.9.0.0.nupkg.sha512",
-    "C:\\Users\\swattowner\\.nuget\\packages\\microsoft.netcore.app.runtime.linux-x64\\10.0.7\\microsoft.netcore.app.runtime.linux-x64.10.0.7.nupkg.sha512",
-    "C:\\Users\\swattowner\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.linux-x64\\10.0.7\\microsoft.aspnetcore.app.runtime.linux-x64.10.0.7.nupkg.sha512",
-    "C:\\Users\\swattowner\\.nuget\\packages\\microsoft.netcore.app.host.linux-x64\\10.0.7\\microsoft.netcore.app.host.linux-x64.10.0.7.nupkg.sha512"
+    "C:\\Users\\swattowner\\.nuget\\packages\\system.windows.extensions\\9.0.0\\system.windows.extensions.9.0.0.nupkg.sha512"
   ],
   "logs": [
     {
@@ -78,8 +75,7 @@
       "filePath": "D:\\FluxVisuals\\AuthServer\\AuthServer.csproj",
       "libraryId": "SQLitePCLRaw.lib.e_sqlite3",
       "targetGraphs": [
-        "net10.0",
-        "net10.0/linux-x64"
+        "net10.0"
       ]
     }
   ]
