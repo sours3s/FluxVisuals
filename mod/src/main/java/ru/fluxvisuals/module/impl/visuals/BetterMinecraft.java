@@ -55,7 +55,7 @@ public class BetterMinecraft extends Module {
    @Override
    public void onEnable() {
       initialized = false;
-      if (mc.worldRenderer != null) mc.worldRenderer.reload();
+      try { if (mc.worldRenderer != null) mc.worldRenderer.reload(); } catch (Exception ignored) {}
    }
 
    @Override
@@ -68,7 +68,7 @@ public class BetterMinecraft extends Module {
       lastTabOpen = false;
       lastChatOpen = false;
       initialized = false;
-      if (mc.worldRenderer != null) mc.worldRenderer.reload();
+      try { if (mc.worldRenderer != null) mc.worldRenderer.reload(); } catch (Exception ignored) {}
    }
 
    @EventInit

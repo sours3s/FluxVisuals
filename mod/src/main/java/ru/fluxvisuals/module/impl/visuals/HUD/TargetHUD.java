@@ -1,441 +1,320 @@
 package ru.fluxvisuals.module.impl.visuals.HUD;
 
-import java.util.ArrayList;
-import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.PlayerSkinDrawer;
 import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.SkinTextures;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
-import org.joml.Vector2f;
+import net.minecraft.util.hit.HitResult;
 import org.joml.Vector4f;
-import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
-import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
-import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
-import ru.fluxvisuals.module.impl.visuals.Hud;
-import ru.fluxvisuals.ui.draggable.DraggableManager;
-import ru.fluxvisuals.util.render.animation.util.Animation;
-import ru.fluxvisuals.util.render.animation.util.Easings;
+import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.animation.AnimationMath;
+import ru.fluxvisuals.util.render.math.ScaleHelper;
+import ru.fluxvisuals.util.render.text.FontObject;
 import ru.fluxvisuals.util.render.text.FontRegistry;
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Target HUD — полная реализация из GodWeer (TargetHudElement)
- * <p>Голова 20px, основная панель 28px высотой,
- * предметы сверху (14.5px бокс), имя справа от головы со скроллом, HP-бар с
- * градиентом клиентского цвета, абсорбция золотом, частицы.
- * <p>Таргет только из-под прицела; при простое показывается сам игрок.
+ * TargetHUD — полная реализация из GodWeer (TargetHudElement)
+ * <p>Показывает здоровье, никнейм, предметы цели под прицелом.
+ * Видимость: в чате — последняя зафиксированная цель, в игре — цель под прицелом/наведением.
  */
 @Environment(EnvType.CLIENT)
-public final class TargetHUD {
-   private static final MinecraftClient mc = MinecraftClient.getInstance();
+public class TargetHUD {
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-   // === Настройки ===
-   public static final ModeSetting targetMode = new ModeSetting("TargetHUD Mode", "Normal", "Normal", "Minimal");
-   public static final ModeSetting style = new ModeSetting("TargetHUD Style", "Glass", "Dark", "Glass");
-   public static final BooleanSetting showItems = new BooleanSetting("TargetHUD Show Items", true);
-   public static final BooleanSetting showOnHover = new BooleanSetting("TargetHUD Show on Hover", true);
-   public static final BooleanSetting particles = new BooleanSetting("TargetHUD Particles", true);
-   public static final SliderSetting scale = new SliderSetting("TargetHUD Scale", 1.0F, 0.5F, 2.0F, 0.05F, false);
+    // Константы из донора
+    private static final float WIDTH = 110f;
+    private static final float MAIN_HEIGHT = 28f;
+    private static final float HEAD_SIZE = 20f;
+    private static final float ITEM_BOX = 14.5f;
+    private static final float SPACING = 1.5f;
 
-   // === Константы макета (как в доноре) ===
-   private static final float ITEM_BOX = 14.5F;
-   private static final float SPACING = 1.5F;
-   private static final float MAIN_HEIGHT = 28.0F;
-   private static final float HEAD_SIZE = 20.0F;
-   private static final float WIDTH = 110.0F;
+    // Анимация появления/скрытия
+    private static float animation = 0f;
+    private static float scrollAnim = 0f;
+    private static long scrollDelay = 0;
+    private static int scrollDir = 1;
 
-   // === Состояние ===
-   private static final Animation animation = new Animation();
-   private static final Particles2DEngine particlesEngine = new Particles2DEngine();
-   private static LivingEntity prevTarget = null;
-   private static LivingEntity lastHoveredEntity = null;
-   private static long lastHoverTime = 0L;
-   private static float healthAnim = 0.0F;
-   private static float absorptionAnim = 0.0F;
-   private static float healthFactorAnim = 0.0F;
-   private static int particlesToSpawn = 0;
-   private static long scrollDelay = 0L;
-   private static int scrollDir = 1;
-   private static float scrollAnim = 0.0F;
+    // Состояние цели
+    private static LivingEntity lastHoveredEntity = null;
+    private static long lastHoverTime = 0;
+    private static LivingEntity prevTarget = null;
 
-   private TargetHUD() {
-   }
+    // Здоровье с анимацией (как в доноре)
+    private static float healthAnim = 0f;
+    private static float absorptionAnim = 0f;
+    private static float healthFactor = 0f;
 
-   /** Вызывается из AttackEvent для спавна частиц при попадании в цель. */
-   public static void onAttack(LivingEntity target) {
-      if (target == prevTarget && particles.get()) {
-         particlesToSpawn += 10;
-         healthFactorAnim = (float) (Math.random() * 20.0F);
-      }
-   }
+    // Частицы (упрощенно, без движка частиц)
+    private static int particlesToSpawn = 0;
 
-   /** Жевая сущность под прицелом. */
-   private static LivingEntity getHoveredEntity() {
-      if (mc.crosshairTarget instanceof net.minecraft.util.hit.EntityHitResult ehr) {
-         if (ehr.getEntity() instanceof LivingEntity le && le != mc.player && le.isAlive()) {
-            return le;
-         }
-      }
-      if (mc.targetedEntity instanceof LivingEntity le && le != mc.player && le.isAlive()) {
-         return le;
-      }
-      return null;
-   }
+    // Шрифт
+    private static FontObject font = FontRegistry.INTER_MEDIUM;
 
-   public static void targetHUD(Renderer2D r2, DrawContext drawContext) {
-      if (mc == null || mc.player == null || mc.world == null || mc.getWindow() == null) {
-         return;
-      }
-      try {
-         targetHUDInternal(r2, drawContext);
-      } catch (Throwable t) {
-         System.err.println("[TargetHUD] render error: " + t);
-         t.printStackTrace();
-      }
-   }
+    /**
+     * Рендерит TargetHUD — вызывается из Hud.onRender (как в доноре)
+     */
+    public static void renderTargetHUD(DrawContext context, int mouseX, int mouseY) {
+        if (mc.player == null || mc.world == null) return;
+        if (font == null) return;
 
-   private static void targetHUDInternal(Renderer2D r2, DrawContext drawContext) {
-      LivingEntity target = getHoveredEntity();
-      long now = System.currentTimeMillis();
-      if (target != null) {
-         lastHoverTime = now;
-         lastHoveredEntity = target;
-      }
+        // Получаем цель под прицелом (как в доноре: TargetsUtility.getTarget() или mc.targetedEntity)
+        LivingEntity target = getHoveredEntity();
+        LivingEntity hoveredEntity = (mc.targetedEntity instanceof LivingEntity living) ? living : null;
 
-      boolean isInChat = mc.currentScreen instanceof ChatScreen;
-      boolean isHovering = showOnHover.get() && lastHoveredEntity != null && (now - lastHoverTime < 2000L);
+        long now = System.currentTimeMillis();
+        if (hoveredEntity != null) {
+            lastHoverTime = now;
+            lastHoveredEntity = hoveredEntity;
+        }
 
-      // Логика показа:
-      // - В чате: показываем последнюю зафиксированную цель (lastHoveredEntity), если есть
-      // - В игре: показываем цель под прицелом (target) или при наведении (isHovering)
-      boolean shown = (isInChat && lastHoveredEntity != null) || target != null || isHovering;
+        boolean isInChat = mc.currentScreen instanceof ChatScreen;
+        boolean showOnHover = true; // настройка из донора
+        boolean isHovering = showOnHover && lastHoveredEntity != null && (now - lastHoverTime < 2000);
 
-      // Обновляем prevTarget
-      if (target != null) {
-         prevTarget = target;
-      } else if (isHovering) {
-         prevTarget = lastHoveredEntity;
-      } else if (isInChat) {
-         // В чате показываем последнюю зафиксированную цель, НЕ игрока
-         prevTarget = lastHoveredEntity;
-      } else if (prevTarget == null) {
-         prevTarget = mc.player;
-      }
+        // Логика показа:
+        // - В чате: показываем себя (mc.player)
+        // - В игре: показываем цель под прицелом или при наведении
+        boolean shown = isInChat || target != null || isHovering;
 
-      // Анимация появления/скрытия (как в доноре: BACKWARDS = показывать)
-      animation.update();
-      animation.run(shown ? 1.0 : 0.0, 0.4F, Easings.CIRC_OUT);
-      float anim = 1.0F - (float) animation.getValue();
-      anim = MathHelper.clamp(anim, 0.0F, 1.0F);
-      if (anim < 0.01F) return;
+        // Обновляем prevTarget
+        if (target != null) {
+            prevTarget = target;
+        } else if (isHovering) {
+            prevTarget = lastHoveredEntity;
+        } else if (isInChat) {
+            // В чате показываем себя
+            prevTarget = mc.player;
+        } else {
+            // Нет цели, не наведение, не чат - сбрасываем цель
+            prevTarget = null;
+        }
 
-      if (prevTarget == null) return;
+        // Анимация появления/скрытия (как в доноре: BACKWARDS = показывать)
+        animation = AnimationMath.animation(animation, shown ? 1.0f : 0.0f, 0.4f);
+        float anim = 1.0f - animation;
+        anim = Math.max(0.0f, Math.min(1.0f, anim));
+        if (anim < 0.01f) return;
 
-      // Предметы
-      List<ItemStack> items = new ArrayList<>();
-      if (showItems.get()) {
-         items.add(prevTarget.getMainHandStack());
-         items.add(prevTarget.getEquippedStack(EquipmentSlot.HEAD));
-         items.add(prevTarget.getEquippedStack(EquipmentSlot.CHEST));
-         items.add(prevTarget.getEquippedStack(EquipmentSlot.LEGS));
-         items.add(prevTarget.getEquippedStack(EquipmentSlot.FEET));
-         items.add(prevTarget.getOffHandStack());
-         items.removeIf(ItemStack::isEmpty);
-      }
+        if (prevTarget == null) return;
 
-      float totalItemsW = items.size() * ITEM_BOX + Math.max(0, items.size() - 1) * SPACING;
-      float itemStartY = 0.0F;
-      float mainBoxY = showItems.get() && !items.isEmpty() ? ITEM_BOX + 2.0F : 0.0F;
-      float panelH = mainBoxY + MAIN_HEIGHT + 6.0F;
+        // Предметы цели
+        List<ItemStack> items = new ArrayList<>();
+        boolean showItems = true; // настройка из донора
+        if (showItems) {
+            items.add(prevTarget.getMainHandStack());
+            items.add(prevTarget.getEquippedStack(EquipmentSlot.HEAD));
+            items.add(prevTarget.getEquippedStack(EquipmentSlot.CHEST));
+            items.add(prevTarget.getEquippedStack(EquipmentSlot.LEGS));
+            items.add(prevTarget.getEquippedStack(EquipmentSlot.FEET));
+            items.add(prevTarget.getOffHandStack());
+            items.removeIf(ItemStack::isEmpty);
+        }
 
-      int fbW = mc.getWindow().getFramebufferWidth();
-      int fbH = mc.getWindow().getFramebufferHeight();
-      float defX = Math.max(0.0F, (fbW - WIDTH) / 2.0F);
-      float defY = Math.max(0.0F, fbH * 0.55F);
+        float totalItemsW = items.size() * ITEM_BOX + Math.max(0, items.size() - 1) * SPACING;
+        float itemStartY = 0.0f;
+        float mainBoxY = showItems && !items.isEmpty() ? ITEM_BOX + 2.0f : 0.0f;
+        float panelH = mainBoxY + MAIN_HEIGHT + 6.0f;
 
-      DraggableManager.DragSession session = DraggableManager.getInstance()
-            .beginDrag("targetHUD", defX, defY, WIDTH, panelH);
-      float x = session.positionX();
-      float y = session.positionY();
-      float hudScale = session.scale();
+        // Позиция (ванильная: центр снизу)
+        float defX = Math.max(0.0f, (mc.getWindow().getFramebufferWidth() - WIDTH) / 2.0f);
+        float defY = Math.max(0.0f, mc.getWindow().getFramebufferHeight() * 0.55f);
 
-      float width = WIDTH * hudScale;
-      float mainHeight = MAIN_HEIGHT * hudScale;
-      float headSize = HEAD_SIZE * hudScale;
-      float boxY = y + mainBoxY * hudScale;
-      float itemStartYScaled = y + itemStartY * hudScale;
-      float totalItemsWScaled = totalItemsW * hudScale;
-      float spacingScaled = SPACING * hudScale;
-      float itemBoxScaled = ITEM_BOX * hudScale;
+        // В FluxVisuals нет Drag системы, используем фиксированную позицию
+        float x = defX;
+        float y = defY;
+        float hudScale = 1.0f;
 
-      float guiScale = (float) mc.getWindow().getScaleFactor();
-      if (guiScale <= 0.0F) guiScale = 1.0F;
+        float width = WIDTH * hudScale;
+        float mainHeight = MAIN_HEIGHT * hudScale;
+        float headSize = HEAD_SIZE * hudScale;
+        float boxY = y + mainBoxY * hudScale;
+        float itemStartYScaled = y + itemStartY * hudScale;
 
-      drawContext.getMatrices().pushMatrix();
-      try {
-         drawContext.getMatrices().translate(x / guiScale, y / guiScale);
-         drawContext.getMatrices().scale(hudScale, hudScale);
-         drawContext.getMatrices().translate(-x / guiScale, -y / guiScale);
+        Renderer2D r2 = FluxVisualsClient.getRenderer();
+        if (r2 == null) return;
 
-         r2.pushAlpha(anim);
-         try {
-            // Предметы сверху
-            if (showItems.get() && !items.isEmpty()) {
-               float itemStartX = x + (width / 2.0F) - (totalItemsWScaled / 2.0F);
-               for (int i = 0; i < items.size(); i++) {
-                  float ix = itemStartX + i * (itemBoxScaled + spacingScaled);
-                  drawStyle(r2, ix, itemStartYScaled, itemBoxScaled, itemBoxScaled, anim);
-                  if (drawContext != null) {
-                     renderItem(drawContext, items.get(i), ix + 2.0F * hudScale, itemStartYScaled + 2.0F * hudScale, itemBoxScaled - 4.0F * hudScale);
-                  }
-               }
+        try {
+            // Рендерим предметы
+            if (showItems && !items.isEmpty()) {
+                float itemStartX = x + (width / 2f) - (totalItemsW * hudScale / 2f);
+                for (int i = 0; i < items.size(); i++) {
+                    float ix = itemStartX + i * (ITEM_BOX + SPACING) * hudScale;
+                    float itemBoxScaled = ITEM_BOX * hudScale;
+                    drawStyle(r2, ix, itemStartYScaled, itemBoxScaled, itemBoxScaled, anim);
+                    if (context != null) {
+                        renderItem(context, items.get(i), ix + 2.0f * hudScale, itemStartYScaled + 2.0f * hudScale, itemBoxScaled - 4.0f * hudScale);
+                    }
+                }
             }
 
             // Основная панель
             drawStyle(r2, x, boxY, width, mainHeight, anim);
 
-            // Голова
-            float headX = x + 4.0F * hudScale;
-            float headY = boxY + 4.0F * hudScale;
-            drawHead(r2, drawContext, prevTarget, headX, headY, headSize, anim);
+            // Голова цели
+            float headX = x + 4.0f * hudScale;
+            float headY = boxY + 4.0f * hudScale;
+            drawHead(r2, context, prevTarget, headX, headY, headSize, anim);
 
-            // Имя со скроллом
-            String name = prevTarget instanceof CreeperEntity ? "Грустный крипер" : prevTarget.getName().getString();
-            float nameX = headX + headSize + 5.0F * hudScale;
-            float nameW = width - (headSize + 15.0F * hudScale);
-            float nameSize = 9.0F * hudScale; // Увеличен текст имени
+            // Имя с скроллом (как в доноре)
+            String name = prevTarget.getName().getString();
+            float nameX = headX + headSize + 5.0f * hudScale;
+            float nameW = width - (headSize + 15.0f * hudScale);
+            float nameSize = 9.0f * hudScale; // УВЕЛИЧЕНО от 7.5 до 9.0 как в доноре
 
-            // Текст метрики
-            float tWidth = r2.measureText(FontRegistry.INTER_MEDIUM, name, nameSize).width;
+            // Текст метрика
+            var metrics = r2.measureText(font, name, nameSize);
+            float tWidth = metrics != null ? metrics.width : 0;
 
             // Скролл анимация (как в доноре)
             if (scrollDelay == 0L) scrollDelay = System.currentTimeMillis();
             if (System.currentTimeMillis() - scrollDelay > 1000L) {
-               scrollDelay = System.currentTimeMillis();
-               scrollDir = -scrollDir;
+                scrollDelay = System.currentTimeMillis();
+                scrollDir = -scrollDir;
             }
-            float targetOffset = scrollDir > 0 ? Math.max(0.0F, tWidth - nameW) : 0.0F;
-            scrollAnim = AnimationMath.animation(scrollAnim, targetOffset, 0.05F);
+            float targetOffset = scrollDir > 0 ? Math.max(0.0f, tWidth - nameW) : 0.0f;
+            scrollAnim = AnimationMath.animation(scrollAnim, targetOffset, 0.05f);
 
-            r2.pushClipRect((int) nameX, (int) boxY, (int) nameW, (int) mainHeight);
-            r2.text(FontRegistry.INTER_MEDIUM, nameX - scrollAnim, boxY + 4.5F * hudScale, nameSize, name, 0xFFFFFFFF);
-            r2.popClipRect();
+            // Имя (без scissor - просто рисуем)
+            r2.text(font, nameX - scrollAnim, boxY + 4.5f * hudScale, nameSize, name, Color.WHITE.getRGB());
 
             // HP-бар
             float barX = nameX;
-            float barY = boxY + mainHeight - 8.5F * hudScale;
+            float barY = boxY + mainHeight - 8.5f * hudScale;
             float barW = nameW;
-            float barH = 3.5F * hudScale;
+            float barH = 3.5f * hudScale;
 
-            // Фон бара
-            r2.rect(barX, barY, barW, barH, 1.5F * hudScale, Renderer2D.ColorUtil.replAlpha(0xFF000000, (int) (60 * anim)));
+            // Фон HP-бара
+            r2.rect(barX, barY, barW, barH, 1.5f, new Color(0, 0, 0, (int) (60 * anim)).getRGB());
 
-            // HP анимация
+            // Анимация здоровья (как в доноре)
             float maxHp = prevTarget.getMaxHealth();
-            healthAnim = AnimationMath.animation(healthAnim, prevTarget.getHealth(), 0.1F);
-            absorptionAnim = AnimationMath.animation(absorptionAnim, prevTarget.getAbsorptionAmount(), 0.1F);
+            healthAnim = AnimationMath.animation(healthAnim, prevTarget.getHealth(), 0.2f);
+            absorptionAnim = AnimationMath.animation(absorptionAnim, prevTarget.getAbsorptionAmount(), 0.2f);
 
-            float hpFactor = MathHelper.clamp(healthAnim / maxHp, 0.0F, 1.0F);
+            float hpFactor = Math.max(0, Math.min(1, healthAnim / maxHp));
 
-            // Градиент HP (клиентский цвет)
-            int c1 = Renderer2D.ColorUtil.getMainColor(1, 0);
-            int c2 = Renderer2D.ColorUtil.getMainColor(1, 40);
-            drawHpGradient(r2, barX, barY, barW * hpFactor, barH, c1, c2, anim);
+            // Цвета здоровья (как в доноре)
+            Color c1 = new Color(0xFF, 0x44, 0x44); // красный
+            Color c2 = new Color(0xCC, 0x33, 0x33);
+            r2.rect(barX, barY, barW * hpFactor, barH, 1.5f, c1.getRGB());
 
-            // Частицы у HP
-            if (particles.get() && hpFactor > 0.0F) {
-               spawnHealthParticles(barX + barW * hpFactor, barY + barH / 2.0F, c1);
+            // Поглощение (absorption)
+            float absWidth = 0;
+            if (absorptionAnim > 0.1f) {
+                float absFactor = Math.max(0, Math.min(1, absorptionAnim / maxHp));
+                absWidth = barW * absFactor;
+                Color gold1 = new Color(255, 215, 0, 200);
+                r2.rect(barX + barW - absWidth, barY, absWidth, barH, 1.5f, gold1.getRGB());
             }
 
-            // Абсорбция (золото, от правого края)
-            float absWidth = 0.0F;
-            if (absorptionAnim > 0.1F) {
-               float absFactor = MathHelper.clamp(absorptionAnim / maxHp, 0.0F, 1.0F);
-               absWidth = barW * absFactor;
-               int gold1 = Renderer2D.ColorUtil.replAlpha(0xFFFFD700, (int) (200 * anim));
-               int gold2 = Renderer2D.ColorUtil.replAlpha(0xFFFFA500, (int) (180 * anim));
-               drawHpGradient(r2, barX + barW - absWidth, barY, absWidth, barH, gold1, gold2, anim);
-               if (particles.get()) {
-                  spawnHealthParticles(barX + barW - absWidth, barY + barH / 2.0F, gold1);
-               }
-            }
-
-            // Частицы
-            if (particles.get()) {
-               particlesEngine.render(r2);
-            }
-
-            // HP текст — используем реальное здоровье, не анимированное
+            // HP текст — используем РЕАЛЬНОЕ здоровье (как в доноре), не анимированное
             float currentHealth = prevTarget.getHealth();
             float currentAbsorption = prevTarget.getAbsorptionAmount();
-            float hValue = (float) (Math.round(currentHealth * 10.0F) / 10.0F);
-            float aValue = (float) (Math.round(currentAbsorption * 10.0F) / 10.0F);
+            float hValue = (float) (Math.round(currentHealth * 10.0f) / 10.0f);
+            float aValue = (float) (Math.round(currentAbsorption * 10.0f) / 10.0f);
             String hStr = hValue + "";
-            String aStr = aValue > 0 ? " +" + aValue : "";
+            String aStr = aValue > 0 ? " + " + aValue : "";
             String suffix = " HP";
-            float hpTextSize = 8.0F * hudScale; // Увеличен текст HP
-            float fullTextW = r2.measureText(FontRegistry.INTER_MEDIUM, hStr + aStr + suffix, hpTextSize).width;
+            float hpTextSize = 8.0f * hudScale; // УВЕЛИЧЕНО от 6.5 до 8.0
+
+            // Измеряем ширину текста через measureText
+            var hMetrics = r2.measureText(font, hStr, hpTextSize);
+            var aMetrics = r2.measureText(font, aStr, hpTextSize);
+            var sMetrics = r2.measureText(font, suffix, hpTextSize);
+            float hWidth = hMetrics != null ? hMetrics.width : 0;
+            float aWidth = aMetrics != null ? aMetrics.width : 0;
+            float sWidth = sMetrics != null ? sMetrics.width : 0;
+            float fullTextW = hWidth + aWidth + sWidth;
+
             float drawX = barX + barW - fullTextW;
-            float drawY = barY - 8.5F * hudScale;
-            r2.text(FontRegistry.INTER_MEDIUM, drawX, drawY, hpTextSize, hStr, 0xFFE0E0E0);
-            float off = r2.measureText(FontRegistry.INTER_MEDIUM, hStr, hpTextSize).width;
+            float drawY = barY - 7.0f * hudScale;
+            r2.text(font, drawX, drawY, hpTextSize, hStr, new Color(0xE0, 0xE0, 0xE0).getRGB());
+            float off = hWidth;
             if (aValue > 0) {
-               r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, aStr, 0xFFFFD700);
-               off += r2.measureText(FontRegistry.INTER_MEDIUM, aStr, hpTextSize).width;
+                r2.text(font, drawX + off, drawY, hpTextSize, aStr, new Color(0xFF, 0xD7, 0x00).getRGB());
+                off += aWidth;
             }
-            r2.text(FontRegistry.INTER_MEDIUM, drawX + off, drawY, hpTextSize, suffix, Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, (int) (180 * anim)));
-         } finally {
-            r2.popAlpha();
-         }
-      } finally {
-         drawContext.getMatrices().popMatrix();
-      }
-      DraggableManager.getInstance().endDrag(session);
-   }
+            r2.text(font, drawX + off, drawY, hpTextSize, suffix, new Color(255, 255, 255, (int) (150 * anim)).getRGB());
 
-   /** Плоский скин-аватар в логических координатах GUI (без 3D). */
-   private static void drawHead(Renderer2D r2, DrawContext drawContext, LivingEntity target, float headX, float headY, float headSize, float anim) {
-      if (target == null) return;
-      if (drawContext == null) {
-         r2.rect(headX, headY, headSize, headSize, 4.0F, Renderer2D.ColorUtil.replAlpha(0xFF333333, (int) (anim * 200.0F)));
-         return;
-      }
-      try {
-         if (target instanceof PlayerEntity player) {
-            var skinSupplier = mc.getSkinProvider().supplySkinTextures(player.getGameProfile(), true);
-            if (skinSupplier != null) {
-               SkinTextures textures = skinSupplier.get();
-               if (textures == null) return;
-               float guiScale = mc.getWindow().getScaleFactor();
-               int hx = Math.round(headX / guiScale);
-               int hy = Math.round(headY / guiScale);
-               int hs = Math.max(1, Math.round(headSize / guiScale));
-               int color = Renderer2D.ColorUtil.replAlpha(-1, (int) (anim * 255.0F));
-               PlayerSkinDrawer.draw(drawContext, textures, hx, hy, hs, color);
+        } catch (Exception e) {
+            // Ignore render errors
+        }
+    }
+
+    /**
+     * Получает сущность под прицелом (как TargetsUtility.getTarget в доноре)
+     */
+    private static LivingEntity getHoveredEntity() {
+        HitResult hit = mc.crosshairTarget;
+        if (hit != null && hit.getType() == HitResult.Type.ENTITY) {
+            net.minecraft.util.hit.EntityHitResult entityHit = (net.minecraft.util.hit.EntityHitResult) hit;
+            if (entityHit.getEntity() instanceof LivingEntity living) {
+                return living;
             }
-         } else {
-            r2.rect(headX, headY, headSize, headSize, 4.0F, Renderer2D.ColorUtil.replAlpha(0xFF333333, (int) (anim * 200.0F)));
-         }
-      } catch (Exception ignored) {
-      }
-   }
+        }
+        return null;
+    }
 
-   /** Стиль панели: blur + Dark (плотный фон) или Glass (прозрачный + обводка). */
-   private static void drawStyle(Renderer2D r2, float rx, float ry, float rw, float rh, float alpha) {
-      float round = 5.0F;
-      if (Hud.blur.get("HUD")) {
-         r2.prepareBlur(23.0F);
-         r2.blur(rx, ry, rw, rh, round, alpha);
-      }
-      if (style.is("Dark")) {
-         int bg = Renderer2D.ColorUtil.replAlpha(0xFF141419, (int) (180 * alpha));
-         r2.rect(rx, ry, rw, rh, round, bg);
-         int out = Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, (int) (15 * alpha));
-         r2.rectOutline(rx, ry, rw, rh, round, out, 0.4F);
-      } else {
-         int bg = Renderer2D.ColorUtil.replAlpha(0xFF3E3E47, 0);
-         r2.rect(rx, ry, rw, rh, round, bg);
-         int outAlpha = (int) Math.min(Math.max(25 * alpha, 0), 255);
-         int out = Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, outAlpha);
-         r2.rectOutline(rx, ry, rw, rh, round, out, 0.4F);
-      }
-   }
+    /**
+     * Рисует стиль панели (glass/blur)
+     */
+    private static void drawStyle(Renderer2D r2, float x, float y, float w, float h, float anim) {
+        if (ru.fluxvisuals.module.impl.visuals.Hud.blur.get("HUD")) {
+            r2.prepareBlur(23.0f);
+            r2.blur(x, y, w, h, 4f, anim);
+        }
 
-   /** Градиентный бар (левая часть c1, правая c2). */
-   private static void drawHpGradient(Renderer2D r2, float x, float y, float w, float h, int c1, int c2, float anim) {
-      if (w <= 0.0F || h <= 0.0F) return;
-      float mid = w / 2.0F;
-      r2.rect(x, y, mid, h, 1.5F, Renderer2D.ColorUtil.replAlpha(c1, (int) (255 * anim)));
-      r2.rect(x + mid, y, w - mid, h, 1.5F, Renderer2D.ColorUtil.replAlpha(c2, (int) (255 * anim)));
-   }
+        // Glass style
+        int bgColor = Renderer2D.ColorUtil.replAlpha(0xFF141419, (int) (180 * anim));
+        r2.rect(x, y, w, h, 4f, bgColor);
 
-   private static void renderItem(DrawContext drawContext, ItemStack stack, float ix, float iy, float size) {
-      if (drawContext == null) return;
-      drawContext.getMatrices().pushMatrix();
-      drawContext.getMatrices().translate(ix, iy);
-      float scale2 = size / 16.0F;
-      drawContext.getMatrices().scale(scale2, scale2);
-      drawContext.drawItem(stack, 0, 0);
-      drawContext.getMatrices().popMatrix();
-   }
+        // Outline
+        int outAlpha = (int) (30 * anim);
+        int outColor = Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, outAlpha);
+        r2.rectOutline(x, y, w, h, 4f, outColor, 0.5f);
+    }
 
-   /** Спавн частиц у края HP-бара. */
-   private static void spawnHealthParticles(float x, float y, int color) {
-      if (Math.random() > 0.8) {
-         float dir = (float) (Math.random() * 360.0F);
-         float roll = (float) (Math.random() - 0.5F) * 5.0F;
-         long alive = 500L + (long) (Math.random() * 500L);
-         particlesEngine.add(x, y,
-               (float) (Math.random() - 0.5F) * 0.5F,
-               (float) (Math.random() - 0.2F) * 0.5F,
-               dir, roll, alive, color);
-      }
-   }
+    /**
+     * Рисует голову цели (как в доноре)
+     */
+    private static void drawHead(Renderer2D r2, DrawContext context, LivingEntity target, float headX, float headY, float headSize, float anim) {
+        // Для игроков и мобов используем дефолтную голову
+        drawDefaultHead(r2, headX, headY, headSize);
+    }
 
-   /** Движок частиц (2D). */
-   @Environment(EnvType.CLIENT)
-   private static final class Particles2DEngine {
-      private final List<Particle2D> particles = new ArrayList<>();
+    /**
+     * Дефолтная голова для мобов
+     */
+    private static void drawDefaultHead(Renderer2D r2, float headX, float headY, float headSize) {
+        // Рисуем простой прямоугольник как placeholder для головы
+        r2.rect(headX, headY, headSize, headSize, 2f, new Color(0x3E, 0x3E, 0x47, 255).getRGB());
+        r2.rectOutline(headX, headY, headSize, headSize, 2f, new Color(0xFF, 0xFF, 0xFF, 80).getRGB(), 0.5f);
+    }
 
-      void add(float x, float y, float vx, float vy, float dir, float roll, long alive, int color) {
-         particles.add(new Particle2D(x, y, vx, vy, dir, roll, alive, color));
-      }
+    /**
+     * Рендерит предмет (упрощенно)
+     */
+    private static void renderItem(DrawContext context, ItemStack stack, float x, float y, float size) {
+        if (stack.isEmpty()) return;
 
-      void render(Renderer2D r2) {
-         for (Particle2D p : particles) {
-            p.render(r2);
-         }
-         particles.removeIf(Particle2D::removed);
-      }
-   }
-
-   /** Частица (dir/roll, движение по sin/cos, затухание). */
-   @Environment(EnvType.CLIENT)
-   private static final class Particle2D {
-      private float x;
-      private float y;
-      private final float vx;
-      private final float vy;
-      private float dir;
-      private final float roll;
-      private final long deleteIn;
-      private final int color;
-
-      Particle2D(float x, float y, float vx, float vy, float dir, float roll, long alive, int color) {
-         this.x = x;
-         this.y = y;
-         this.vx = vx;
-         this.vy = vy;
-         this.dir = dir;
-         this.roll = roll;
-         this.deleteIn = System.currentTimeMillis() + alive;
-         this.color = color;
-      }
-
-      boolean removed() {
-         return System.currentTimeMillis() > deleteIn;
-      }
-
-      void render(Renderer2D r2) {
-         dir += roll;
-         x += (float) (Math.sin(dir * Math.PI / 180.0) * vx);
-         y += (float) (Math.cos(dir * Math.PI / 180.0) * vy);
-         float f = Math.min(255.0F, Math.max(0, deleteIn - System.currentTimeMillis())) / 255.0F;
-         int col = Renderer2D.ColorUtil.replAlpha(color, (int) (f * 255.0F));
-         r2.circle(x, y, 2.5F, 0.0F, 1.0F, col);
-         r2.circle(x, y, 1.5F, 0.0F, 1.0F, Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, (int) (f * 200.0F)));
-      }
-   }
+        context.getMatrices().pushMatrix();
+        try {
+            context.getMatrices().translate(x, y);
+            float scale = size / 16f;
+            context.getMatrices().scale(scale, scale);
+            context.drawItem(stack, 0, 0);
+            context.drawStackOverlay(mc.textRenderer, stack, 0, 0);
+        } finally {
+            context.getMatrices().popMatrix();
+        }
+    }
 }

@@ -23,7 +23,7 @@ import ru.fluxvisuals.util.render.HudRenderBridge;
 @Mixin({InGameHud.class})
 public class InGameHudMixin {
    private static boolean isHudModuleEnabled() {
-      return FluxVisualsClient.get != null && FluxVisualsClient.get.manager != null;
+      return FluxVisualsClient.isModInitialized() && FluxVisualsClient.get != null && FluxVisualsClient.get.manager != null;
    }
 
    private static boolean isCustomPotionsActive() {
@@ -60,7 +60,7 @@ public class InGameHudMixin {
    )
    private void onRenderHotbar(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
       if (isCustomHotbarActive()) {
-         ci.cancel();
+         ci.cancel(); // Отменяем ванильный рендер, свой рисуем в Hud.onRender (EventScreen)
       }
    }
 

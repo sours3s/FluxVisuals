@@ -19,7 +19,6 @@ import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 import ru.fluxvisuals.module.api.setting.impl.StringSetting;
 import ru.fluxvisuals.module.impl.utils.ClientSound;
 import ru.fluxvisuals.module.impl.visuals.Hud;
-import ru.fluxvisuals.util.render.animation.util.Animation;
 import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.animation.Translate;
 import ru.fluxvisuals.util.render.math.animation.anim.util.Animation2;
@@ -41,7 +40,7 @@ public class Module extends Config {
    public boolean binding;
    public boolean isRender = true;
    public Translate a = new Translate(0.0F, 0.0F);
-   public Animation animation = new Animation();
+   public Animation2 animation = new Animation2();
    public ru.fluxvisuals.util.render.math.animation.Animation animation1 = new EaseInOutQuad(300, 1.0);
    public ru.fluxvisuals.util.render.math.animation.Animation animation2 = new EaseInOutQuad(300, 1.0);
    public final Animation2 mAnim = new Animation2();

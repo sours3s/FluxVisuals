@@ -71,7 +71,6 @@ public class FluxVisualsClient implements ClientModInitializer {
    @Override
    public void onInitializeClient() {
       LOGGER.info("{} client initializing...", NAME);
-      get = this;
 
       // Защита: мод работает только если запущен через лоадер FluxVisuals
       // (одноразовый RSA-подписанный launch-тикет). Скопированный в TLauncher jar не работает.
@@ -80,6 +79,8 @@ public class FluxVisualsClient implements ClientModInitializer {
          showBlockedMessage();
          return; // не инициализируем: модули, HUD, команды, конфиг
       }
+
+      get = this; // ТОЛЬКО после успешной верификации
 
       MinecraftClient mc = MinecraftClient.getInstance();
       this.root = new File(mc.runDirectory, "fluxvisuals");
