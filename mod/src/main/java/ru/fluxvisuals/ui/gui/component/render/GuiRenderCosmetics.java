@@ -19,13 +19,13 @@ import ru.fluxvisuals.utils.cosmetics.FiguraBridge;
 public class GuiRenderCosmetics extends GuiScreen {
    private static final CosmeticEntry.Kind[] TAB_KINDS = CosmeticEntry.Kind.values();
    private static final float PAD = 4.0F;
-   private static final float TAB_H = 16.0F;
-   private static final float TAB_GAP = 3.0F;
+   private static final float TAB_H = 20.0F;
+   private static final float TAB_GAP = 4.0F;
    private static final float CARD_GAP = 4.0F;
    private static final float CARD_RADIUS = 4.0F;
    private static final int COLS = 2;
    private static final float THUMB_PAD = 4.0F;
-   private static final float CARD_H = 75.0F;
+   private static final float CARD_H = 72.0F;
    private static final float NAME_H = 14.0F;
 
    private static float cachedTabsX;
@@ -79,7 +79,7 @@ public class GuiRenderCosmetics extends GuiScreen {
       float total = 0;
       cachedTabW = new float[TAB_KINDS.length];
       for (int i = 0; i < TAB_KINDS.length; i++) {
-         float lw = r.measureText(FontRegistry.INTER_MEDIUM, TAB_KINDS[i].tabName(), 9.0F).width;
+         float lw = r.measureText(FontRegistry.INTER_MEDIUM, TAB_KINDS[i].tabName(), 10.0F).width;
          cachedTabW[i] = lw + 14.0F;
          total += cachedTabW[i];
       }
@@ -98,8 +98,8 @@ public class GuiRenderCosmetics extends GuiScreen {
 
          r.rectOutline(cx, y, tw, TAB_H, 4.0F, border, 0.1F);
          r.rect(cx, y, tw, TAB_H, 4.0F, bg);
-         float lw = r.measureText(FontRegistry.INTER_MEDIUM, TAB_KINDS[i].tabName(), 9.0F).width;
-         r.text(FontRegistry.INTER_MEDIUM, cx + (tw - lw) / 2.0F, y + 3.0F, 9.0F, TAB_KINDS[i].tabName(), rc(col, 255, alpha));
+         float lw = r.measureText(FontRegistry.INTER_MEDIUM, TAB_KINDS[i].tabName(), 10.0F).width;
+         r.text(FontRegistry.INTER_MEDIUM, cx + (tw - lw) / 2.0F, y + TAB_H / 2.0F + 0.8F, 10.0F, TAB_KINDS[i].tabName(), rc(col, 255, alpha));
 
          cx += tw + TAB_GAP;
       }
@@ -167,10 +167,10 @@ public class GuiRenderCosmetics extends GuiScreen {
             r.text(FontRegistry.ICONS, cardX + cardW - THUMB_PAD - bs + (bs - cl) / 2.0F, cardY + THUMB_PAD + 1.5F, 6.0F, chk, main);
          }
 
-         String name = truncate(r, entry.displayName(), cardW - 6.0F, 8.0F);
-         float nw = r.measureText(FontRegistry.INTER_MEDIUM, name, 8.0F).width;
-         r.text(FontRegistry.INTER_MEDIUM, cardX + (cardW - nw) / 2.0F, cardY + CARD_H - NAME_H + 2.0F, 8.0F, name,
-               rc(applied ? main : txt, 255, alpha));
+         String name = truncate(r, entry.displayName(), cardW - 6.0F, 9.0F);
+          float nw = r.measureText(FontRegistry.INTER_MEDIUM, name, 9.0F).width;
+          r.text(FontRegistry.INTER_MEDIUM, cardX + (cardW - nw) / 2.0F, cardY + CARD_H - NAME_H / 2.0F + 0.8F, 9.0F, name,
+                rc(applied ? main : txt, 255, alpha));
       }
 
       if (GuiScreen.cosmeticMaxScroll > 0.0F && h > 20.0F) {
