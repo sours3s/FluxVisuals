@@ -7,6 +7,7 @@ import org.joml.Vector4f;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.module.api.Theme;
 import ru.fluxvisuals.ui.gui.GuiScreen;
+import ru.fluxvisuals.ui.gui.component.render.DrawGuiRenderer;
 import ru.fluxvisuals.ui.gui.component.render.RenderUtil;
 import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.MathHelper;
@@ -15,7 +16,7 @@ import ru.fluxvisuals.util.render.math.animation.Direction;
 
 @Environment(EnvType.CLIENT)
 public class ThemeScreen extends GuiScreen {
-   public static void renderTheme(Renderer2D renderer2D, DrawContext drawContext, int mouseX1, int mouseY1) {
+   public static void renderTheme(DrawGuiRenderer renderer2D, DrawContext drawContext, int mouseX1, int mouseY1) {
       float mainAnim = (float)GuiScreen.alphaPC.getValue();
       int color255 = (int)(255.0F * mainAnim);
       int color100 = (int)(100.0F * mainAnim);

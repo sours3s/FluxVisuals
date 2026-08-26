@@ -16,7 +16,7 @@ import ru.fluxvisuals.util.render.text.FontRegistry;
 
 @Environment(EnvType.CLIENT)
 public class GuiRenderLeftPanel extends GuiScreen {
-   public static void renderLeftPanel(Renderer2D renderer2D, MatrixStack pose, float mainAlpha) {
+   public static void renderLeftPanel(DrawGuiRenderer renderer2D, MatrixStack pose, float mainAlpha) {
       int outlineColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), (int)(20.4F * mainAlpha));
       int backGroundTwoColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getBackGroundTwoColor(1, 1), (int)(178.5F * mainAlpha));
       int backGroundThreeColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), (int)(10.2F * mainAlpha));

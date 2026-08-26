@@ -10,17 +10,17 @@ import ru.fluxvisuals.module.api.setting.impl.HueSetting;
 import ru.fluxvisuals.ui.gui.GuiLayout;
 import ru.fluxvisuals.ui.gui.GuiScreen;
 import ru.fluxvisuals.ui.gui.component.mouse.setting.GuiMouseClickedSetting;
+import ru.fluxvisuals.ui.gui.component.render.DrawGuiRenderer;
 import ru.fluxvisuals.ui.gui.component.render.GuiRenderMain;
 import ru.fluxvisuals.ui.gui.component.setting.GuiRenderSetting;
 import ru.fluxvisuals.util.keyboard.Keyboard;
-import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.animation.Direction;
 import ru.fluxvisuals.util.render.math.animation.anim.util.Easings;
 import ru.fluxvisuals.util.render.text.FontRegistry;
 
 @Environment(EnvType.CLIENT)
 public class GuiMouseClickedModule extends GuiScreen {
-   public static boolean mouseClickedModule(Renderer2D renderer2D, int mouseX, int mouseY, int pButton) {
+   public static boolean mouseClickedModule(DrawGuiRenderer renderer2D, int mouseX, int mouseY, int pButton) {
       if (!GuiRenderMain.isHovered(mouseX, mouseY, GuiLayout.clipX(), GuiLayout.clipY(), GuiLayout.clipWidth(), GuiLayout.clipHeight())) {
          return false;
       }
@@ -166,7 +166,7 @@ public class GuiMouseClickedModule extends GuiScreen {
       }
    }
 
-   public static float[] findColorPickerPosition(Renderer2D renderer2D, HueSetting hueSetting) {
+   public static float[] findColorPickerPosition(DrawGuiRenderer renderer2D, HueSetting hueSetting) {
       if (hueSetting == null) {
          return null;
       }

@@ -110,7 +110,7 @@ public class GuiRenderFriends extends GuiScreen {
       return listY0() + index * (ROW_H + ROW_GAP) - scroll;
    }
 
-   public static void render(Renderer2D r2, float mainAlpha, int mouseX, int mouseY) {
+   public static void render(DrawGuiRenderer r2, float mainAlpha, int mouseX, int mouseY) {
       if (GuiScreen.selectedCategories != Category.Friends) {
          return;
       }
@@ -227,7 +227,7 @@ public class GuiRenderFriends extends GuiScreen {
    }
 
    /** Маленькая круглая кнопка («+»/«-») справа в строке, символ по центру. */
-   private static void drawSmallButton(Renderer2D r2, float bx, float by, int color, String symbol) {
+   private static void drawSmallButton(DrawGuiRenderer r2, float bx, float by, int color, String symbol) {
       r2.rect(bx, by, 14.0F, 14.0F, 7.0F, Renderer2D.ColorUtil.replAlpha(color, 70));
       float sw = r2.measureText(FontRegistry.INTER_MEDIUM, symbol, 12.0F).width;
       r2.text(FontRegistry.INTER_MEDIUM, bx + 7.0F - sw / 2.0F, by + 7.0F - 3.2F, 12.0F, symbol,

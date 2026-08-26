@@ -17,7 +17,7 @@ import ru.fluxvisuals.util.render.texture.TextureLoader;
 
 @Environment(EnvType.CLIENT)
 public class GuiRenderUpPanel extends GuiScreen {
-   public static void renderUpPanel(Renderer2D renderer2D, MatrixStack pose, float mainAlpha) {
+   public static void renderUpPanel(DrawGuiRenderer renderer2D, MatrixStack pose, float mainAlpha) {
       int outlineColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), (int)(20.4F * mainAlpha));
       int backGroundTwoColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getBackGroundTwoColor(1, 1), (int)(178.5F * mainAlpha));
       int backGroundThreeColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), (int)(10.2F * mainAlpha));
@@ -68,7 +68,7 @@ public class GuiRenderUpPanel extends GuiScreen {
       }
    }
 
-   private static void renderClientSettingsPopup(Renderer2D renderer2D, float mainAlpha) {
+   private static void renderClientSettingsPopup(DrawGuiRenderer renderer2D, float mainAlpha) {
       float popupWidth = GuiLayout.popupWidth();
       float popupHeight = GuiLayout.popupHeight();
       float popupX = GuiLayout.popupX();
@@ -98,7 +98,7 @@ public class GuiRenderUpPanel extends GuiScreen {
       );
    }
 
-   public static void drawClientRect(Renderer2D r2, float x, float y, float w, float h, float radius, float alpha, float thickness) {
+   public static void drawClientRect(DrawGuiRenderer r2, float x, float y, float w, float h, float radius, float alpha, float thickness) {
       if (ru.fluxvisuals.module.impl.visuals.Hud.blur.get("GUI")) {
          r2.prepareBlur(23.0F);
          r2.blur(x, y, w, h, radius, alpha);

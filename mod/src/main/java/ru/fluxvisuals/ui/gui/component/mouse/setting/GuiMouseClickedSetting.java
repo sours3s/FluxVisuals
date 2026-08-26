@@ -13,15 +13,15 @@ import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 import ru.fluxvisuals.module.api.setting.impl.StringSetting;
 import ru.fluxvisuals.ui.gui.GuiScreen;
 import ru.fluxvisuals.ui.gui.component.mouse.module.GuiMouseClickedModule;
+import ru.fluxvisuals.ui.gui.component.render.DrawGuiRenderer;
 import ru.fluxvisuals.ui.gui.component.render.GuiRenderMain;
-import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.animation.Direction;
 import ru.fluxvisuals.util.render.text.FontRegistry;
 import ru.fluxvisuals.util.render.utils.KeyUtil;
 
 @Environment(EnvType.CLIENT)
 public class GuiMouseClickedSetting extends GuiScreen {
-   public static boolean handleSettingClick(Renderer2D renderer2D, Setting setting, float x, float y, float width, int mouseX, int mouseY, int button) {
+   public static boolean handleSettingClick(DrawGuiRenderer renderer2D, Setting setting, float x, float y, float width, int mouseX, int mouseY, int button) {
       if (setting instanceof BooleanSetting boolSetting) {
          float rowHeight = 13.0F;
          float checkBoxSize = 8.0F;
