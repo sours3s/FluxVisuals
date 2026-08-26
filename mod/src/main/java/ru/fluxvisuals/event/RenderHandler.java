@@ -37,7 +37,6 @@ public final class RenderHandler {
                      int mouseXInt = (int)mouseX[0];
                      int mouseYInt = (int)mouseY[0];
                      DrawContext drawContext = null;
-                     GuiRender.render(event.renderer(), drawContext, mouseXInt, mouseYInt, client.getRenderTickCounter().getDynamicDeltaTicks());
                   }
                }
             }

@@ -17,6 +17,7 @@ import ru.fluxvisuals.ui.gui.GuiScreen;
 import ru.fluxvisuals.util.color.ColorUtil;
 import ru.fluxvisuals.util.render.animation.util.Animation;
 import ru.fluxvisuals.util.render.animation.util.Easings;
+import ru.fluxvisuals.ui.gui.component.render.DrawGuiRenderer;
 import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.MathHelper;
 import ru.fluxvisuals.util.render.math.animation.AnimationMath;
@@ -31,7 +32,7 @@ public class GuiRenderSetting {
    public static HashMap<String, Float> animation2 = new HashMap<>();
    public static HashMap<String, Float> multiBooleanAnimation = new HashMap<>();
 
-   public static float getSettingsTotalHeight(Renderer2D renderer2D, java.util.List<Setting> settings, float settingWidth) {
+   public static float getSettingsTotalHeight(DrawGuiRenderer renderer2D, java.util.List<Setting> settings, float settingWidth) {
       if (settings == null || settings.isEmpty()) {
          return 0.0F;
       }
@@ -42,7 +43,7 @@ public class GuiRenderSetting {
       return Math.max(total, 20.0F);
    }
 
-   public static float getSettingHeight(Renderer2D renderer2D, Setting setting, float settingWidth) {
+   public static float getSettingHeight(DrawGuiRenderer renderer2D, Setting setting, float settingWidth) {
       if (setting instanceof NoneSetting) {
          return ((NoneSetting)setting).get();
       } else if (setting instanceof BooleanSetting) {
@@ -100,7 +101,7 @@ public class GuiRenderSetting {
    }
 
    public static float renderSetting(
-      Renderer2D renderer2D,
+      DrawGuiRenderer renderer2D,
       Setting setting,
       float x,
       float y,

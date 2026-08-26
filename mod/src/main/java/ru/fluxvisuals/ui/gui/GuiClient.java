@@ -33,7 +33,7 @@ import ru.fluxvisuals.ui.gui.component.mouse.GuiMouseClicked;
 import ru.fluxvisuals.ui.gui.component.render.GuiRender;
 import ru.fluxvisuals.ui.gui.theme.ThemeScreen;
 import ru.fluxvisuals.util.player.MovementManager;
-import ru.fluxvisuals.util.render.core.Renderer2D;
+import ru.fluxvisuals.ui.gui.component.render.DrawGuiRenderer;
 import ru.fluxvisuals.util.render.math.ScaleHelper;
 
 @Environment(EnvType.CLIENT)
@@ -65,20 +65,8 @@ public class GuiClient extends Screen {
          return;
       }
 
-      Renderer2D renderer = FluxVisualsClient.getRenderer();
-      if (renderer != null) {
-         int width = client.getWindow().getFramebufferWidth();
-         int height = client.getWindow().getFramebufferHeight();
-         if (width > 0 && height > 0) {
-            try {
-               renderer.begin(width, height);
-               // Render background blur and GUI
-               GuiRender.render(renderer, context, mouseX, mouseY, deltaTicks);
-            } finally {
-               renderer.end();
-            }
-         }
-      }
+      DrawGuiRenderer renderer = new DrawGuiRenderer(context);
+      GuiRender.render(renderer, context, mouseX, mouseY, deltaTicks);
       // Do NOT call super.render() - this is a fully custom GUI, no vanilla widgets
    }
 
@@ -90,8 +78,8 @@ public class GuiClient extends Screen {
 
    @Override
    public boolean mouseClicked(Click click, boolean bl) {
-      Renderer2D renderer = FluxVisualsClient.getRenderer();
-      return renderer != null && GuiMouseClicked.mouseClicked(renderer, click.comp_4798(), click.comp_4799(), click.button()) ? true : super.mouseClicked(click, bl);
+      DrawGuiRenderer renderer = new DrawGuiRenderer(null);
+      return GuiMouseClicked.mouseClicked(renderer, click.comp_4798(), click.comp_4799(), click.button()) ? true : super.mouseClicked(click, bl);
    }
 
    @Override

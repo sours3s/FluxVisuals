@@ -6,12 +6,11 @@ import net.fabricmc.api.Environment;
 import ru.fluxvisuals.module.api.setting.impl.HueSetting;
 import ru.fluxvisuals.ui.gui.GuiScreen;
 import ru.fluxvisuals.util.color.ColorUtil;
-import ru.fluxvisuals.util.render.core.Renderer2D;
 
 @Environment(EnvType.CLIENT)
 public class GuiRenderColorPicker extends GuiScreen {
    public static void renderColorPickerWindow(
-      Renderer2D renderer2D, HueSetting hueSetting, int mouseX, int mouseY, int outlineColor, int bgColor, int textColor, float alpha
+      DrawGuiRenderer renderer2D, HueSetting hueSetting, int mouseX, int mouseY, int outlineColor, int bgColor, int textColor, float alpha
    ) {
       if (hueSetting != null) {
          if (GuiScreen.colorPickerX != 0.0F || GuiScreen.colorPickerY != 0.0F) {
@@ -36,7 +35,7 @@ public class GuiRenderColorPicker extends GuiScreen {
    }
 
    private static void renderColorPicker(
-      Renderer2D renderer2D,
+      DrawGuiRenderer renderer2D,
       HueSetting setting,
       float x,
       float y,
@@ -75,13 +74,13 @@ public class GuiRenderColorPicker extends GuiScreen {
       renderer2D.rect(hueSliderPos - 3.0F, hueSliderY, 4.7F, 4.7F, 2.0F, new Color(255, 255, 255, 255).getRGB());
    }
 
-   private static void renderSaturationBrightnessPalette(Renderer2D renderer2D, float x, float y, float width, float height, float hue) {
+   private static void renderSaturationBrightnessPalette(DrawGuiRenderer renderer2D, float x, float y, float width, float height, float hue) {
       Color baseColor = Color.getHSBColor(hue, 1.0F, 1.0F);
       renderer2D.horizontalGradient(x, y, width, height, new Color(255, 255, 255).getRGB(), baseColor.getRGB());
       renderer2D.verticalGradient(x, y, width, height, new Color(0, 0, 0, 0).getRGB(), new Color(0, 0, 0, 255).getRGB());
    }
 
-   private static void renderHueSlider(Renderer2D renderer2D, float x, float y, float width, float height) {
+   private static void renderHueSlider(DrawGuiRenderer renderer2D, float x, float y, float width, float height) {
       int segments = 6;
       float segmentWidth = width / segments;
       Color[] hueColors = new Color[]{

@@ -17,7 +17,7 @@ public class GuiRenderBackground extends GuiScreen {
    private static final float RIGHT_BLUR = 45.0F;           // strong blur
    private static final float DIVIDER_ALPHA = 34.0F;        // faint seam divider so the halves don't merge
 
-   public static void renderBackground(Renderer2D renderer2D, MatrixStack pose, float mainAlpha) {
+   public static void renderBackground(DrawGuiRenderer renderer2D, MatrixStack pose, float mainAlpha) {
       int outlineColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), (int)(20.4F * mainAlpha));
 
       float x = GuiScreen.x;

@@ -7,6 +7,7 @@ import net.fabricmc.api.Environment;
 import ru.fluxvisuals.module.api.Module;
 import ru.fluxvisuals.module.api.setting.Setting;
 import ru.fluxvisuals.module.impl.visuals.Hud;
+import ru.fluxvisuals.ui.gui.component.render.DrawGuiRenderer;
 import ru.fluxvisuals.util.render.TextCache;
 import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.text.FontRegistry;
@@ -79,7 +80,7 @@ public final class TooltipManager {
    /**
     * Рисует панель тултипа возле курсора (после popClipRect). Переносит описание по ширине.
     */
-   public static void render(Renderer2D r2, int mouseX, int mouseY, int viewportWidth, int viewportHeight) {
+   public static void render(DrawGuiRenderer r2, int mouseX, int mouseY, int viewportWidth, int viewportHeight) {
       if (hovered == null) {
          return;
       }
@@ -121,7 +122,7 @@ public final class TooltipManager {
       }
    }
 
-   private static String[] wrap(Renderer2D r2, String text, float size) {
+   private static String[] wrap(DrawGuiRenderer r2, String text, float size) {
       String[] words = text.split("\\s+");
       StringBuilder current = new StringBuilder();
       java.util.List<String> lines = new java.util.ArrayList<>();
