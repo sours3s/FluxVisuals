@@ -1,63 +1,41 @@
 package ru.fluxvisuals.utils.cosmetics;
 
 import java.nio.file.Path;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.util.Identifier;
 
-@Environment(EnvType.CLIENT)
 public final class CosmeticEntry {
    private final Path folder;
    private final String id;
    private final String displayName;
-   private final CosmeticEntry.Kind kind;
+   private final Kind kind;
    private int previewGlId = -1;
+   private int previewWidth;
+   private int previewHeight;
 
-   CosmeticEntry(Path folder, String id, String displayName, CosmeticEntry.Kind kind) {
+   CosmeticEntry(Path folder, String id, String displayName, Kind kind) {
       this.folder = folder;
       this.id = id;
       this.displayName = displayName;
       this.kind = kind;
    }
 
-   public Path folder() {
-      return this.folder;
-   }
+   public Path folder() { return folder; }
+   public String id() { return id; }
+   public String displayName() { return displayName; }
+   public Kind kind() { return kind; }
+   public int previewGlId() { return previewGlId; }
+   public int previewWidth() { return previewWidth; }
+   public int previewHeight() { return previewHeight; }
 
-   public String id() {
-      return this.id;
-   }
+   public void setPreviewGlId(int glId) { this.previewGlId = glId; }
+   public void setPreviewSize(int w, int h) { this.previewWidth = w; this.previewHeight = h; }
 
-   public String displayName() {
-      return this.displayName;
-   }
-
-   public CosmeticEntry.Kind kind() {
-      return this.kind;
-   }
-
-   public int previewGlId() {
-      return this.previewGlId;
-   }
-
-   public void setPreviewGlId(int glId) {
-      this.previewGlId = glId;
-   }
-
-   @Environment(EnvType.CLIENT)
    public static enum Kind {
       MODEL("Models"),
-      HEAD("Head"),
+      HEAD("Heads"),
       WEAPON("Weapons");
 
       private final String tabName;
-
-      private Kind(String tabName) {
-         this.tabName = tabName;
-      }
-
-      public String tabName() {
-         return this.tabName;
-      }
+      Kind(String tabName) { this.tabName = tabName; }
+      public String tabName() { return tabName; }
    }
 }
