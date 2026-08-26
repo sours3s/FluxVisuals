@@ -37,8 +37,10 @@ public final class FiguraBridge {
          Class<?> manager = Class.forName(AVATAR_MANAGER);
          loadLocalAvatar = manager.getMethod("loadLocalAvatar", Path.class);
          clearAvatars = manager.getMethod("clearAvatars", UUID.class);
+         LOGGER.info("Figura bridge resolved successfully");
          return true;
-      } catch (Exception var1) {
+      } catch (Exception e) {
+         LOGGER.warn("Figura present but bridge failed to resolve", e);
          loadLocalAvatar = null;
          clearAvatars = null;
          return false;
@@ -54,37 +56,48 @@ public final class FiguraBridge {
    }
 
    public static boolean apply(CosmeticEntry entry) {
-      if (entry != null && isAvailable()) {
-         try {
-            CosmeticFirstPerson.repair(entry.folder());
-            if (entry.kind() != CosmeticEntry.Kind.WEAPON) {
-               CosmeticFirstPerson.installHide(entry.folder());
-            }
-            loadLocalAvatar.invoke(null, entry.folder());
-            appliedId = entry.id();
-            return true;
-         } catch (Exception var2) {
-            LOGGER.error("Failed to apply cosmetic {}", entry.id(), var2);
+      if (entry == null || !isAvailable()) {
+         return false;
+      }
+      try {
+         MinecraftClient mc = MinecraftClient.getInstance();
+         if (mc == null || mc.player == null) {
+            LOGGER.warn("Cannot apply cosmetic: player not available");
             return false;
          }
+         CosmeticFirstPerson.repair(entry.folder());
+         if (entry.kind() != CosmeticEntry.Kind.WEAPON) {
+            CosmeticFirstPerson.installHide(entry.folder());
+         }
+         loadLocalAvatar.invoke(null, entry.folder());
+         appliedId = entry.id();
+         LOGGER.info("Applied cosmetic: {}", entry.id());
+         return true;
+      } catch (Exception e) {
+         LOGGER.error("Failed to apply cosmetic {}", entry.id(), e);
+         return false;
       }
-      return false;
    }
 
    public static boolean clear() {
-      appliedId = "";
-      if (isAvailable()) {
-         MinecraftClient mc = MinecraftClient.getInstance();
-         if (mc != null && mc.player != null) {
-            try {
-               clearAvatars.invoke(null, mc.player.getUuid());
-               return true;
-            } catch (Exception var1) {
-               LOGGER.error("Failed to clear the applied cosmetic", var1);
-               return false;
-            }
-         }
+      if (!isAvailable()) {
+         appliedId = "";
+         return false;
       }
-      return false;
+      try {
+         MinecraftClient mc = MinecraftClient.getInstance();
+         if (mc == null || mc.player == null) {
+            appliedId = "";
+            return false;
+         }
+         clearAvatars.invoke(null, mc.player.getUuid());
+         appliedId = "";
+         LOGGER.info("Cleared applied cosmetic");
+         return true;
+      } catch (Exception e) {
+         LOGGER.error("Failed to clear cosmetic", e);
+         appliedId = "";
+         return false;
+      }
    }
 }
