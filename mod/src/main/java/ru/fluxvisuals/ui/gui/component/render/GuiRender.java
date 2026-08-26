@@ -13,7 +13,7 @@ import ru.fluxvisuals.util.render.math.ScaleHelper;
 
 @Environment(EnvType.CLIENT)
 public class GuiRender extends GuiScreen {
-   public static void render(DrawGuiRenderer renderer2D, DrawContext p_281549_, int p_281550_, int p_282878_, float p_282465_) {
+   public static void render(Renderer2D renderer2D, DrawContext p_281549_, int p_281550_, int p_282878_, float p_282465_) {
       MinecraftClient client = MinecraftClient.getInstance();
       if (client != null && client.getWindow() != null) {
          int viewportWidth = client.getWindow().getFramebufferWidth();
@@ -40,20 +40,11 @@ public class GuiRender extends GuiScreen {
             if (!(mainAlpha <= 0.001F)) {
                float scaledWidth = client.getWindow().getScaledWidth();
                float scaledHeight = client.getWindow().getScaledHeight();
-               float animProgress = 1.0F - (1.0F - mainAlpha);
-               float slideY = -12.0F * (1.0F - animProgress);
-               float animScale = 0.92F + 0.08F * animProgress;
                GuiScreen.x = scaledWidth / 2.0F - GuiScreen.width / 2.0F;
-               GuiScreen.y = scaledHeight / 2.0F - GuiScreen.height / 2.0F - (80.0F - 80.0F * mainAlpha) + slideY;
+               GuiScreen.y = scaledHeight / 2.0F - GuiScreen.height / 2.0F - (80.0F - 80.0F * mainAlpha);
                MatrixStack pose = new MatrixStack();
-
-               org.joml.Matrix3x2fStack matrices = p_281549_.getMatrices();
-               matrices.pushMatrix();
-               float pivotX = scaledWidth / 2.0F;
-               float pivotY = scaledHeight / 2.0F;
-               matrices.translate(pivotX, pivotY);
-               matrices.scale(animScale, animScale);
-               matrices.translate(-pivotX, -pivotY);
+               float scale = (float)client.getWindow().getFramebufferWidth() / client.getWindow().getScaledWidth();
+               renderer2D.pushScale(scale);
 
                try {
                   renderer2D.rect(0.0F, 0.0F, scaledWidth, scaledHeight, Renderer2D.ColorUtil.rgba(0, 0, 0, (int)(140.0F * mainAlpha)));
@@ -66,7 +57,6 @@ public class GuiRender extends GuiScreen {
                } finally {
                   renderer2D.popTransform();
                   renderer2D.popTransform();
-                  matrices.popMatrix();
                }
             }
          }

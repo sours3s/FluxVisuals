@@ -16,15 +16,15 @@ import ru.fluxvisuals.ui.gui.component.setting.GuiRenderSetting;
 import ru.fluxvisuals.util.color.ColorUtil;
 import ru.fluxvisuals.util.keyboard.Keyboard;
 import ru.fluxvisuals.util.player.MovementManager;
-import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.animation.anim.util.Easings;
+import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.MathHelper;
 import ru.fluxvisuals.util.render.math.animation.Direction;
 import ru.fluxvisuals.util.render.text.FontRegistry;
 
 @Environment(EnvType.CLIENT)
 public class GuiRenderMain extends GuiScreen {
-   public static void renderMain(DrawGuiRenderer renderer2D, MatrixStack pose, int mouseX, int mouseY, float mainAlpha) {
+   public static void renderMain(Renderer2D renderer2D, MatrixStack pose, int mouseX, int mouseY, float mainAlpha) {
       // Специальные вкладки (Themes / Styles / Configs / Friends) вместо списка модулей.
       if (GuiScreen.selectedCategories == Category.Configs) {
          GuiRenderSpecial.render(renderer2D, mainAlpha, mouseX, mouseY);
