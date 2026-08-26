@@ -34,6 +34,9 @@ dependencies {
 	// compileOnly — jar кладёт сам лоадер в game/mods, в мод не бандлим.
 	modCompileOnly "net.caffeinemc:sodium-fabric:0.8.13+mc1.21.11"
 
+	// Figura + LuaJ — встроены через JAR-in-JAR (JIJ)
+	modImplementation fileTree(dir: 'src/main/resources/META-INF/jars', include: ['*.jar'])
+
 	// JNA — для Discord Rich Presence (JNI)
 	implementation "net.java.dev.jna:jna:5.15.0"
 	implementation "net.java.dev.jna:jna-platform:5.15.0"

@@ -13,6 +13,11 @@
   },
   "mixins": ["fluxvisuals.mixins.json"],
   "accessWidener": "fluxvisuals.accesswidener",
+  "jars": [
+    { "file": "META-INF/jars/figura-0.1.5+1.21.11-fabric-mc.jar" },
+    { "file": "META-INF/jars/luaj-core-3.0.8-figura.jar" },
+    { "file": "META-INF/jars/luaj-jse-3.0.8-figura.jar" }
+  ],
   "depends": {
     "fabricloader": ">=0.19.3",
     "minecraft": "~1.21.11",

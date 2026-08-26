@@ -24,6 +24,11 @@ public final class ChangelogPanel {
    private static final float HEADER_HEIGHT = 20f;
 
    private static final String[][] SECTIONS = {
+      {"v1.0.15", null},
+      {"added", "Figura встроена в FluxVisuals — отдельно ставить не нужно"},
+      {"added", "Превью аватаров в карточках (avatar.png из бандла)"},
+      {"fixed", "Центрирование вкладок, кнопок и карточек в Cosmetics"},
+      {"fixed", "Клик по карточкам и кнопкам — корректные координаты"},
       {"v1.0.14", null},
       {"added", "Cosmetics — вкладка для моделей/головок/оружия Figura"},
       {"added", "Полная интеграция с Figura (бандлы + собственные аватары)"},
