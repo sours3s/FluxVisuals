@@ -84,6 +84,15 @@ public class GuiScreen {
    public static Map<Module, Animation2> moduleSettingsAlphaAnimations = new HashMap<>();
    public static Map<Module, Animation2> moduleBindAnimations = new HashMap<>();
    public static Map<SliderSetting, Animation2> sliderAnimations = new HashMap<>();
+   // Cosmetic tab state
+   public static int cosmeticTab = 0;
+   public static float cosmeticScroll = 0.0F;
+   public static float cosmeticMaxScroll = 0.0F;
+   public static int cosmeticSelectedIndex = -1;
+   public static int cosmeticHoverIndex = -1;
+   public static String cosmeticStatus = "";
+   public static boolean cosmeticStatusOk = false;
+   public static long cosmeticStatusUntil = 0L;
 
    public static ScrollUtil getScrollUtil() {
       if (scrollUtil == null) {

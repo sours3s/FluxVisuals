@@ -17,6 +17,11 @@ public class GuiMouseScrolled extends GuiScreen {
       float rectWidth = 251.5F;
       float rectHeight = 199.5F;
       if (!GuiScreen.exit && GuiRenderMain.isHovered(mouseX, mouseY, x1, y1, rectWidth, rectHeight)) {
+         if (GuiScreen.selectedCategories == ru.fluxvisuals.module.api.Category.Cosmetics) {
+            if (ru.fluxvisuals.ui.gui.component.render.GuiRenderCosmetics.handleMouseScrolled((double) mouseX, (double) mouseY, pScrollX, pScrollY)) {
+               return true;
+            }
+         }
          GuiScreen.getScrollUtil().handleScroll(pScrollY);
          return true;
       } else {

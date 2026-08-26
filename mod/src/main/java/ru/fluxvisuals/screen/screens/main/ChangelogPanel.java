@@ -24,6 +24,10 @@ public final class ChangelogPanel {
    private static final float HEADER_HEIGHT = 20f;
 
    private static final String[][] SECTIONS = {
+      {"v1.0.14", null},
+      {"added", "Cosmetics — вкладка для моделей/головок/оружия Figura"},
+      {"added", "Полная интеграция с Figura (бандлы + собственные аватары)"},
+      {"fixed", "Скролл и клики теперь работают на всех вкладках ClickGUI"},
       {"v1.0.13", null},
       {"added", "Shader Fog — 5 режимов неба (Caustic, Drain, Nebula, Plasma, Bloom)"},
       {"added", "Better Minecraft — анимации инвентаря, таба, чата и хотбара"},

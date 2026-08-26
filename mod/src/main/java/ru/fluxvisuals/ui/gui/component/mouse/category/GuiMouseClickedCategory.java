@@ -18,14 +18,17 @@ public class GuiMouseClickedCategory extends GuiScreen {
 
       for (Category category : GuiScreen.categories) {
          if (GuiRenderMain.isHovered(mouseX, mouseY, x1, y1 + 43.365F + downY, GuiLayout.SIDEBAR, GuiLayout.CATEGORY_STEP) && GuiScreen.selectedCategories != category) {
-            GuiScreen.animation15.setDirection(Direction.BACKWARDS);
-            GuiScreen.activeColorPicker = null;
-            GuiScreen.selectedCategories = category;
-            GuiScreen.modules = FluxVisualsClient.get.manager.getType(GuiScreen.selectedCategories);
-            GuiScreen.categoryAnimation.reset();
-            GuiScreen.moduleAnimation.reset();
-            GuiScreen.getScrollUtil().reset();
-            GuiScreen.scrollToModule = null;
+         GuiScreen.animation15.setDirection(Direction.BACKWARDS);
+         GuiScreen.activeColorPicker = null;
+         GuiScreen.selectedCategories = category;
+         GuiScreen.modules = FluxVisualsClient.get.manager.getType(GuiScreen.selectedCategories);
+         GuiScreen.categoryAnimation.reset();
+         GuiScreen.moduleAnimation.reset();
+         GuiScreen.getScrollUtil().reset();
+         GuiScreen.scrollToModule = null;
+         GuiScreen.cosmeticScroll = 0.0F;
+         GuiScreen.cosmeticSelectedIndex = -1;
+         GuiScreen.cosmeticHoverIndex = -1;
             FluxVisualsClient.get.guiManager.setGuiCategory(category);
          }
 

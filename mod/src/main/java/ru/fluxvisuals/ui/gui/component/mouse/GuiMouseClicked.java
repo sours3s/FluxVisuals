@@ -52,6 +52,11 @@ public class GuiMouseClicked extends GuiScreen {
                return true;
             }
          }
+         if (GuiScreen.selectedCategories == Category.Cosmetics) {
+            if (ru.fluxvisuals.ui.gui.component.render.GuiRenderCosmetics.handleMouseClicked((double) mouseX, (double) mouseY, pButton)) {
+               return true;
+            }
+         }
 
          if (GuiMouseClickedColorPicker.mouseClickedColorPicker(mouseX, mouseY, pButton)) {
             return true;
