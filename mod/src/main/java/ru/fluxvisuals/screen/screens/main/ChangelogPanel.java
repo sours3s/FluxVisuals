@@ -23,8 +23,10 @@ public final class ChangelogPanel {
    private static final float ITEM_SIZE = 7f;
    private static final float HEADER_HEIGHT = 20f;
 
-   private static final String[][] SECTIONS = {
-      {"v1.0.15", null},
+    private static final String[][] SECTIONS = {
+       {"v1.0.21", null},
+       {"fixed", "Краш при использовании косметики с включённым Customizable Player Models"},
+       {"v1.0.15", null},
       {"added", "Figura встроена в FluxVisuals — отдельно ставить не нужно"},
       {"added", "Превью аватаров в карточках (avatar.png из бандла)"},
       {"fixed", "Центрирование вкладок, кнопок и карточек в Cosmetics"},
