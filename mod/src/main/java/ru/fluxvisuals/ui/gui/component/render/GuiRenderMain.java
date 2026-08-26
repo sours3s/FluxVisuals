@@ -25,13 +25,17 @@ import ru.fluxvisuals.util.render.text.FontRegistry;
 @Environment(EnvType.CLIENT)
 public class GuiRenderMain extends GuiScreen {
    public static void renderMain(Renderer2D renderer2D, MatrixStack pose, int mouseX, int mouseY, float mainAlpha) {
-      // Специальные вкладки (Themes / Styles / Configs / Friends) вместо списка модулей.
+      // Специальные вкладки (Themes / Styles / Configs / Friends / Cosmetics) вместо списка модулей.
       if (GuiScreen.selectedCategories == Category.Configs) {
          GuiRenderSpecial.render(renderer2D, mainAlpha, mouseX, mouseY);
          return;
       }
       if (GuiScreen.selectedCategories == Category.Friends) {
          GuiRenderFriends.render(renderer2D, mainAlpha, mouseX, mouseY);
+         return;
+      }
+      if (GuiScreen.selectedCategories == Category.Cosmetics) {
+         GuiRenderCosmetics.render(renderer2D, pose, mouseX, mouseY, mainAlpha);
          return;
       }
 

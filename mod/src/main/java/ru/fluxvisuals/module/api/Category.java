@@ -9,7 +9,8 @@ public enum Category {
    Visuals("Visuals", "e"),
    Utils("Utils", "h"),
    Configs("Configs", "c"),
-   Friends("Friends", "d");
+   Friends("Friends", "d"),
+   Cosmetics("Cosmetics", "k");
 
    private final String name;
    private final String icon;
