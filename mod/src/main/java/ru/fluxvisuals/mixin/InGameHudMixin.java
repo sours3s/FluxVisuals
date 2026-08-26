@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.module.impl.visuals.Hud;
+import ru.fluxvisuals.ui.gui.GuiClient;
 import ru.fluxvisuals.util.render.HudRenderBridge;
 
 @Environment(EnvType.CLIENT)
@@ -182,6 +183,9 @@ public class InGameHudMixin {
       // (иначе они прячутся за тёмным фоном панели чата). Здесь пропускаем.
       MinecraftClient client = MinecraftClient.getInstance();
       if (client != null && client.currentScreen instanceof ChatScreen) {
+         return;
+      }
+      if (client != null && client.currentScreen instanceof GuiClient) {
          return;
       }
       HudRenderBridge.renderHudOverlay(context, tickCounter);
