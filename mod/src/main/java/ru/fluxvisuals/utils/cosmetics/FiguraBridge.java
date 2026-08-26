@@ -3,9 +3,6 @@ package ru.fluxvisuals.utils.cosmetics;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.loader.api.FabricLoader;
@@ -17,15 +14,10 @@ import org.slf4j.LoggerFactory;
 public final class FiguraBridge {
    private static final Logger LOGGER = LoggerFactory.getLogger(FiguraBridge.class);
    private static final String AVATAR_MANAGER = "org.figuramc.figura.avatar.AvatarManager";
-   private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor(r -> {
-      Thread t = new Thread(r, "FiguraBridge-Worker");
-      t.setDaemon(true);
-      return t;
-   });
    private static Boolean available;
    private static Method loadLocalAvatar;
    private static Method clearAvatars;
-   private static volatile String appliedId = "";
+   private static String appliedId = "";
 
    private FiguraBridge() {
    }
@@ -42,6 +34,7 @@ public final class FiguraBridge {
          return false;
       }
       try {
+         Class.forName("org.figuramc.figura.FiguraMod");
          Class<?> manager = Class.forName(AVATAR_MANAGER);
          loadLocalAvatar = manager.getMethod("loadLocalAvatar", Path.class);
          clearAvatars = manager.getMethod("clearAvatars", UUID.class);
@@ -69,45 +62,41 @@ public final class FiguraBridge {
       }
       MinecraftClient mc = MinecraftClient.getInstance();
       if (mc == null || mc.player == null) {
-         LOGGER.warn("Cannot apply cosmetic: player not available");
+         LOGGER.warn("Cannot apply: player not available");
          return false;
       }
-      appliedId = entry.id();
-      EXECUTOR.submit(() -> {
-         try {
-            CosmeticFirstPerson.repair(entry.folder());
-            if (entry.kind() != CosmeticEntry.Kind.WEAPON) {
-               CosmeticFirstPerson.installHide(entry.folder());
-            }
-            loadLocalAvatar.invoke(null, entry.folder());
-            LOGGER.info("Applied cosmetic: {}", entry.id());
-         } catch (Exception e) {
-            LOGGER.error("Failed to apply cosmetic {}", entry.id(), e);
-            appliedId = "";
-         }
-      });
-      return true;
+      try {
+         LOGGER.info("Loading avatar: {}", entry.id());
+         loadLocalAvatar.invoke(null, entry.folder());
+         appliedId = entry.id();
+         LOGGER.info("Avatar loaded: {}", entry.id());
+         return true;
+      } catch (Exception e) {
+         LOGGER.error("Failed to apply cosmetic {}", entry.id(), e);
+         return false;
+      }
    }
 
    public static boolean clear() {
-      String prevId = appliedId;
-      appliedId = "";
       if (!isAvailable()) {
+         appliedId = "";
          return false;
       }
       MinecraftClient mc = MinecraftClient.getInstance();
       UUID uuid = mc != null && mc.player != null ? mc.player.getUuid() : null;
       if (uuid == null) {
+         appliedId = "";
          return false;
       }
-      EXECUTOR.submit(() -> {
-         try {
-            clearAvatars.invoke(null, uuid);
-            LOGGER.info("Cleared cosmetic");
-         } catch (Exception e) {
-            LOGGER.error("Failed to clear cosmetic", e);
-         }
-      });
-      return true;
+      try {
+         clearAvatars.invoke(null, uuid);
+         appliedId = "";
+         LOGGER.info("Cleared cosmetic");
+         return true;
+      } catch (Exception e) {
+         LOGGER.error("Failed to clear cosmetic", e);
+         appliedId = "";
+         return false;
+      }
    }
 }
