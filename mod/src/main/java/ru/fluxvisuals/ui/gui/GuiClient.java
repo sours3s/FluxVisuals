@@ -18,7 +18,6 @@ import ru.fluxvisuals.event.EventInit;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.render.RenderEvent;
 import ru.fluxvisuals.module.api.Category;
-import ru.fluxvisuals.util.render.math.animation.Direction;
 import ru.fluxvisuals.module.api.Manager;
 import ru.fluxvisuals.module.api.Theme;
 import ru.fluxvisuals.module.api.setting.impl.HueSetting;
@@ -33,7 +32,7 @@ import ru.fluxvisuals.ui.gui.component.mouse.GuiMouseClicked;
 import ru.fluxvisuals.ui.gui.component.render.GuiRender;
 import ru.fluxvisuals.ui.gui.theme.ThemeScreen;
 import ru.fluxvisuals.util.player.MovementManager;
-import ru.fluxvisuals.ui.gui.component.render.DrawGuiRenderer;
+import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.ScaleHelper;
 
 @Environment(EnvType.CLIENT)
@@ -49,25 +48,31 @@ public class GuiClient extends Screen {
    public static void registerEventHandlers() {
       if (!eventsRegistered) {
          eventsRegistered = true;
-         // Event handlers are now registered through Screen lifecycle methods (render, mouseClicked, etc.)
-         // No need for separate event registration since GuiClient extends Screen
+         EventManager.register(new Object() {
+            @EventInit
+            public void onRender(RenderEvent event) {
+               MinecraftClient client = event.client();
+               if (client != null && client.currentScreen instanceof GuiClient) {
+                  double[] mouseX = new double[1];
+                  double[] mouseY = new double[1];
+                  if (client.getWindow() != null) {
+                     GLFW.glfwGetCursorPos(client.getWindow().getHandle(), mouseX, mouseY);
+                     if (client.mouse != null) {
+                        client.mouse.unlockCursor();
+                     }
+                  }
+
+                  int mouseXInt = (int)mouseX[0];
+                  int mouseYInt = (int)mouseY[0];
+                  DrawContext drawContext = null;
+                  GuiRender.render(event.renderer(), drawContext, mouseXInt, mouseYInt, client.getRenderTickCounter().getDynamicDeltaTicks());
+               }
+            }
+         });
       }
    }
 
-   @Override
    public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-      if (!FluxVisualsClient.isModInitialized()) {
-         return;
-      }
-
-      MinecraftClient client = MinecraftClient.getInstance();
-      if (client == null || client.getWindow() == null) {
-         return;
-      }
-
-      DrawGuiRenderer renderer = new DrawGuiRenderer(context);
-      GuiRender.render(renderer, context, mouseX, mouseY, deltaTicks);
-      // Do NOT call super.render() - this is a fully custom GUI, no vanilla widgets
    }
 
    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -78,8 +83,8 @@ public class GuiClient extends Screen {
 
    @Override
    public boolean mouseClicked(Click click, boolean bl) {
-      DrawGuiRenderer renderer = new DrawGuiRenderer(null);
-      return GuiMouseClicked.mouseClicked(renderer, click.comp_4798(), click.comp_4799(), click.button()) ? true : super.mouseClicked(click, bl);
+      Renderer2D renderer = FluxVisualsClient.getRenderer();
+      return renderer != null && GuiMouseClicked.mouseClicked(renderer, click.comp_4798(), click.comp_4799(), click.button()) ? true : super.mouseClicked(click, bl);
    }
 
    @Override
@@ -242,9 +247,7 @@ public class GuiClient extends Screen {
       GuiScreen.x = 480.0F - GuiScreen.width / 2.0F;
       GuiScreen.y = 260.0F - GuiScreen.height / 2.0F;
       GuiScreen.mainAnimation.reset();
-      GuiScreen.mainAnimation.setDirection(Direction.FORWARDS);
       GuiScreen.categoryAnimation.reset();
-      GuiScreen.categoryAnimation.setDirection(Direction.FORWARDS);
       if (FluxVisualsClient.get.guiManager == null) {
          FluxVisualsClient.get.guiManager = new GuiManager();
          FluxVisualsClient.get.guiManager.init();

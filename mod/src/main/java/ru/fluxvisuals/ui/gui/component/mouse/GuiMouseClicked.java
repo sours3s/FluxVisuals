@@ -12,16 +12,16 @@ import ru.fluxvisuals.ui.gui.component.mouse.category.GuiMouseClickedCategory;
 import ru.fluxvisuals.ui.gui.component.mouse.colorpicker.GuiMouseClickedColorPicker;
 import ru.fluxvisuals.ui.gui.component.mouse.module.GuiMouseClickedModule;
 import ru.fluxvisuals.ui.gui.component.mouse.setting.GuiMouseClickedSetting;
-import ru.fluxvisuals.ui.gui.component.render.DrawGuiRenderer;
 import ru.fluxvisuals.ui.gui.component.render.GuiRenderMain;
 import ru.fluxvisuals.ui.gui.theme.ThemeScreen;
+import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.MathHelper;
 import ru.fluxvisuals.util.render.math.ScaleHelper;
 import ru.fluxvisuals.util.render.math.ScaledResolution;
 
 @Environment(EnvType.CLIENT)
 public class GuiMouseClicked extends GuiScreen {
-   public static boolean mouseClicked(DrawGuiRenderer renderer2D, double pMouseX, double pMouseY, int pButton) {
+   public static boolean mouseClicked(Renderer2D renderer2D, double pMouseX, double pMouseY, int pButton) {
       int mouseX = (int)ScaleHelper.calc((float)pMouseX, (float)pMouseY)[0];
       int mouseY = (int)ScaleHelper.calc((float)pMouseX, (float)pMouseY)[1];
       if (captureActiveMouseBind(pButton)) {

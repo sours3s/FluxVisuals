@@ -39,7 +39,7 @@ public class GuiRenderSpecial extends GuiScreen {
       return GuiLayout.MODULE_HEIGHT;
    }
 
-   public static void render(DrawGuiRenderer r2, float mainAlpha, int mouseX, int mouseY) {
+   public static void render(Renderer2D r2, float mainAlpha, int mouseX, int mouseY) {
       if (GuiScreen.selectedCategories != Category.Configs) {
          return;
       }
@@ -48,7 +48,7 @@ public class GuiRenderSpecial extends GuiScreen {
       renderConfigs(r2, mainAlpha);
    }
 
-   private static void renderThemes(DrawGuiRenderer r2, float mainAlpha) {
+   private static void renderThemes(Renderer2D r2, float mainAlpha) {
       Theme[] themes = Theme.values();
       int outlineColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), (int)(20.4F * mainAlpha));
       int backThree = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), (int)(10.2F * mainAlpha));
@@ -76,7 +76,7 @@ public class GuiRenderSpecial extends GuiScreen {
       }
    }
 
-   private static void renderStyles(DrawGuiRenderer r2, float mainAlpha) {
+   private static void renderStyles(Renderer2D r2, float mainAlpha) {
       int outlineColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), (int)(20.4F * mainAlpha));
       int backThree = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), (int)(10.2F * mainAlpha));
       int textColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getTextColor(1, 1), (int)(255.0F * mainAlpha));
@@ -103,7 +103,7 @@ public class GuiRenderSpecial extends GuiScreen {
       }
    }
 
-   private static void renderConfigs(DrawGuiRenderer r2, float mainAlpha) {
+   private static void renderConfigs(Renderer2D r2, float mainAlpha) {
       int outlineColor = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), (int)(20.4F * mainAlpha));
       int backThree = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), (int)(10.2F * mainAlpha));
       int backHover = Renderer2D.ColorUtil.replAlpha(Renderer2D.ColorUtil.getMainColor(1, 1), (int)(18.0F * mainAlpha));
