@@ -229,7 +229,7 @@ public class ClickGui extends Screen {
     static final int[] PALETTE_PRESETS = new int[]{-45478, -5745161, -10262799, -12877066, -16337196, -15681151, -680437, -429290, -770210, -1};
     static final String[] MARKER_COLOR_LABELS = new String[]{"Фон", "Текст", "Иконка", "Фон иконки"};
     static final int MODULE_COLUMNS = 2;
-    static final Identifier AVATAR = Identifier.of("FluxVisuals", "icons/avatar.png");
+    static final Identifier AVATAR = Identifier.of("fluxvisuals", "icons/avatar.png");
     static final ClickGui$SidebarEntry[] SIDEBAR = new ClickGui$SidebarEntry[]{
         new ClickGui$SidebarEntry(Category.VISUALS, "star", "star", 1.25F),
         new ClickGui$SidebarEntry(Category.UTILITY, "command", "command_large", 1.0F),

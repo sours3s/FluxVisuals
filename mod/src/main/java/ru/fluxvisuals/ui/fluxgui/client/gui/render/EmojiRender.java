@@ -9,7 +9,7 @@ import net.minecraft.util.Identifier;
 public final class EmojiRender {
     private static final int COLUMNS = 8;
     private static final int ROWS = 8;
-    private static final Identifier ATLAS = Identifier.of("FluxVisuals", "textures/gui/emoji_atlas.png");
+    private static final Identifier ATLAS = Identifier.of("fluxvisuals", "textures/gui/emoji_atlas.png");
     private static final int[] CODEPOINTS = new int[]{
         128512,
         128515,

@@ -19,9 +19,9 @@ import org.lwjgl.system.MemoryUtil;
 
 public final class FramebufferBlitter {
     private static final RenderPipeline PIPELINE = RenderPipeline.builder()
-        .withLocation(Identifier.of("FluxVisuals", "pipeline/core/framebuffer_blit"))
-        .withVertexShader(Identifier.of("FluxVisuals", "core/framebuffer_blit"))
-        .withFragmentShader(Identifier.of("FluxVisuals", "core/framebuffer_blit"))
+        .withLocation(Identifier.of("fluxvisuals", "pipeline/core/framebuffer_blit"))
+        .withVertexShader(Identifier.of("fluxvisuals", "core/framebuffer_blit"))
+        .withFragmentShader(Identifier.of("fluxvisuals", "core/framebuffer_blit"))
         .withVertexFormat(VertexFormats.EMPTY, DrawMode.TRIANGLES)
         .withSampler("Sampler0")
         .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
