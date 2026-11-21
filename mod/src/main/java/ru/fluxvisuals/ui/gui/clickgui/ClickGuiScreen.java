@@ -18,7 +18,7 @@ import ru.fluxvisuals.ui.gui.clickgui.util.type.KeyInputAction;
 import ru.fluxvisuals.ui.gui.clickgui.util.type.MouseButtonAction;
 
 /**
- * Vanilla Screen that drives the donor ClickGui's WindowController.
+ * Vanilla Screen that drives the source ClickGui's WindowController.
  *
  * In 1.21.11 input dispatch moved to net.minecraft.client.Mouse / Keyboard, which call the current
  * screen with the new event objects (Click, KeyInput, CharInput). We translate them into the mod's
@@ -34,7 +34,7 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     protected void init() {
-        // В доноре ClientInitEvent диспатчился из MinecraftClientMixin и создавал
+        // В исходныйе ClientInitEvent диспатчился из MinecraftClientMixin и создавал
         // DrawEngine (фрагментный шейдер) + windowController.init(). Здесь этого вызова
         // не было — дублируем его, чтобы рендер кликгуи был готов до отрисовки.
         FluxVisuals.INSTANCE.eventDispatcher().dispatch(new ru.fluxvisuals.ui.gui.clickgui.events.impl.ClientInitEvent());

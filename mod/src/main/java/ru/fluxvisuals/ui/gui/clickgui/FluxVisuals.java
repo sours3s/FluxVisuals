@@ -127,13 +127,7 @@ public class FluxVisuals {
         this.configManager.loadLocalConfig();
         this.executor.scheduleAtFixedRate(this.configManager::saveLocalConfig, 30L, 30L, TimeUnit.SECONDS);
         registerShutdownHook();
-        try {
-            Class.forName("com.viaversion.viafabricplus.ViaFabricPlus");
-            if (com.viaversion.viafabricplus.ViaFabricPlus.getImpl() != null) {
-                this.viaLoaded = true;
-            }
-        } catch (ClassNotFoundException e2) {
-        }
+        // ViaFabricPlus не используется — версия протокола фиксирована.
     }
 
     public void captureDefaultConfig() {

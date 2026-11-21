@@ -1,0 +1,175 @@
+{
+  "atlas": {
+    "width": 288,
+    "height": 288,
+    "size": 64,
+    "distanceRange": 6
+  },
+  "icons": {
+    "logo": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.054688,
+      "planeRight": 1.046875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 0.5,
+      "atlasTop": 0.5,
+      "atlasRight": 70.5,
+      "atlasBottom": 71.5,
+      "designSize": 14.0002
+    },
+    "search": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.054688,
+      "planeRight": 1.046875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 213.5,
+      "atlasTop": 0.5,
+      "atlasRight": 283.5,
+      "atlasBottom": 71.5,
+      "designSize": 12.0
+    },
+    "list": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.007812,
+      "planeRight": 1.046875,
+      "planeBottom": 0.007812,
+      "atlasLeft": 142.5,
+      "atlasTop": 216.5,
+      "atlasRight": 212.5,
+      "atlasBottom": 281.5,
+      "designSize": 13.5
+    },
+    "star": {
+      "planeLeft": 0.03125,
+      "planeTop": -1.054688,
+      "planeRight": 0.96875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 142.5,
+      "atlasTop": 144.5,
+      "atlasRight": 202.5,
+      "atlasBottom": 215.5,
+      "designSize": 14.5267
+    },
+    "command": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.054688,
+      "planeRight": 1.046875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 71.5,
+      "atlasTop": 216.5,
+      "atlasRight": 141.5,
+      "atlasBottom": 287.5,
+      "designSize": 13.4999
+    },
+    "grid": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.054688,
+      "planeRight": 1.046875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 71.5,
+      "atlasTop": 144.5,
+      "atlasRight": 141.5,
+      "atlasBottom": 215.5,
+      "designSize": 16.0
+    },
+    "diamond": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.054688,
+      "planeRight": 1.046875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 0.5,
+      "atlasTop": 216.5,
+      "atlasRight": 70.5,
+      "atlasBottom": 287.5,
+      "designSize": 16.6658
+    },
+    "command_large": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.054688,
+      "planeRight": 1.046875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 0.5,
+      "atlasTop": 144.5,
+      "atlasRight": 70.5,
+      "atlasBottom": 215.5,
+      "designSize": 17.7499
+    },
+    "command_small": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.054688,
+      "planeRight": 1.046875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 200.5,
+      "atlasTop": 72.5,
+      "atlasRight": 270.5,
+      "atlasBottom": 143.5,
+      "designSize": 12.4999
+    },
+    "person": {
+      "planeLeft": 0.03125,
+      "planeTop": -1.054688,
+      "planeRight": 0.96875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 139.5,
+      "atlasTop": 72.5,
+      "atlasRight": 199.5,
+      "atlasBottom": 143.5,
+      "designSize": 12.0
+    },
+    "monitor": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.054688,
+      "planeRight": 1.046875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 68.5,
+      "atlasTop": 72.5,
+      "atlasRight": 138.5,
+      "atlasBottom": 143.5,
+      "designSize": 12.0
+    },
+    "ping": {
+      "planeLeft": -0.023438,
+      "planeTop": -1.054688,
+      "planeRight": 1.023438,
+      "planeBottom": 0.054688,
+      "atlasLeft": 0.5,
+      "atlasTop": 72.5,
+      "atlasRight": 67.5,
+      "atlasBottom": 143.5,
+      "designSize": 13.5
+    },
+    "keyboard": {
+      "planeLeft": -0.046875,
+      "planeTop": -0.898438,
+      "planeRight": 1.046875,
+      "planeBottom": -0.101562,
+      "atlasLeft": 213.5,
+      "atlasTop": 216.5,
+      "atlasRight": 283.5,
+      "atlasBottom": 267.5,
+      "designSize": 15.0
+    },
+    "flask": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.054688,
+      "planeRight": 1.046875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 142.5,
+      "atlasTop": 0.5,
+      "atlasRight": 212.5,
+      "atlasBottom": 71.5,
+      "designSize": 12.0
+    },
+    "clock": {
+      "planeLeft": -0.046875,
+      "planeTop": -1.054688,
+      "planeRight": 1.046875,
+      "planeBottom": 0.054688,
+      "atlasLeft": 71.5,
+      "atlasTop": 0.5,
+      "atlasRight": 141.5,
+      "atlasBottom": 71.5,
+      "designSize": 13.4999
+    }
+  }
+}

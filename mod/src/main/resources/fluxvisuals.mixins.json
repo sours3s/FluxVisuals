@@ -9,6 +9,7 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "RenderLayerMultiPhaseMixin",
+    "ShaderLoaderMixin",
     "RenderSystemMixin",
     "RenderPhaseMixin",
     "MinecraftClientMixin",

@@ -52,18 +52,20 @@ dependencies {
 	implementation "org.springframework:spring-websocket:6.1.13"
 	implementation "com.formdev:svgSalamander:1.1.4"
 
+	// Внешние библиотеки ClickGUI должны быть в jar: implementation их только компилирует.
+	// Без include классы okhttp3/retrofit2/etc. отсутствуют в рантайме и мод падает на старте.
+	include "com.squareup.okhttp3:okhttp:4.12.0"
+	include "com.squareup.okio:okio-jvm:3.6.0"
+	include "org.jetbrains.kotlin:kotlin-stdlib:1.9.10"
+	include "com.squareup.retrofit2:retrofit:2.11.0"
+	include "com.squareup.retrofit2:converter-gson:2.11.0"
+	include "org.java-websocket:Java-WebSocket:1.5.7"
+	include "net.java.dev.jna:jna:5.15.0"
+	include "net.java.dev.jna:jna-platform:5.15.0"
+
 	// Lombok (@Generated и codegen из Arizona-порта).
 	compileOnly "org.projectlombok:lombok:1.18.38"
 	annotationProcessor "org.projectlombok:lombok:1.18.38"
-}
-
-configurations {
-	// ProGuard — обфускация финального jar (запускается напрямую через JavaExec)
-	proguard
-}
-
-dependencies {
-	proguard "com.guardsquare:proguard-base:7.6.1"
 }
 
 processResources {
@@ -108,57 +110,67 @@ publishing {
 	}
 }
 
-// ---- Обфускация финального jar (ProGuard, запуск напрямую через JavaExec) ----
-// Берёт remapped jar и переименовывает классы/методы/поля, кроме keep-списка
-// (миксины, entrypoint, лицензия, события, module API). Результат — build/release/.
+// ---- Обфускация финального jar (Grunteon 3, CLI) ----
+// Берёт remapped jar, переименовывает классы/методы/поля и обновляет entrypoints
+// в fabric.mod.json. Исключения (Gson-модели, миксины, reflection) — в grunteon-config.json.
 tasks.register('obfuscateJar', JavaExec) {
 	dependsOn remapJar
 
 	def outDir = layout.buildDirectory.dir("release")
 	def outJar = layout.buildDirectory.file("release/${archives_base_name}-${project.version}.jar")
+	def configFile = layout.buildDirectory.file('tmp/grunteon-config.json')
 
-	classpath = configurations.proguard
-	mainClass = 'proguard.ProGuard'
-	jvmArgs '-Xmx2g'
+	// Grunteon 3 требует JDK 25. Пути можно переопределить:
+	//   -PgrunteonJar=... -PgrunteonJava=...
+	// По умолчанию берём JAR с Рабочего стола и java из PATH.
+	def grunteonJarPath = project.findProperty('grunteonJar')
+		?: System.getenv('GRUNTEON_JAR')
+		?: new File(System.getProperty('user.home'), 'Desktop/Grunteon-3.0.0.260621.jar').absolutePath
+	def grunteonJava = project.findProperty('grunteonJava') ?: System.getenv('GRUNTEON_JAVA') ?: 'java'
+	def grunteonXmx = project.findProperty('grunteonXmx') ?: '1536m'
 
-	// Windows ограничивает длину командной строки (~32k). Сотни -libraryjars
-	// не помещаются, поэтому все аргументы ProGuard пишутся в @-файл.
-	def proguardArgsFile = layout.buildDirectory.file('tmp/proguard-args.txt')
-	args '@' + proguardArgsFile.get().asFile.absolutePath
+	classpath = files(grunteonJarPath)
+	mainClass = 'net.spartanb312.grunteon.obfuscator.MainKt'
+	executable = grunteonJava
+	jvmArgs '--enable-native-access=ALL-UNNAMED', "-Xmx${grunteonXmx}"
+	args '--config', configFile.get().asFile.absolutePath
 
 	doFirst {
-		def q = { it.absolutePath.replace('\\', '/') }
-		def lines = []
-		lines << "-injars '${q(remapJar.archiveFile.get().asFile)}'"
-		lines << "-outjars '${q(outJar.get().asFile)}'"
-
-		// Библиотеки: все зависимости (minecraft named, fabric-loader, mixin, jna) + JDK 21 jmods.
-		configurations.runtimeClasspath.files.each { f ->
-			lines << "-libraryjars '${q(f)}'"
+		if (!file(grunteonJarPath).isFile()) {
+			throw new GradleException("Grunteon JAR not found: ${grunteonJarPath}. Pass -PgrunteonJar=<path> or set GRUNTEON_JAR")
 		}
-		def jhome = System.getProperty('java.home')
-		if (jhome != null) {
-			def jmods = new File(jhome, 'jmods')
-			if (jmods.isDirectory()) {
-				jmods.listFiles().findAll { it.name.endsWith('.jmod') }.each { lines << "-libraryjars '${q(it)}'" }
+
+		// Grunteon читает только intermediary-jar Minecraft. Подключение всего
+		// runtimeClasspath (десятки тысяч классов) упирается в лимит памяти JVM.
+		def libs = []
+		def loomMcDir = new File(gradle.gradleUserHomeDir,
+			'caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-merged-intermediary')
+		if (loomMcDir.isDirectory()) {
+			def candidates = fileTree(dir: loomMcDir, include: '**/*.jar').files.findAll {
+				it.name.contains(project.minecraft_version as String)
 			}
+			def mcJar = candidates.find { it.name.endsWith('-v2.jar') } ?: (candidates ? candidates[0] : null)
+			if (mcJar != null) libs << mcJar.absolutePath.replace('\\', '/')
 		}
+		def customMcJar = project.findProperty('grunteonMinecraftJar')
+		if (customMcJar != null) libs << file(customMcJar).absolutePath.replace('\\', '/')
 
-		lines << "-include '${q(file('proguard-rules.pro'))}'"
+		def json = groovy.json.JsonOutput
+		def configText = file('grunteon-config.json').text
+			.replace('__INPUT__', json.toJson(remapJar.archiveFile.get().asFile.absolutePath.replace('\\', '/')))
+			.replace('__OUTPUT__', json.toJson(outJar.get().asFile.absolutePath.replace('\\', '/')))
+			.replace('__LIBS__', json.toJson(libs))
 
-		def argsFile = proguardArgsFile.get().asFile
-		argsFile.parentFile.mkdirs()
-		argsFile.text = lines.join('\n')
+		def config = configFile.get().asFile
+		config.parentFile.mkdirs()
+		config.text = configText
 	}
 
 	inputs.file(remapJar.archiveFile)
-	inputs.files(file('proguard-rules.pro'),
-		file('obfuscation-dictionary.txt'),
-		file('class-obfuscation-dictionary.txt'),
-		file('package-obfuscation-dictionary.txt'))
+	inputs.files(file('grunteon-config.json'))
 	outputs.dir(outDir)
 
-	// Без принудительного указания working dir файл правил ищется относительно CWD.
+	// Относительные пути внутри конфига считаются от CWD процесса.
 	workingDir = projectDir
 }
 

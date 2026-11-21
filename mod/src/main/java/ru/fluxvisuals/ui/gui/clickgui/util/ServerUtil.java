@@ -4,9 +4,6 @@ import ru.fluxvisuals.ui.gui.clickgui.util.type.Mc;
 import ru.fluxvisuals.ui.gui.clickgui.events.impl.PacketReceiveEvent;
 import ru.fluxvisuals.ui.gui.clickgui.util.math.Stopwatch;
 
-import com.viaversion.viafabricplus.ViaFabricPlus;
-import com.viaversion.viafabricplus.api.ViaFabricPlusBase;
-import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Optional;
@@ -52,21 +49,10 @@ public final class ServerUtil {
     }
 
     public static void registerViaVersionClamp() {
-        ViaFabricPlusBase impl = ViaFabricPlus.getImpl();
-        if (impl.getTargetVersion().olderThan(ProtocolVersion.v1_17)) {
-            impl.setTargetVersion(ProtocolVersion.v1_17);
-        }
-        impl.registerOnChangeProtocolVersionCallback((protocolVersion, protocolVersion2) -> {
-            if (protocolVersion2.olderThan(ProtocolVersion.v1_17)) {
-                impl.setTargetVersion(ProtocolVersion.v1_17);
-            }
-        });
+        // ViaFabricPlus не используется: мод работает на фиксированной версии протокола.
     }
 
     public static int getProtocolVersion() {
-        if (FluxVisuals.INSTANCE.viaLoaded()) {
-            return ViaFabricPlus.getImpl().getTargetVersion().getVersion();
-        }
         return 769;
     }
 

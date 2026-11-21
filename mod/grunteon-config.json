@@ -1,0 +1,101 @@
+{
+  "globalConfig": {
+    "input": "__INPUT__",
+    "output": "__OUTPUT__",
+    "libs": __LIBS__,
+    "exclusions": [
+      "ru/fluxvisuals/mixin/**",
+      "ru/fluxvisuals/license/**",
+      "ru/fluxvisuals/event/**",
+      "ru/fluxvisuals/module/api/**",
+      "ru/fluxvisuals/api/**",
+      "ru/fluxvisuals/crosshair/**",
+      "ru/fluxvisuals/screen/**",
+      "ru/fluxvisuals/ui/gui/clickgui/util/model/**",
+      "ru/fluxvisuals/ui/gui/clickgui/util/render/**",
+      "ru/fluxvisuals/ui/gui/clickgui/util/net/**",
+      "ru/fluxvisuals/ui/gui/clickgui/config/**",
+      "ru/fluxvisuals/ui/gui/clickgui/util/StringMappingLookup",
+      "ru/fluxvisuals/ui/fluxgui/config/**",
+      "ru/fluxvisuals/ui/fluxgui/theme/**"
+    ],
+    "mixinExclusions": [
+      "ru/fluxvisuals/mixin/**"
+    ],
+    "controllableRandom": true,
+    "baseSeed": "fluxvisuals-1.0.23",
+    "missingCheck": false,
+    "compressionLevel": 6
+  },
+  "transformers": [
+    {
+      "name": "ReflectionSupport",
+      "enabled": false,
+      "config": {
+        "type": "net.spartanb312.grunteon.obfuscator.process.transformers.other.ReflectionSupport.Config",
+        "classLiterals": true,
+        "memberLiterals": true,
+        "methodHandleLiterals": true,
+        "unknownOwnerFallback": true
+      }
+    },
+    {
+      "name": "SourceDebugInfoHide",
+      "enabled": true,
+      "config": {
+        "type": "net.spartanb312.grunteon.obfuscator.process.transformers.optimize.SourceDebugInfoHide.Config",
+        "sourceFiles": "Remove",
+        "lineNumbers": true,
+        "sourceNames": [""]
+      }
+    },
+    {
+      "name": "ClassRenamer",
+      "enabled": true,
+      "config": {
+        "type": "net.spartanb312.grunteon.obfuscator.process.transformers.rename.ClassRenamer.Config",
+        "dictionary": "Alphabet",
+        "parent": "",
+        "shuffled": true
+      }
+    },
+    {
+      "name": "MethodRenamer",
+      "enabled": true,
+      "config": {
+        "type": "net.spartanb312.grunteon.obfuscator.process.transformers.rename.MethodRenamer.Config",
+        "dictionary": "Alphabet"
+      }
+    },
+    {
+      "name": "FieldRenamer",
+      "enabled": true,
+      "config": {
+        "type": "net.spartanb312.grunteon.obfuscator.process.transformers.rename.FieldRenamer.Config",
+        "dictionary": "Alphabet",
+        "excludedNames": ["INSTANCE", "Companion", "LOGGER", "serialVersionUID"]
+      }
+    },
+    {
+      "name": "LocalVarRenamer",
+      "enabled": true,
+      "config": {
+        "type": "net.spartanb312.grunteon.obfuscator.process.transformers.rename.LocalVarRenamer.Config",
+        "dictionary": "Alphabet",
+        "deleteASMInfo": true
+      }
+    },
+    {
+      "name": "PostProcess",
+      "enabled": true,
+      "config": {
+        "type": "net.spartanb312.grunteon.obfuscator.process.transformers.PostProcess.Config",
+        "manifest": true,
+        "pluginMain": true,
+        "bungeeMain": true,
+        "fabricMain": true,
+        "velocityMain": true
+      }
+    }
+  ]
+}

@@ -40,7 +40,8 @@ public class KeyboardMixin {
             // Переключаем только на нажатии (action 1), не на autorepeat (action 2).
             if (action == 1) {
                if (clickGuiOpen) {
-                  client.setScreen(null);
+                  // Закрываем через сам экран, чтобы не оборвать анимацию закрытия.
+                  client.currentScreen.close();
                } else if (client.currentScreen == null) {
                   client.setScreen(new FluxClickGuiScreen());
                   if (client.mouse != null) {
@@ -50,7 +51,7 @@ public class KeyboardMixin {
             }
 
             // Подавляем и нажатие, и повторы: иначе они доходят до хендлеров
-            // донорского MenuScreen и вызывают мерцание/самозакрытие GUI.
+            // исходныйского MenuScreen и вызывают мерцание/самозакрытие GUI.
             ci.cancel();
             return;
          }
