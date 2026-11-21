@@ -5,7 +5,6 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.pipeline.RenderPipeline.Snippet;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
@@ -16,7 +15,6 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.textures.TextureFormat;
 import com.mojang.blaze3d.vertex.VertexFormat.DrawMode;
 import java.awt.Color;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
@@ -36,7 +34,7 @@ import org.lwjgl.system.MemoryUtil;
 
 public final class FluxGlassPipeline {
     private static final int BUFFER_SIZE = 256;
-    private static final RenderPipeline PIPELINE = RenderPipeline.builder(snippet("TRANSFORMS_AND_PROJECTION_SNIPPET"))
+    private static final RenderPipeline PIPELINE = RenderPipeline.builder(RenderPipelines.TRANSFORMS_AND_PROJECTION_SNIPPET)
         .withLocation(Identifier.of("fluxvisuals", "pipeline/flux_glass"))
         .withVertexShader(Identifier.of("fluxvisuals", "core/flux_glass_vertex"))
         .withFragmentShader(Identifier.of("fluxvisuals", "core/flux_glass_fragment"))
@@ -63,16 +61,6 @@ public final class FluxGlassPipeline {
     private static boolean hudFrameCaptureLocked;
     private static boolean initialized;
     private static final Color DEFAULT_TINT = new Color(206, 212, 226, 30);
-
-    private static Snippet snippet(String name) {
-        try {
-            Field f = RenderPipelines.class.getDeclaredField(name);
-            f.setAccessible(true);
-            return (Snippet)f.get(null);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private FluxGlassPipeline() {
     }
