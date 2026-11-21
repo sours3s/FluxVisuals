@@ -17,7 +17,9 @@
       "ru/fluxvisuals/ui/gui/clickgui/config/**",
       "ru/fluxvisuals/ui/gui/clickgui/util/StringMappingLookup",
       "ru/fluxvisuals/ui/fluxgui/config/**",
-      "ru/fluxvisuals/ui/fluxgui/theme/**"
+      "ru/fluxvisuals/ui/fluxgui/theme/**",
+      "ru/fluxvisuals/client/FluxVisualsClient",
+      "ru/fluxvisuals/ui/gui/clickgui/FluxClientInit"
     ],
     "mixinExclusions": [
       "ru/fluxvisuals/mixin/**"
