@@ -34,6 +34,8 @@
 
 # --- Entrypoint Fabric (fabric.mod.json) ---
 -keep public class ru.fluxvisuals.client.FluxVisualsClient { *; }
+# Второй entrypoint инициализирует донорский ClickGUI — имя берётся из fabric.mod.json
+-keep public class ru.fluxvisuals.ui.gui.clickgui.FluxClientInit { *; }
 
 # --- Миксины: имена классов жёстко завязаны на mixins.json ---
 -keep class ru.fluxvisuals.mixin.** { *; }
