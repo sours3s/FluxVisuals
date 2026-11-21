@@ -1,13 +1,13 @@
 package ru.fluxvisuals.api.render;
 
-import ru.fluxvisuals.api.render.system.IconUse;
 import ru.fluxvisuals.api.render.system.ShaderUse;
 import ru.fluxvisuals.api.render.system.TextureUse;
+import ru.fluxvisuals.api.render.system.IconUse;
+import ru.fluxvisuals.api.render.system.sys2d.CRenderSystem;
+import ru.fluxvisuals.api.render.system.sys2d.TextureAtlas;
 import net.minecraft.client.gui.PlayerSkinDrawer;
 import net.minecraft.entity.player.SkinTextures;
 import net.minecraft.item.ItemStack;
-import ru.fluxvisuals.api.render.system.sys2d.CRenderSystem;
-import ru.fluxvisuals.api.render.system.sys2d.TextureAtlas;
 import ru.fluxvisuals.vse.utils.client.client.ClientColors;
 import ru.fluxvisuals.vse.utils.client.client.ClientSettings;
 import ru.fluxvisuals.vse.utils.math.MathUtility;

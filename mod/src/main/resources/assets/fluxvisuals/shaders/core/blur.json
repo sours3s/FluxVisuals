@@ -1,6 +1,6 @@
 {
-    "vertex": "godweer:core/blur",
-    "fragment": "godweer:core/blur",
+    "vertex": "fluxvisuals:core/blur",
+    "fragment": "fluxvisuals:core/blur",
     "samplers": [
         { "name": "DiffuseSampler" }
     ],

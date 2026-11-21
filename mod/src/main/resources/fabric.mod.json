@@ -9,7 +9,10 @@
   "icon": "assets/fluxvisuals/textures/icon/logo.png",
   "environment": "client",
   "entrypoints": {
-    "client": ["ru.fluxvisuals.client.FluxVisualsClient"]
+    "client": [
+      "ru.fluxvisuals.client.FluxVisualsClient",
+      "ru.fluxvisuals.ui.gui.clickgui.FluxClientInit"
+    ]
   },
   "mixins": ["fluxvisuals.mixins.json"],
   "accessWidener": "fluxvisuals.accesswidener",

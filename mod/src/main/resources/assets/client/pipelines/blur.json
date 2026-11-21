@@ -1,0 +1,8 @@
+{
+  "vertex": "client:core/blur",
+  "fragment": "client:core/blur",
+  "samplers": ["Sampler0"],
+  "uniforms": [
+    { "name": "BlurData", "type": "uniform_buffer", "count": 1 }
+  ]
+}

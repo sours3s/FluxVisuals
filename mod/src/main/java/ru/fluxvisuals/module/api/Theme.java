@@ -27,6 +27,12 @@ public enum Theme {
         return new Color(accent(), true);
     }
 
+    public Color getText2() { return new Color(0x7267FF); }
+    public Color getText()  { return new Color(0xBBBDFF); }
+    public Color getBg()    { return new Color(0x1A1A2E); }
+    public Color getBg2()   { return new Color(0x16213E); }
+    public Color getOutline() { return new Color(0x7267FF); }
+
     public static class SimpleAnimation {
         private float output = 1f;
 

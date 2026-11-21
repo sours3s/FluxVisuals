@@ -1,0 +1,8 @@
+{
+  "vertex": "client:core/kawase_down",
+  "fragment": "client:core/kawase_down",
+  "samplers": ["Sampler0"],
+  "uniforms": [
+    { "name": "BlurData", "type": "uniform_buffer", "count": 1 }
+  ]
+}

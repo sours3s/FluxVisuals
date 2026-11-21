@@ -1,0 +1,8 @@
+{
+  "vertex": "client:core/rect",
+  "fragment": "client:core/rect",
+  "samplers": [],
+  "uniforms": [
+    { "name": "Projection", "type": "uniform_buffer", "count": 1 }
+  ]
+}

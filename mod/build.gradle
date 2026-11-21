@@ -41,6 +41,17 @@ dependencies {
 	implementation "net.java.dev.jna:jna:5.15.0"
 	implementation "net.java.dev.jna:jna-platform:5.15.0"
 
+	// WebSocket — для AuthWebSocketClient
+	implementation "org.java-websocket:Java-WebSocket:1.5.7"
+
+	// --- Зависимости исходного ClickGui (из expensivesrc/build.gradle) ---
+	implementation "org.json:json:20240303"
+	implementation "com.squareup.okhttp3:okhttp:4.12.0"
+	implementation "com.squareup.retrofit2:retrofit:2.11.0"
+	implementation "com.squareup.retrofit2:converter-gson:2.11.0"
+	implementation "org.springframework:spring-websocket:6.1.13"
+	implementation "com.formdev:svgSalamander:1.1.4"
+
 	// Lombok (@Generated и codegen из Arizona-порта).
 	compileOnly "org.projectlombok:lombok:1.18.38"
 	annotationProcessor "org.projectlombok:lombok:1.18.38"
@@ -110,22 +121,35 @@ tasks.register('obfuscateJar', JavaExec) {
 	mainClass = 'proguard.ProGuard'
 	jvmArgs '-Xmx2g'
 
-	args '-injars', remapJar.archiveFile.get().asFile.absolutePath
-	args '-outjars', outJar.get().asFile.absolutePath
+	// Windows ограничивает длину командной строки (~32k). Сотни -libraryjars
+	// не помещаются, поэтому все аргументы ProGuard пишутся в @-файл.
+	def proguardArgsFile = layout.buildDirectory.file('tmp/proguard-args.txt')
+	args '@' + proguardArgsFile.get().asFile.absolutePath
 
-	// Библиотеки: все зависимости (minecraft named, fabric-loader, mixin, jna) + JDK 21 jmods.
-	configurations.runtimeClasspath.files.each { f ->
-		args '-libraryjars', f.absolutePath
-	}
-	def jhome = System.getProperty('java.home')
-	if (jhome != null) {
-		def jmods = new File(jhome, 'jmods')
-		if (jmods.isDirectory()) {
-			jmods.listFiles().findAll { it.name.endsWith('.jmod') }.each { args '-libraryjars', it.absolutePath }
+	doFirst {
+		def q = { it.absolutePath.replace('\\', '/') }
+		def lines = []
+		lines << "-injars '${q(remapJar.archiveFile.get().asFile)}'"
+		lines << "-outjars '${q(outJar.get().asFile)}'"
+
+		// Библиотеки: все зависимости (minecraft named, fabric-loader, mixin, jna) + JDK 21 jmods.
+		configurations.runtimeClasspath.files.each { f ->
+			lines << "-libraryjars '${q(f)}'"
 		}
-	}
+		def jhome = System.getProperty('java.home')
+		if (jhome != null) {
+			def jmods = new File(jhome, 'jmods')
+			if (jmods.isDirectory()) {
+				jmods.listFiles().findAll { it.name.endsWith('.jmod') }.each { lines << "-libraryjars '${q(it)}'" }
+			}
+		}
 
-	args '-include', file('proguard-rules.pro').absolutePath
+		lines << "-include '${q(file('proguard-rules.pro'))}'"
+
+		def argsFile = proguardArgsFile.get().asFile
+		argsFile.parentFile.mkdirs()
+		argsFile.text = lines.join('\n')
+	}
 
 	inputs.file(remapJar.archiveFile)
 	inputs.files(file('proguard-rules.pro'),
@@ -136,4 +160,16 @@ tasks.register('obfuscateJar', JavaExec) {
 
 	// Без принудительного указания working dir файл правил ищется относительно CWD.
 	workingDir = projectDir
+}
+
+tasks.register('printCpc') {
+    doLast {
+        println configurations.compileClasspath.asPath
+    }
+}
+
+task printClasspath {
+    doLast {
+        configurations.compileClasspath.files.each { println it.absolutePath }
+    }
 }

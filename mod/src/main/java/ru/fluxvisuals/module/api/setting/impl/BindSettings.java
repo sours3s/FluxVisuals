@@ -11,6 +11,7 @@ public class BindSettings extends Setting {
    public int key;
    public String description;
    public boolean active;
+   public boolean allowMouse = true; // For mouse binding support in ClickGUI
 
    public BindSettings(String name, int key) {
       this.name = name;

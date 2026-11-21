@@ -1,0 +1,9 @@
+package ru.fluxvisuals.ui.gui.clickgui.config;
+
+import com.google.gson.reflect.TypeToken;
+import java.util.List;
+
+public class CredentialListTypeToken extends TypeToken<List<StoredCredential>> {
+    CredentialListTypeToken(CredentialStore credentialStore) {
+    }
+}

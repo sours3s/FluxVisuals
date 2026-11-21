@@ -24,7 +24,7 @@ import java.awt.Color;
 public class HotBarHUD {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-    // Константы из донора (HotbarElement)
+    // Константы из исходников (HotbarElement)
     private static final float SLOT_SIZE = 24.0F;
     private static final float SLOT_OFFSET = 2.0F;
     private static final float HOTBAR_WIDTH = 198.0F;
@@ -33,21 +33,21 @@ public class HotBarHUD {
     private static final float ROUND_SMALL = 4.0F;
     private static final float SMOOTH = 1.0F;
 
-    // Анимация выбранного слота (как в доноре)
+    // Анимация выбранного слота (как в исходниках)
     private static float slotChangeAnim = 0f;
 
     /**
-     * Рендерит хотбар — вызывается из InGameHudMixin (как в доноре)
+     * Рендерит хотбар — вызывается из InGameHudMixin (как в исходниках)
      */
     public static void renderHotbar(DrawContext context, RenderTickCounter tickCounter) {
         if (!FluxVisualsClient.isModInitialized()) return;
         if (mc.player == null || mc.world == null) return;
 
-        // Анимация выбранного слота (как в доноре)
+        // Анимация выбранного слота (как в исходниках)
         int slot = mc.player.getInventory().getSelectedSlot();
         slotChangeAnim = AnimationMath.animation(slotChangeAnim, slot, 0.41f);
 
-        // Позиции (как в доноре) — ванильная позиция
+        // Позиции (как в исходниках) — ванильная позиция
         float halfWidth = mc.getWindow().getScaledWidth() / 2.0F;
         float x = halfWidth - HOTBAR_WIDTH / 2.0F;
         float y = mc.getWindow().getScaledHeight() - HOTBAR_OFFSET;
@@ -58,13 +58,13 @@ public class HotBarHUD {
         // Рендерим стиль хотбара
         drawHotbarStyle(r2, x, y, HOTBAR_WIDTH, HOTBAR_HEIGHT, ROUND_SMALL, 1.0F);
 
-        // Индикатор выбранного слота (как в доноре)
+        // Индикатор выбранного слота (как в исходниках)
         float selectedSlotX = halfWidth - HOTBAR_WIDTH / 2.0F + ((SLOT_SIZE - SLOT_OFFSET) * slotChangeAnim);
         int selectedColor = Renderer2D.ColorUtil.getMainColor(1, 0);
         // Renderer2D.rect не поддерживает Vector4f, используем прямоугольник с rounding
         r2.rect(selectedSlotX + 1, y + 1.5f, SLOT_SIZE - 4, 2.5f, 1, selectedColor);
 
-        // Оффхенд слот (как в доноре)
+        // Оффхенд слот (как в исходниках)
         ClientPlayerEntity player = mc.player;
         ItemStack offhandStack = player.getOffHandStack();
         Arm offhand = player.getMainArm().getOpposite();
@@ -85,7 +85,7 @@ public class HotBarHUD {
             renderHotbarItem(context, itemX, itemY, tickCounter, offhandStack, 10);
         }
 
-        // 9 слотов хотбара (как в доноре)
+        // 9 слотов хотбара (как в исходниках)
         for (int m = 0; m < 9; ++m) {
             float n = x + (m * (SLOT_SIZE - SLOT_OFFSET)) + 4;
             float o = y + (HOTBAR_HEIGHT - 16) / 2.0F;
@@ -102,7 +102,7 @@ public class HotBarHUD {
             r2.blur(rx, ry, rw, rh, round, alpha);
         }
 
-        // Glass style (как в доноре GLASS)
+        // Glass style (как в исходниках GLASS)
         int bgColor = Renderer2D.ColorUtil.replAlpha(0xFF3E3E47, 0);
         r2.rect(rx, ry, rw, rh, round, bgColor);
 
@@ -112,7 +112,7 @@ public class HotBarHUD {
     }
 
     /**
-     * Рендерит предмет в слоте хотбара (как в доноре)
+     * Рендерит предмет в слоте хотбара (как в исходниках)
      */
     private static void renderHotbarItem(DrawContext context, float x, float y, RenderTickCounter tickCounter, ItemStack stack, int slotIndex) {
         if (stack.isEmpty()) return;

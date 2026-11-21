@@ -30,7 +30,7 @@ import java.util.List;
 public class TargetHUD {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-    // Константы из донора
+    // Константы из исходника
     private static final float WIDTH = 110f;
     private static final float MAIN_HEIGHT = 28f;
     private static final float HEAD_SIZE = 20f;
@@ -48,7 +48,7 @@ public class TargetHUD {
     private static long lastHoverTime = 0;
     private static LivingEntity prevTarget = null;
 
-    // Здоровье с анимацией (как в доноре)
+    // Здоровье с анимацией (как в исходнике)
     private static float healthAnim = 0f;
     private static float absorptionAnim = 0f;
     private static float healthFactor = 0f;
@@ -60,13 +60,13 @@ public class TargetHUD {
     private static FontObject font = FontRegistry.INTER_MEDIUM;
 
     /**
-     * Рендерит TargetHUD — вызывается из Hud.onRender (как в доноре)
+     * Рендерит TargetHUD — вызывается из Hud.onRender (как в исходнике)
      */
     public static void renderTargetHUD(DrawContext context, int mouseX, int mouseY) {
         if (mc.player == null || mc.world == null) return;
         if (font == null) return;
 
-        // Получаем цель под прицелом (как в доноре: TargetsUtility.getTarget() или mc.targetedEntity)
+        // Получаем цель под прицелом (как в исходнике: TargetsUtility.getTarget() или mc.targetedEntity)
         LivingEntity target = getHoveredEntity();
         LivingEntity hoveredEntity = (mc.targetedEntity instanceof LivingEntity living) ? living : null;
 
@@ -77,7 +77,7 @@ public class TargetHUD {
         }
 
         boolean isInChat = mc.currentScreen instanceof ChatScreen;
-        boolean showOnHover = true; // настройка из донора
+        boolean showOnHover = true; // настройка из исходника
         boolean isHovering = showOnHover && lastHoveredEntity != null && (now - lastHoverTime < 2000);
 
         // Логика показа:
@@ -98,7 +98,7 @@ public class TargetHUD {
             prevTarget = null;
         }
 
-        // Анимация появления/скрытия (как в доноре: BACKWARDS = показывать)
+        // Анимация появления/скрытия (как в исходнике: BACKWARDS = показывать)
         animation = AnimationMath.animation(animation, shown ? 1.0f : 0.0f, 0.4f);
         float anim = 1.0f - animation;
         anim = Math.max(0.0f, Math.min(1.0f, anim));
@@ -108,7 +108,7 @@ public class TargetHUD {
 
         // Предметы цели
         List<ItemStack> items = new ArrayList<>();
-        boolean showItems = true; // настройка из донора
+        boolean showItems = true; // настройка из исходника
         if (showItems) {
             items.add(prevTarget.getMainHandStack());
             items.add(prevTarget.getEquippedStack(EquipmentSlot.HEAD));
@@ -164,17 +164,17 @@ public class TargetHUD {
             float headY = boxY + 4.0f * hudScale;
             drawHead(r2, context, prevTarget, headX, headY, headSize, anim);
 
-            // Имя с скроллом (как в доноре)
+            // Имя с скроллом (как в исходнике)
             String name = prevTarget.getName().getString();
             float nameX = headX + headSize + 5.0f * hudScale;
             float nameW = width - (headSize + 15.0f * hudScale);
-            float nameSize = 9.0f * hudScale; // УВЕЛИЧЕНО от 7.5 до 9.0 как в доноре
+            float nameSize = 9.0f * hudScale; // УВЕЛИЧЕНО от 7.5 до 9.0 как в исходнике
 
             // Текст метрика
             var metrics = r2.measureText(font, name, nameSize);
             float tWidth = metrics != null ? metrics.width : 0;
 
-            // Скролл анимация (как в доноре)
+            // Скролл анимация (как в исходнике)
             if (scrollDelay == 0L) scrollDelay = System.currentTimeMillis();
             if (System.currentTimeMillis() - scrollDelay > 1000L) {
                 scrollDelay = System.currentTimeMillis();
@@ -195,14 +195,14 @@ public class TargetHUD {
             // Фон HP-бара
             r2.rect(barX, barY, barW, barH, 1.5f, new Color(0, 0, 0, (int) (60 * anim)).getRGB());
 
-            // Анимация здоровья (как в доноре)
+            // Анимация здоровья (как в исходнике)
             float maxHp = prevTarget.getMaxHealth();
             healthAnim = AnimationMath.animation(healthAnim, prevTarget.getHealth(), 0.2f);
             absorptionAnim = AnimationMath.animation(absorptionAnim, prevTarget.getAbsorptionAmount(), 0.2f);
 
             float hpFactor = Math.max(0, Math.min(1, healthAnim / maxHp));
 
-            // Цвета здоровья (как в доноре)
+            // Цвета здоровья (как в исходнике)
             Color c1 = new Color(0xFF, 0x44, 0x44); // красный
             Color c2 = new Color(0xCC, 0x33, 0x33);
             r2.rect(barX, barY, barW * hpFactor, barH, 1.5f, c1.getRGB());
@@ -216,7 +216,7 @@ public class TargetHUD {
                 r2.rect(barX + barW - absWidth, barY, absWidth, barH, 1.5f, gold1.getRGB());
             }
 
-            // HP текст — используем РЕАЛЬНОЕ здоровье (как в доноре), не анимированное
+            // HP текст — используем РЕАЛЬНОЕ здоровье (как в исходнике), не анимированное
             float currentHealth = prevTarget.getHealth();
             float currentAbsorption = prevTarget.getAbsorptionAmount();
             float hValue = (float) (Math.round(currentHealth * 10.0f) / 10.0f);
@@ -251,7 +251,7 @@ public class TargetHUD {
     }
 
     /**
-     * Получает сущность под прицелом (как TargetsUtility.getTarget в доноре)
+     * Получает сущность под прицелом (как TargetsUtility.getTarget в исходнике)
      */
     private static LivingEntity getHoveredEntity() {
         HitResult hit = mc.crosshairTarget;
@@ -284,7 +284,7 @@ public class TargetHUD {
     }
 
     /**
-     * Рисует голову цели (как в доноре)
+     * Рисует голову цели (как в исходнике)
      */
     private static void drawHead(Renderer2D r2, DrawContext context, LivingEntity target, float headX, float headY, float headSize, float anim) {
         // Для игроков и мобов используем дефолтную голову

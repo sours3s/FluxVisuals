@@ -1,0 +1,9 @@
+{
+  "vertex": "client:core/outline",
+  "fragment": "client:core/outline",
+  "samplers": ["Sampler0"],
+  "uniforms": [
+    { "name": "Projection", "type": "uniform_buffer", "count": 1 },
+    { "name": "OutlineData", "type": "uniform_buffer", "count": 1 }
+  ]
+}

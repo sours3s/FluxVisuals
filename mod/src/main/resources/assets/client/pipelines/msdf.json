@@ -1,0 +1,9 @@
+{
+  "vertex": "client:core/msdf",
+  "fragment": "client:core/msdf",
+  "samplers": ["Sampler0"],
+  "uniforms": [
+    { "name": "Projection", "type": "uniform_buffer", "count": 1 },
+    { "name": "GlyphData", "type": "uniform_buffer", "count": 1 }
+  ]
+}

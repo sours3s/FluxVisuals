@@ -1,6 +1,6 @@
 {
   "vertex": "minecraft:core/position_color",
-  "fragment": "godweer:pipeline/water",
+  "fragment": "fluxvisuals:pipeline/water",
   "samplers": [],
   "uniforms": [
     { "name": "ShaderFogData", "type": "uniform_buffer", "count": 1 }

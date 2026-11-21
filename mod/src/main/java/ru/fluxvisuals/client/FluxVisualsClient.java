@@ -187,6 +187,10 @@ public class FluxVisualsClient implements ClientModInitializer {
             if (client == null || client.getWindow() == null) {
                return;
             }
+            // Не рисуем основной HUD, если открыт ClickGui (он сам управляет рендером)
+            if (client.currentScreen instanceof ru.fluxvisuals.ui.clickgui.FluxClickGuiScreen) {
+               return;
+            }
 
             int width = client.getWindow().getFramebufferWidth();
             int height = client.getWindow().getFramebufferHeight();

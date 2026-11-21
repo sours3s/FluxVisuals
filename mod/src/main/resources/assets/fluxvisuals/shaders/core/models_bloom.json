@@ -1,6 +1,6 @@
 {
   "vertex": "minecraft:core/position_color",
-  "fragment": "godweer:pipeline/models_bloom",
+  "fragment": "fluxvisuals:pipeline/models_bloom",
   "samplers": [
     { "name": "Sampler0" }
   ],

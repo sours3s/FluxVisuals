@@ -30,6 +30,10 @@ public class SliderSetting extends Setting {
       return this.current;
    }
 
+   public void set(float value) {
+      this.current = value;
+   }
+
    public SliderSetting hidden(Supplier<Boolean> hidden) {
       this.hidden = hidden;
       return this;

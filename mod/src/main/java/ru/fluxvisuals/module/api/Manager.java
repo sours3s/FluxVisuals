@@ -131,6 +131,10 @@ public class Manager {
       return this.module;
    }
 
+   public List<Module> getAll() {
+      return this.module;
+   }
+
    public <T extends Module> T get(Class<T> clazz) {
       // Direct lookup is much faster than stream + filter
       Module m = moduleByClass.get(clazz);

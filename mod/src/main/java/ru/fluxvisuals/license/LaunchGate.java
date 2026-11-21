@@ -50,6 +50,11 @@ public final class LaunchGate {
 
    private static boolean doVerify() {
       try {
+         // Dev-запуск (gradlew runClient, IDE): тикета нет — инициализируемся сразу.
+         // Продакшен (jar через лоадер) dev-mode не включает, тикет остаётся обязательным.
+         if (net.fabricmc.loader.api.FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            return true;
+         }
          String ticket = System.getProperty("fluxvisuals.ticket");
          String challenge = System.getProperty("fluxvisuals.challenge");
          String authServer = System.getProperty("fluxvisuals.authserver");
