@@ -25,9 +25,6 @@ public final class Hotkeys implements HudElement {
     private static final float BADGE_ICON_Y = 54.0F;
     private static final float BADGE_ICON_SIZE = 13.0F;
     private static final float KEY_BASELINE = 65.0F;
-    private static final String TITLE = "Hotkeys";
-    private static final String PLACEHOLDER_ROW = "Auto Swap";
-    private static final String PLACEHOLDER_KEY = "R";
     private static int cachedPlayerAge = Integer.MIN_VALUE;
     private static List<Module> cachedBound = List.of();
     private static float currentWidth = 193.0F;
@@ -68,21 +65,21 @@ public final class Hotkeys implements HudElement {
     @Override
     public void render(DrawContext context, Hud hud) {
         List<Module> modules = bound();
+        if (modules.isEmpty()) {
+            return;
+        }
+
         float targetWidth = targetWidth(modules);
         currentWidth = MathHelper.lerp(0.12F, currentWidth, targetWidth);
         if (Math.abs(currentWidth - targetWidth) < 0.05F) {
             currentWidth = targetWidth;
         }
 
-        hud.listPanel(context, 179.0F, 322.0F, currentWidth, Hud.listHeight(Math.max(1, modules.size())), "Hotkeys", "keyboard", currentWidth - 25.5F, 14.0F);
-        if (modules.isEmpty()) {
-            row(context, 0, "Auto Swap", "R");
-        } else {
-            for (int index = 0; index < modules.size(); index++) {
-                Module module = modules.get(index);
-                String key = Type.KEYSYM.createFromCode(module.getKey()).getLocalizedText().getString();
-                row(context, index, module.getName(), key);
-            }
+        hud.listPanel(context, 179.0F, 322.0F, currentWidth, Hud.listHeight(modules.size()), "Hotkeys", "keyboard", currentWidth - 25.5F, 14.0F);
+        for (int index = 0; index < modules.size(); index++) {
+            Module module = modules.get(index);
+            String key = Type.KEYSYM.createFromCode(module.getKey()).getLocalizedText().getString();
+            row(context, index, module.getName(), key);
         }
     }
 

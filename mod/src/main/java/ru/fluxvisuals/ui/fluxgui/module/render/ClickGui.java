@@ -15,13 +15,13 @@ public final class ClickGui {
 
     public static final BindSetting openBind = new BindSetting("Бинд ClickGUI", 344);
     public static final ModeSetting guiSize = new ModeSetting("Размер GUI", "100%", "50%", "75%", "100%", "125%", "150%");
-    public static final ModeSetting guiStyle = new ModeSetting("Стиль", "Основной", "Основной", "Жидкое стекло");
-    public static final ColorSetting guiGlassColor = new ColorSetting("Цвет стекла", new Color(250, 108, 108, 33), ClickGui::isLiquidGlassStyle);
+    public static final ModeSetting guiStyle = new ModeSetting("Стиль", "Жидкое стекло", "Основной", "Жидкое стекло");
+    public static final ColorSetting guiGlassColor = new ColorSetting("Цвет стекла", new Color(20, 16, 38, 88), ClickGui::isLiquidGlassStyle);
     public static final BooleanSetting guiGlassGlow = new BooleanSetting("Свечение краёв", true, ClickGui::isLiquidGlassStyle);
     public static final NumberSetting guiGlowStrength = new NumberSetting(
         "Сила свечения", 1.0, 0.25, 2.0, 0.05, () -> isLiquidGlassStyle() && guiGlassGlow.getValue()
     );
-    public static final ColorSetting accentColor = new ColorSetting("Акцентный цвет", new Color(255, 78, 90));
+    public static final ColorSetting accentColor = new ColorSetting("Акцентный цвет", new Color(0xA855F7));
     public static final BooleanSetting blur = new BooleanSetting("Блюр панелей", true);
     public static final NumberSetting blurStrength = new NumberSetting("Сила блюра", 6.0, 1.0, 12.0, 1.0, () -> blur.getValue());
 

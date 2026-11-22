@@ -2,7 +2,6 @@ package ru.fluxvisuals.ui.fluxgui.client.gui.hud;
 
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.RoundedRenderer;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.TextRender;
-import java.util.Comparator;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.PlayerSkinDrawer;
@@ -43,9 +42,9 @@ public final class Target implements HudElement {
     private static final float HEALTH_BASELINE = 31.083F;
     private static final float MIN_BAR_HEIGHT = 0.5F;
     private static final EquipmentSlot[] ARMOR_SLOTS = new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
-    private static PlayerEntity currentTarget;
+    private static LivingEntity currentTarget;
     private static int lastResolveAge = Integer.MIN_VALUE;
-    private static PlayerEntity lastResolvedTarget;
+    private static LivingEntity lastResolvedTarget;
 
     private Target() {
     }
@@ -153,7 +152,7 @@ public final class Target implements HudElement {
         return target != null ? target : MinecraftClient.getInstance().player;
     }
 
-    private static PlayerEntity resolveTarget() {
+    private static LivingEntity resolveTarget() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || client.world == null) {
             currentTarget = null;
@@ -176,11 +175,11 @@ public final class Target implements HudElement {
         }
 
         lastResolveAge = client.player.age;
-        PlayerEntity pointed = null;
-        if (client.targetedEntity instanceof PlayerEntity player) {
-            pointed = player;
-        } else if (client.crosshairTarget instanceof EntityHitResult hit && hit.getEntity() instanceof PlayerEntity player) {
-            pointed = player;
+        LivingEntity pointed = null;
+        if (client.targetedEntity instanceof LivingEntity living) {
+            pointed = living;
+        } else if (client.crosshairTarget instanceof EntityHitResult hit && hit.getEntity() instanceof LivingEntity living) {
+            pointed = living;
         }
 
         if (isValidTarget(pointed) && client.player.distanceTo(pointed) <= 4.0F) {
@@ -189,22 +188,16 @@ public final class Target implements HudElement {
             return pointed;
         }
 
-        if (isValidTarget(currentTarget) && client.player.distanceTo(currentTarget) <= 10.0F) {
-            return lastResolvedTarget = currentTarget;
-        }
-
-        currentTarget = client.world
-            .getPlayers()
-            .stream()
-            .filter(Target::isValidTarget)
-            .filter(playerx -> client.player.distanceTo(playerx) <= 4.0F)
-            .min(Comparator.comparingDouble(playerx -> playerx.squaredDistanceTo(client.player)))
-            .orElse(null);
-        return lastResolvedTarget = currentTarget;
+        // Панель должна исчезать сразу, как только прицел сошёл с цели.
+        // Раньше здесь оставался запомненный/ближайший игрок — из-за этого
+        // TargetHUD отображался, даже когда никто не наведен.
+        currentTarget = null;
+        lastResolvedTarget = null;
+        return null;
     }
 
-    private static boolean isValidTarget(PlayerEntity player) {
+    private static boolean isValidTarget(LivingEntity entity) {
         MinecraftClient client = MinecraftClient.getInstance();
-        return player != null && player != client.player && player.isAlive() && !player.isInvisible();
+        return entity != null && entity != client.player && entity.isAlive() && !entity.isInvisible();
     }
 }

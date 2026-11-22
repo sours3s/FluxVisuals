@@ -1,6 +1,5 @@
 package ru.fluxvisuals.ui.fluxgui.client.gui.hud;
 
-import ru.fluxvisuals.ui.fluxgui.client.gui.font.icon.IconTtfBridge;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.IconRender;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.RoundedRenderer;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.TextRender;
@@ -82,7 +81,7 @@ public final class Watermark implements HudElement {
         String playerName = Hud.playerName();
         String fpsText = String.valueOf(Math.max(0, Math.round(animatedFps)));
         String pingText = String.valueOf(Math.max(0, Math.round(animatedPing)));
-        float nameWidth = TextRender.width("FluxVisuals", 14.241F);
+        float nameWidth = TextRender.width(CLIENT_NAME, 14.241F);
         float userWidth = TextRender.width(playerName, 13.224F);
         float fpsWidth = TextRender.width(fpsText, 13.224F);
         float fpsUnitWidth = TextRender.width("fps", 13.224F);
@@ -120,7 +119,7 @@ public final class Watermark implements HudElement {
             );
         }
 
-        TextRender.draw(context, "FluxVisuals", nameX, 56.583F, 14.241F, Hud.animatedColor(-2434342));
+        TextRender.draw(context, CLIENT_NAME, nameX, 56.583F, 14.241F, Hud.animatedColor(-2434342));
         Hud.separator(context, userSepX, 45.5F, 12.0F, 452984831);
         IconRender.draw(context, "person", userIconX, 45.5F, IconRender.getDesignSize("person"), Hud.animatedColor(Hud.accent()));
         TextRender.draw(context, playerName, userTextX, 56.583F, 13.224F, Hud.animatedColor(-2434342));
@@ -143,7 +142,8 @@ public final class Watermark implements HudElement {
         float iconX = centerX - size / 2.0F;
         float iconY = centerY - size / 2.0F;
         drawCompactGlow(context, iconX, iconY, size, color);
-        return IconTtfBridge.tryDrawIconsFontChar(context, '|', iconX, iconY, size, color);
+        IconRender.draw(context, "logo", iconX, iconY, size, color);
+        return true;
     }
 
     private static void drawCompactGlow(DrawContext context, float x, float y, float size, int color) {

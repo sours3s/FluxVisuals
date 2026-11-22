@@ -16,8 +16,8 @@ public final class Hud {
     private static final String STYLE_LIQUID_GLASS = "Жидкое стекло";
     private static final Supplier<Boolean> GLASS_VISIBLE = Hud::isLiquidGlassStyle;
 
-    public static final ModeSetting hudStyle = new ModeSetting("Стиль", STYLE_CLASSIC, STYLE_CLASSIC, STYLE_LIQUID_GLASS);
-    public static final ColorSetting hudGlassColor = new ColorSetting("Цвет стекла", new Color(255, 176, 158, 72), GLASS_VISIBLE);
+    public static final ModeSetting hudStyle = new ModeSetting("Стиль", STYLE_LIQUID_GLASS, STYLE_CLASSIC, STYLE_LIQUID_GLASS);
+    public static final ColorSetting hudGlassColor = new ColorSetting("Цвет стекла", new Color(20, 16, 38, 88), GLASS_VISIBLE);
     public static final BooleanSetting hudGlassGlow = new BooleanSetting("HUD Edge Glow", true, GLASS_VISIBLE);
     public static final NumberSetting hudGlowStrength = new NumberSetting(
           "HUD Glow Strength", 1.0, 0.25, 2.0, 0.05,
@@ -26,7 +26,7 @@ public final class Hud {
     public static final BooleanSetting armorHud = new BooleanSetting("Броня", true);
     public static final BooleanSetting watermark = new BooleanSetting("Ватермарка", true);
     public static final ModeSetting language = new ModeSetting("Язык", "Русский", "Русский", "Английский");
-    public static final ColorSetting accentColor = new ColorSetting("Акцентный цвет", new Color(255, 78, 90));
+    public static final ColorSetting accentColor = new ColorSetting("Акцентный цвет", new Color(0xA855F7));
     public static final BooleanSetting shadow = new BooleanSetting("Тень", true);
     public static final BooleanSetting blur = new BooleanSetting("Блюр", true);
     public static final BooleanSetting notifications = new BooleanSetting("Уведомления", true);

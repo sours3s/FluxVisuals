@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AfterInit;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.Remove;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.AllowMouseClick;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.AllowMouseScroll;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.BeforeMouseDrag;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.BeforeMouseRelease;
@@ -43,6 +44,7 @@ public final class HudEditor {
             installed = true;
             ScreenEvents.AFTER_INIT.register((AfterInit)(client, screen, width, height) -> {
                 if (screen instanceof ChatScreen) {
+                    ScreenMouseEvents.allowMouseClick(screen).register((AllowMouseClick)(s, click) -> !handleChatMouseClick(click));
                     ScreenMouseEvents.allowMouseScroll(screen).register((AllowMouseScroll)(s, x, y, horizontal, vertical) -> !scaleAt(x, y, vertical));
                     ScreenMouseEvents.beforeMouseDrag(screen).register((BeforeMouseDrag)(s, click, deltaX, deltaY) -> {
                         if (click.button() == 0) {

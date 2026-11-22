@@ -291,6 +291,15 @@ public class ClickGui extends Screen {
     float sidebarGliderY = 168.0F;
     static float scrollOffset = 0.0F;
     static float targetScroll = 0.0F;
+    static final float SETTINGS_X = 1000.0F;
+    static final float SETTINGS_Y = 10.0F;
+    static final float SETTINGS_W = 360.0F;
+    static final float SETTINGS_H = 516.0F;
+    static final float SETTINGS_TOP = 76.0F;
+    static final float SETTINGS_BOTTOM = 514.0F;
+    static Module settingsModule = null;
+    static float settingsScroll = 0.0F;
+    static float settingsTargetScroll = 0.0F;
     NumberSetting draggingSlider = null;
     float draggingSliderX;
     float draggingSliderWidth;
@@ -505,6 +514,14 @@ public class ClickGui extends Screen {
             context.enableScissor(257, 72, 977, 526);
             this.renderModules(context, designMouseX, designMouseY);
             context.disableScissor();
+        }
+
+        settingsScroll = this.approach(settingsScroll, settingsTargetScroll, 10.0F);
+        if (Math.abs(settingsScroll - settingsTargetScroll) < 0.02F) {
+            settingsScroll = settingsTargetScroll;
+        }
+        if (settingsModule != null && selectedCategory != Category.CONFIGS && selectedCategory != Category.MARKS) {
+            this.renderSettingsPanel(context, designMouseX, designMouseY);
         }
 
         if (activeColorPicker != null && this.colorPickerProgress > 0.001F) {
@@ -1775,111 +1792,75 @@ public class ClickGui extends Screen {
             int col = index % 2;
             float cardX = 257.0F + col * 365.0F;
             float cardY = columnY[col] - scrollOffset;
-            boolean expanded = EXPANDED_MODULES.contains(module);
-            List<Setting<?>> settings = module.getSettings();
-            Map<Setting<?>, Float> visibilityAnimations = new IdentityHashMap<>();
-            float settingsHeight = 0.0F;
-
-            for (Setting<?> s : settings) {
-                float visibility = SETTING_VISIBILITY_ANIMS.compute(s, (key, previous) -> {
-                    float target = s.isVisible() ? 1.0F : 0.0F;
-                    return previous == null ? target : this.approach(previous, target, 8.5F);
-                });
-                visibilityAnimations.put(s, visibility);
-                settingsHeight += 30.8F * visibility;
+            columnY[col] += 67.2F;
+            if (cardY + 57.2F < 72.0F || cardY > 536.0F) {
+                continue;
             }
 
-            if (settingsHeight > 0.01F) {
-                settingsHeight += 8.0F;
+            boolean enabled = module.isEnabled();
+            float toggleAnim = TOGGLE_ANIMS.compute(module, (m, prev) -> {
+                float target = enabled ? 1.0F : 0.0F;
+                return prev == null ? target : this.approach(prev, target, 10.0F);
+            });
+            boolean hovered = inside(mouseX, mouseY, cardX, cardY, 355.0F, 57.2F);
+            float hoverAnim = HOVER_ANIMS.compute(module, (m, prev) -> {
+                float target = hovered || settingsModule == module ? 1.0F : 0.0F;
+                return prev == null ? target : this.approach(prev, target, 10.0F);
+            });
+            float opacity = 0.6F + 0.4F * toggleAnim;
+            int cardBg = fade(1073741824, opacity);
+            if (hoverAnim > 0.01F) {
+                cardBg = lerpColor(cardBg, 1428300330, hoverAnim);
             }
 
-            float targetExpand = expanded ? settingsHeight : 0.0F;
-            float expandAnim = EXPAND_ANIMS.compute(module, (m, prev) -> prev == null ? targetExpand : this.approach(prev, targetExpand, 7.5F));
-            float totalCardHeight = 57.2F + expandAnim;
-            columnY[col] += totalCardHeight + 10.0F;
-            if (!(cardY + totalCardHeight < 72.0F) && !(cardY > 536.0F)) {
-                boolean enabled = module.isEnabled();
-                float toggleAnim = TOGGLE_ANIMS.compute(module, (m, prev) -> {
-                    float target = enabled ? 1.0F : 0.0F;
-                    return prev == null ? target : this.approach(prev, target, 10.0F);
-                });
-                boolean hovered = inside(mouseX, mouseY, cardX, cardY, 355.0F, totalCardHeight);
-                float hoverAnim = HOVER_ANIMS.compute(module, (m, prev) -> {
-                    float target = hovered ? 1.0F : 0.0F;
-                    return prev == null ? target : this.approach(prev, target, 10.0F);
-                });
-                float opacity = 0.6F + 0.4F * toggleAnim;
-                int cardBg = fade(1073741824, opacity);
-                if (hoverAnim > 0.01F) {
-                    cardBg = lerpColor(cardBg, 1428300330, hoverAnim);
-                }
-
-                RoundedRenderer.drawRoundedRect(context, cardX, cardY, 355.0F, totalCardHeight, 12.0F, cardBg);
-                if (settingsHeight > 0.0F && expandAnim > 0.05F) {
-                    float lineProgress = MathHelper.clamp(expandAnim / Math.min(42.0F, settingsHeight), 0.0F, 1.0F);
-                    lineProgress = lineProgress * lineProgress * (3.0F - 2.0F * lineProgress);
-                    float lineWidth = 327.0F * lineProgress;
-                    float lineY = cardY + 57.2F - 2.0F;
-                    RoundedRenderer.drawRoundedRect(context, cardX + 177.5F - lineWidth / 2.0F, lineY, lineWidth, 1.2F, 0.6F, fade(680562840, lineProgress));
-                }
-
-                int cardAccent = accentAt(cardX, cardY);
-                int iconColor = lerpColor(fade(-2130706433, opacity), fade(cardAccent, opacity), toggleAnim);
-                float moduleIconSize = IconRender.getDesignSize("diamond") * 1.1F;
-                IconRender.draw(context, "diamond", cardX + 14.0F, cardY + 20.7F, moduleIconSize, iconColor);
-                TextRender.draw(context, module.getName(), cardX + 42.0F, cardY + 23.1F, 14.85F, fade(-1, opacity));
-                this.renderModuleDescription(context, module, cardX, cardY, mouseX, mouseY, fade(-2130706433, opacity));
-                String bind = module.isBinding() ? "[...]" : bindName(module);
-                int bindColor = module.isBinding() ? cardAccent : fade(-2130706433, opacity);
-                TextRender.draw(context, bind, cardX + 297.0F - TextRender.width(bind, 15.665F), cardY + 33.55F, 15.665F, bindColor);
-                float trackX = cardX + 313.4F;
-                float trackY = cardY + 20.9F;
-                int currentTrackColor = lerpColor(fade(536870911, opacity), fade(cardAccent, opacity), toggleAnim);
-                int currentKnobColor = lerpColor(fade(-2130706433, opacity), fade(-1, opacity), toggleAnim);
-                this.drawSwitch(context, trackX, trackY, 28.6F, 15.4F, toggleAnim, currentTrackColor, currentKnobColor, 11.8F);
-                if (expandAnim > 0.5F) {
-                    boolean clipAnimatedCard = Math.abs(expandAnim - targetExpand) > 0.1F;
-                    if (clipAnimatedCard) {
-                        context.enableScissor(
-                            (int)Math.floor(cardX - 0.75F),
-                            (int)Math.floor(cardY + 57.2F - 0.75F),
-                            (int)Math.ceil(cardX + 355.0F + 0.75F),
-                            (int)Math.ceil(cardY + totalCardHeight + 0.75F)
-                        );
-                    }
-
-                    float settingY = cardY + 57.2F + 4.0F;
-
-                    for (Setting<?> setting : settings) {
-                        float visibility = visibilityAnimations.getOrDefault(setting, setting.isVisible() ? 1.0F : 0.0F);
-                        if (!(visibility <= 0.01F)) {
-                            float sH = 26.8F;
-                            float visibleHeight = Math.min(sH, 30.8F * visibility);
-                            boolean clipAnimatedRow = visibility < 0.999F;
-                            if (clipAnimatedRow) {
-                                context.enableScissor(
-                                    (int)Math.floor(cardX + 11.25F),
-                                    (int)Math.floor(settingY - 0.75F),
-                                    (int)Math.ceil(cardX + 355.0F - 11.25F),
-                                    (int)Math.ceil(settingY + visibleHeight + 0.75F)
-                                );
-                            }
-
-                            this.renderSetting(context, module, setting, cardX + 12.0F, settingY, 331.0F, sH, mouseX, mouseY);
-                            if (clipAnimatedRow) {
-                                context.disableScissor();
-                            }
-
-                            settingY += 30.8F * visibility;
-                        }
-                    }
-
-                    if (clipAnimatedCard) {
-                        context.disableScissor();
-                    }
-                }
-            }
+            RoundedRenderer.drawRoundedRect(context, cardX, cardY, 355.0F, 57.2F, 12.0F, cardBg);
+            int cardAccent = accentAt(cardX, cardY);
+            int iconColor = lerpColor(fade(-2130706433, opacity), fade(cardAccent, opacity), toggleAnim);
+            float moduleIconSize = IconRender.getDesignSize("diamond") * 1.1F;
+            IconRender.draw(context, "diamond", cardX + 14.0F, cardY + 20.7F, moduleIconSize, iconColor);
+            TextRender.draw(context, module.getName(), cardX + 42.0F, cardY + 23.1F, 14.85F, fade(-1, opacity));
+            this.renderModuleDescription(context, module, cardX, cardY, mouseX, mouseY, fade(-2130706433, opacity));
+            String bind = module.isBinding() ? "[...]" : bindName(module);
+            int bindColor = module.isBinding() ? cardAccent : fade(-2130706433, opacity);
+            TextRender.draw(context, bind, cardX + 297.0F - TextRender.width(bind, 15.665F), cardY + 33.55F, 15.665F, bindColor);
+            float trackX = cardX + 313.4F;
+            float trackY = cardY + 20.9F;
+            int currentTrackColor = lerpColor(fade(536870911, opacity), fade(cardAccent, opacity), toggleAnim);
+            int currentKnobColor = lerpColor(fade(-2130706433, opacity), fade(-1, opacity), toggleAnim);
+            this.drawSwitch(context, trackX, trackY, 28.6F, 15.4F, toggleAnim, currentTrackColor, currentKnobColor, 11.8F);
         }
+    }
+
+    void renderSettingsPanel(DrawContext context, float mouseX, float mouseY) {
+        Module module = settingsModule;
+        if (module == null) {
+            return;
+        }
+
+        float x = SETTINGS_X;
+        float y = SETTINGS_Y;
+        float w = SETTINGS_W;
+        RoundedRenderer.drawRoundedRect(context, x, y, w, SETTINGS_H, 12.0F, 0xD0101420);
+        RoundedRenderer.drawRoundedOutline(context, x + 1.0F, y + 1.0F, w - 2.0F, SETTINGS_H - 2.0F, 11.0F, 1.1F, withAlpha(ACCENT, 120));
+        TextRender.draw(context, module.getName(), x + 16.0F, y + 19.0F, 14.85F, -1);
+        TextRender.draw(context, "×", x + w - 28.0F, y + 18.0F, 14.0F, -1);
+
+        context.enableScissor((int)(x + 8.0F), (int)SETTINGS_TOP, (int)(x + w - 8.0F), (int)SETTINGS_BOTTOM);
+        float settingY = SETTINGS_TOP + 6.0F - settingsScroll;
+        for (Setting<?> setting : module.getSettings()) {
+            float visibility = SETTING_VISIBILITY_ANIMS.compute(setting, (key, previous) -> {
+                float target = setting.isVisible() ? 1.0F : 0.0F;
+                return previous == null ? target : this.approach(previous, target, 8.5F);
+            });
+            if (visibility <= 0.01F) {
+                continue;
+            }
+
+            float sH = 26.8F;
+            this.renderSetting(context, module, setting, x + 12.0F, settingY, w - 24.0F, sH, mouseX, mouseY);
+            settingY += 30.8F * visibility;
+        }
+        context.disableScissor();
     }
 
     void renderSetting(DrawContext context, Module module, Setting<?> setting, float x, float y, float w, float h, float mouseX, float mouseY) {
@@ -2488,6 +2469,13 @@ public class ClickGui extends Screen {
 
         float mouseX = ((float)click.comp_4798() - this.originX) / this.scale;
         float mouseY = ((float)click.comp_4799() - this.originY) / this.scale;
+        if (settingsModule != null && click.button() == 0
+            && inside(mouseX, mouseY, SETTINGS_X + SETTINGS_W - 42.0F, SETTINGS_Y + 8.0F, 32.0F, 28.0F)) {
+            settingsModule = null;
+            settingsScroll = 0.0F;
+            settingsTargetScroll = 0.0F;
+            return true;
+        }
         if (this.handleModePopupClick(mouseX, mouseY)) {
             return true;
         }
@@ -2778,23 +2766,8 @@ public class ClickGui extends Screen {
                 int colxx = indexxx % 2;
                 float cardX = 257.0F + colxx * 365.0F;
                 float cardY = columnY[colxx] - scrollOffset;
-                boolean expanded = EXPANDED_MODULES.contains(module);
                 List<Setting<?>> settings = module.getSettings();
-                float settingsHeight = 0.0F;
-                if (expanded) {
-                    for (Setting<?> s : settings) {
-                        float visibility = SETTING_VISIBILITY_ANIMS.getOrDefault(s, s.isVisible() ? 1.0F : 0.0F);
-                        settingsHeight += 30.8F * visibility;
-                    }
-
-                    if (settingsHeight > 0.01F) {
-                        settingsHeight += 8.0F;
-                    }
-                }
-
-                float expandAnim = EXPAND_ANIMS.getOrDefault(module, settingsHeight);
-                float totalCardHeight = 57.2F + expandAnim;
-                columnY[colxx] += totalCardHeight + 10.0F;
+                columnY[colxx] += 67.2F;
                 if (inside(mouseX, mouseY, cardX, cardY, 355.0F, 57.2F)) {
                     if (click.button() == 0) {
                         float bindRight = cardX + 297.0F;
@@ -2811,13 +2784,13 @@ public class ClickGui extends Screen {
 
                     if (click.button() == 1) {
                         if (!settings.isEmpty()) {
-                            if (EXPANDED_MODULES.contains(module)) {
-                                EXPANDED_MODULES.remove(module);
-                            } else {
-                                EXPANDED_MODULES.add(module);
-                            }
+                            settingsModule = settingsModule == module ? null : module;
+                            settingsScroll = 0.0F;
+                            settingsTargetScroll = 0.0F;
+                            modePopupOpen = false;
+                            colorPickerOpen = false;
+                            activeTextSetting = null;
                         }
-
                         return true;
                     }
 
@@ -2827,14 +2800,15 @@ public class ClickGui extends Screen {
                     }
                 }
 
-                if (expanded && inside(mouseX, mouseY, cardX, cardY + 57.2F, 355.0F, expandAnim)) {
-                    float settingY = cardY + 57.2F + 4.0F;
+                if (settingsModule == module
+                    && inside(mouseX, mouseY, SETTINGS_X + 8.0F, SETTINGS_TOP, SETTINGS_W - 16.0F, SETTINGS_BOTTOM - SETTINGS_TOP)) {
+                    float settingY = SETTINGS_TOP + 6.0F - settingsScroll;
 
                     for (Setting<?> setting : settings) {
                         float visibility = SETTING_VISIBILITY_ANIMS.getOrDefault(setting, setting.isVisible() ? 1.0F : 0.0F);
                         if (!(visibility <= 0.01F)) {
-                            float sX = cardX + 12.0F;
-                            float sW = 331.0F;
+                            float sX = SETTINGS_X + 12.0F;
+                            float sW = SETTINGS_W - 24.0F;
                             float sH = 26.8F;
                             float visibleHeight = Math.min(sH, 30.8F * visibility);
                             if (setting.isVisible() && visibility > 0.55F && inside(mouseX, mouseY, sX, settingY, sW, visibleHeight)) {
@@ -2879,14 +2853,14 @@ public class ClickGui extends Screen {
                                     float fieldW = modeFieldWidth(modeSetting);
                                     float fieldX = sX + sW - fieldW - 8.0F;
                                     if (inside(mouseX, mouseY, fieldX, settingY + 4.4F, fieldW, sH - 8.8F)) {
-                                        this.openModePopup(modeSetting, cardX, settingY, colxx);
+                                        this.openModePopup(modeSetting, sX, settingY + settingsScroll - scrollOffset, 0);
                                         return true;
                                     }
                                 } else if (setting instanceof MultiBooleanSetting multiSetting) {
                                     float fieldW = multiFieldWidth(multiSetting);
                                     float fieldX = sX + sW - fieldW - 8.0F;
                                     if (inside(mouseX, mouseY, fieldX, settingY + 4.4F, fieldW, sH - 8.8F)) {
-                                        this.openModePopup(multiSetting, cardX, settingY, colxx);
+                                        this.openModePopup(multiSetting, sX, settingY + settingsScroll - scrollOffset, 0);
                                         return true;
                                     }
                                 } else if (setting instanceof NumberSetting numSetting) {
@@ -3058,6 +3032,18 @@ public class ClickGui extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         float designMouseX = ((float)mouseX - this.originX) / this.scale;
         float designMouseY = ((float)mouseY - this.originY) / this.scale;
+        if (settingsModule != null
+            && inside(designMouseX, designMouseY, SETTINGS_X, SETTINGS_TOP, SETTINGS_W, SETTINGS_BOTTOM - SETTINGS_TOP)) {
+            int count = 0;
+            for (Setting<?> setting : settingsModule.getSettings()) {
+                if (setting.isVisible()) {
+                    count++;
+                }
+            }
+            float maxSettingsScroll = Math.max(0.0F, count * 30.8F - (SETTINGS_BOTTOM - SETTINGS_TOP));
+            settingsTargetScroll = MathHelper.clamp(settingsTargetScroll - (float)verticalAmount * 34.0F, 0.0F, maxSettingsScroll);
+            return true;
+        }
         if (selectedCategory == Category.CONFIGS && !isSearchMode()) {
             float pageW = 720.0F;
             float listY = 162.0F;
@@ -3322,23 +3308,8 @@ public class ClickGui extends Screen {
             Arrays.fill(columnY, 72.0F);
 
             for (int index = 0; index < modules.size(); index++) {
-                Module module = modules.get(index);
                 int col = index % 2;
-                boolean expanded = EXPANDED_MODULES.contains(module);
-                List<Setting<?>> settings = module.getSettings();
-                float settingsHeight = 0.0F;
-                if (expanded) {
-                    for (Setting<?> s : settings) {
-                        settingsHeight += 30.8F * SETTING_VISIBILITY_ANIMS.getOrDefault(s, s.isVisible() ? 1.0F : 0.0F);
-                    }
-
-                    if (settingsHeight > 0.01F) {
-                        settingsHeight += 8.0F;
-                    }
-                }
-
-                float totalCardHeight = 57.2F + settingsHeight;
-                columnY[col] += totalCardHeight + 10.0F;
+                columnY[col] += 67.2F;
             }
 
             float maxColumnY = Math.max(columnY[0], columnY[1]);
@@ -3390,6 +3361,10 @@ public class ClickGui extends Screen {
     @Override
     public void removed() {
         ConfigManager.INSTANCE.saveConfig("default");
+        if (ru.fluxvisuals.client.FluxVisualsClient.get != null
+              && ru.fluxvisuals.client.FluxVisualsClient.get.configManager != null) {
+            ru.fluxvisuals.client.FluxVisualsClient.get.configManager.autoSave();
+        }
         cancelBinding();
         this.draggingSlider = null;
         this.draggingSV = false;

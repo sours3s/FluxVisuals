@@ -203,6 +203,19 @@ public class Module {
 
     public void setKey(int key) {
         delegate.bind = key;
+        // Кеш биндов строится только при создании менеджера, поэтому без его
+        // пересборки новый код клавиши не срабатывает, хотя GUI показывает бинд.
+        try {
+            if (ru.fluxvisuals.client.FluxVisualsClient.get != null) {
+                if (ru.fluxvisuals.client.FluxVisualsClient.get.manager != null) {
+                    ru.fluxvisuals.client.FluxVisualsClient.get.manager.invalidateCaches();
+                }
+                if (ru.fluxvisuals.client.FluxVisualsClient.get.configManager != null) {
+                    ru.fluxvisuals.client.FluxVisualsClient.get.configManager.autoSave();
+                }
+            }
+        } catch (RuntimeException ignored) {
+        }
     }
 
     public String getConfigKey() {

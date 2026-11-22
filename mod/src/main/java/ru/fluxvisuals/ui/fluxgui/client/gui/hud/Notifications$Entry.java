@@ -26,7 +26,9 @@ public final class Notifications$Entry {
     }
 
     static Notifications$Entry placeholder() {
-        Notifications$Entry entry = new Notifications$Entry("Auto Swap", null, true, false);
+        Notifications$Entry entry = message(
+            ru.fluxvisuals.ui.fluxgui.module.render.Hud.text("Уведомления", "Notifications")
+        );
         entry.currentY = 0.0F;
         return entry;
     }

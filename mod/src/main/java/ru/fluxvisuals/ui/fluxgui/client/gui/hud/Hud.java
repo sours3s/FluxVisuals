@@ -92,6 +92,7 @@ public final class Hud {
 
     public void render(DrawContext context) {
         FrameEspGlow.update();
+        ru.fluxvisuals.ui.fluxgui.module.render.Animations.INSTANCE.updateAnimations();
         this.updateLayout(context);
         context.getMatrices().pushMatrix();
         context.getMatrices().translate(this.originX, this.originY);
