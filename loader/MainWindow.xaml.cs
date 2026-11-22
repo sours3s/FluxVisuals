@@ -150,6 +150,8 @@ public partial class MainWindow : Window
         ExtractResource("Resources.logo.png", logoDst);
         string catalDst = Path.Combine(webDir, "img", "catal.png");
         ExtractResource("Web.img.catal.png", catalDst);
+        string userDst = Path.Combine(webDir, "img", "user.png");
+        ExtractResource("Web.img.user.png", userDst);
 
         FluxVisualsLoader.Core.LauncherLog.Info($"Web files extracted to: {webDir}");
         FluxVisualsLoader.Core.LauncherLog.Info($"Files: {string.Join(", ", Directory.GetFiles(webDir, "*", SearchOption.AllDirectories))}");

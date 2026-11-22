@@ -46,6 +46,7 @@
     <EmbeddedResource Include="Web\js\app.js" LogicalName="Web.app.js" />
     <EmbeddedResource Include="Web\css\style.css" LogicalName="Web.style.css" />
     <EmbeddedResource Include="Web\img\catal.png" LogicalName="Web.img.catal.png" />
+    <EmbeddedResource Include="Web\img\user.png" LogicalName="Web.img.user.png" />
   </ItemGroup>
 
 </Project>
