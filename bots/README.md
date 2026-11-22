@@ -44,6 +44,7 @@
 - ПКМ по своему имени → **Copy User ID** → это `DISCORD_OWNER_ID`;
 - ПКМ по каналу «вопрос-ответ» → **Copy Channel ID** → это `SUPPORT_CHANNEL_IDS`;
 - ПКМ по категории с тикетами → **Copy Category ID** → это `SUPPORT_CATEGORY_IDS`;
+- ПКМ по роли поддержки в списке ролей сервера → **Copy Role ID** → это `SUPPORT_ROLE_ID` (роль должна быть mentionable: Role Settings → Allow anyone to @mention this role);
 - ПКМ по серверу → **Copy Server ID** → это `COMMAND_GUILD_ID` (необязательно, но ускоряет появление `/news`).
 
 Если Ticket Tool создаёт каналы с именами вида `ticket-1234`, категорию можно не указывать: бот сам находит их по шаблону `^ticket`. Шаблон меняется через `SUPPORT_CHANNEL_PATTERN`.
@@ -104,6 +105,7 @@ AUTH_SERVER_URL=https://fluxvisuals-server.onrender.com
 SUPPORT_CHANNEL_IDS=<ID каналов через запятую>
 SUPPORT_CATEGORY_IDS=<ID категории с тикетами, необязательно>
 SUPPORT_CHANNEL_PATTERN=^ticket
+SUPPORT_ROLE_ID=1574052054224339078
 ```
 
 `PORT` Render задаёт сам — трогать не нужно.
@@ -151,6 +153,8 @@ Render Free засыпает после ~15 минут простоя. UptimeRob
 - в каналах, чьё имя подходит под `SUPPORT_CHANNEL_PATTERN` — по умолчанию `^ticket`, то есть `ticket-1234` и подобные.
 
 Поэтому тикеты Ticket Tool подхватываются автоматически, даже если канал создан после запуска бота. Дайте боту роль с правами `View Channel` и `Send Messages` на категории тикетов — Ticket Tool создаёт каналы с наследованием прав категории. Бот отвечает прямо на сообщение пользователя, скриншоты передаёт Catal. Ответы режутся на куски до 1900 символов и не пингуют пользователей.
+
+Catal represents один раз — при первом сообщении от пользователя. Если Catal не смог ответить, бот предлагает написать «позови саппорта». По этой фразе (или «вызови поддержку», «нужен живой человек», `call support`) бот упоминает роль из `SUPPORT_ROLE_ID` прямо в тикете. Роль должна быть Include in mentions / Allow anyone to @mention this role, иначе Discord не пришлёт уведомление.
 
 Catal отвечает только по FluxVisuals: клиент, визуалы, лаунчер, сайт, аккаунты, запуск, ошибки, модпаки. На посторонние задачи он отвечает отказом.
 

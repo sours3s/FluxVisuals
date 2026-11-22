@@ -6,6 +6,12 @@ namespace FluxVisualsBots;
 
 public sealed record CatalTurn(string Role, string Text);
 
+public readonly record struct CatalResult(bool Ok, string Text)
+{
+    public static CatalResult Success(string text) => new(true, text);
+    public static CatalResult Fail(string text) => new(false, text);
+}
+
 /// <summary>Общий доступ к Catal через защищённый серверный шлюз AuthServer.</summary>
 public sealed class CatalClient
 {
@@ -27,14 +33,14 @@ public sealed class CatalClient
 
     public bool Configured => !string.IsNullOrWhiteSpace(_secret);
 
-    public async Task<string> AskAsync(
+    public async Task<CatalResult> AskAsync(
         string message,
         IEnumerable<CatalTurn> history,
         string? image,
         ulong discordUserId)
     {
         if (!Configured)
-            return "Catal пока недоступен: не настроен доступ к серверу.";
+            return CatalResult.Fail("Catal пока недоступен: не настроен доступ к серверу.");
 
         var payload = new
         {
@@ -58,7 +64,7 @@ public sealed class CatalClient
         }
         catch (Exception)
         {
-            return "Catal сейчас не отвечает. Попробуйте ещё раз позже.";
+            return CatalResult.Fail("Catal сейчас не отвечает. Попробуйте ещё раз позже.");
         }
 
         using (response)
@@ -72,15 +78,16 @@ public sealed class CatalClient
                     if (doc.RootElement.TryGetProperty("answer", out var answer))
                     {
                         string? text = answer.GetString();
-                        if (!string.IsNullOrWhiteSpace(text)) return text.Trim();
+                        if (!string.IsNullOrWhiteSpace(text))
+                            return CatalResult.Success(text.Trim());
                     }
                 }
                 catch { }
-                return "Catal вернул пустой ответ. Попробуйте ещё раз.";
+                return CatalResult.Fail("Catal вернул пустой ответ. Попробуйте ещё раз.");
             }
 
             string upstream = ReadError(body);
-            return response.StatusCode switch
+            string error = response.StatusCode switch
             {
                 HttpStatusCode.Unauthorized => "Catal недоступен: проверьте настройку сервера.",
                 HttpStatusCode.ServiceUnavailable => "Catal пока недоступен: ключ ИИ не задан на сервере.",
@@ -90,6 +97,7 @@ public sealed class CatalClient
                     ? "Catal недоступен. Попробуйте позже."
                     : "Catal недоступен: " + upstream
             };
+            return CatalResult.Fail(error);
         }
     }
 

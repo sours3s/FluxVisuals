@@ -40,3 +40,5 @@ services:
         sync: false
       - key: SUPPORT_CHANNEL_PATTERN
         value: ^ticket
+      - key: SUPPORT_ROLE_ID
+        value: "1574052054224339078"

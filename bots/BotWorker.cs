@@ -9,6 +9,14 @@ namespace FluxVisualsBots;
 /// <summary>Один образ, два режима: news (slash-команда) и support (Catal в канале).</summary>
 public sealed class BotWorker : BackgroundService
 {
+    private static readonly Regex IntroPrefix = new(
+        @"^\s*(?:Привет[!,.]?\s*)?(?:Я\s*[—–-]\s*)?Catal\s*[—–-]\s*ИИ[\s-]?саппорт\s+FluxVisuals\.?\s*",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex CallVerb = new(
+        @"(?iu)\b(позови(те)?|вызови(те)?|зови(те)?|пригласи(те)?|нужен|нужна|подключи(те)?|call|ping|tag|mention)\b");
+    private static readonly Regex SupportTarget = new(
+        @"(?iu)\b(саппорт\w*|поддерж\w*|жив\w*\s+человек\w*|человек\w*|support|staff|админ\w*|модератор\w*)\b");
+
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _interactions;
     private readonly IServiceProvider _services;
@@ -20,7 +28,9 @@ public sealed class BotWorker : BackgroundService
     private readonly HashSet<ulong> _supportChannels;
     private readonly HashSet<ulong> _supportCategories;
     private readonly Regex? _supportNamePattern;
+    private readonly ulong _supportRoleId;
     private readonly ConcurrentDictionary<ulong, List<CatalTurn>> _history = new();
+    private readonly ConcurrentDictionary<ulong, byte> _greeted = new();
     private readonly object _historyGate = new();
     private int _commandsRegistered;
 
@@ -39,6 +49,7 @@ public sealed class BotWorker : BackgroundService
         _mode = (Environment.GetEnvironmentVariable("BOT_MODE") ?? "news").Trim().ToLowerInvariant();
         _supportChannels = ParseIds("SUPPORT_CHANNEL_IDS");
         _supportCategories = ParseIds("SUPPORT_CATEGORY_IDS");
+        ulong.TryParse(Environment.GetEnvironmentVariable("SUPPORT_ROLE_ID"), out _supportRoleId);
 
         // Ticket Tool создаёт каналы вида ticket-1234. По умолчанию берём их по имени,
         // а точные ID категории можно задать через SUPPORT_CATEGORY_IDS.
@@ -66,12 +77,34 @@ public sealed class BotWorker : BackgroundService
         {
             if (_supportChannels.Count == 0 && _supportCategories.Count == 0 && _supportNamePattern == null)
                 _log.LogWarning("Не заданы SUPPORT_CHANNEL_IDS / SUPPORT_CATEGORY_IDS / SUPPORT_CHANNEL_PATTERN — бот будет молчать.");
+            if (_supportRoleId == 0)
+                _log.LogWarning("SUPPORT_ROLE_ID не задан — по просьбе «позови саппорта» бот ответит без упоминания роли.");
             _client.MessageReceived += OnMessageAsync;
         }
 
-        await _client.LoginAsync(TokenType.Bot, token);
-        await _client.StartAsync();
-        _log.LogInformation("FluxVisuals {Mode} bot запущен.", _mode);
+        // Неверный токен не должен ронять хост: /ping обязан отвечать даже при сбое Discord.
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await _client.LoginAsync(TokenType.Bot, token);
+                await _client.StartAsync();
+                _log.LogInformation("FluxVisuals {Mode} bot запущен.", _mode);
+                break;
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Не удалось подключиться к Discord. Повтор через 30 секунд, /ping работает.");
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+            }
+        }
 
         try
         {
@@ -79,8 +112,11 @@ public sealed class BotWorker : BackgroundService
         }
         finally
         {
-            await _client.StopAsync();
-            await _client.LogoutAsync();
+            if (_client.ConnectionState == ConnectionState.Connected)
+            {
+                await _client.StopAsync();
+                await _client.LogoutAsync();
+            }
         }
     }
 
@@ -117,10 +153,17 @@ public sealed class BotWorker : BackgroundService
         if (_client.CurrentUser == null) return;
 
         string text = message.Content.Replace(_client.CurrentUser.Mention, "").Trim();
+
+        if (IsSupportCall(text))
+        {
+            await CallSupportAsync(message);
+            return;
+        }
+
         var (image, imageError) = await GetImageAsync(message.Attachments);
         if (imageError != null)
         {
-            await ReplyChunksAsync(message, new[] { imageError });
+            await ReplyChunksAsync(message, new[] { imageError + "\n\nЕсли хотите, напишите «позови саппорта» — я упомяну роль поддержки в этом тикете." });
             return;
         }
         if (text.Length == 0 && image == null) return;
@@ -144,16 +187,49 @@ public sealed class BotWorker : BackgroundService
         }
         catch { }
 
-        string answer = await _catal.AskAsync(question, history, image, message.Author.Id);
+        CatalResult result = await _catal.AskAsync(question, history, image, message.Author.Id);
 
-        lock (_historyGate)
+        bool first = _greeted.TryAdd(message.Author.Id, 0);
+        string answer = IntroPrefix.Replace(result.Text, "").Trim();
+        if (answer.Length == 0) answer = result.Text.Trim();
+
+        if (!result.Ok)
+            answer += "\n\nЕсли хотите, напишите «позови саппорта» — я упомяну роль поддержки в этом тикете.";
+        if (first)
+            answer = "Catal — ИИ-саппорт FluxVisuals.\n\n" + answer;
+
+        if (result.Ok)
         {
-            var list = _history.GetOrAdd(message.Author.Id, _ => new List<CatalTurn>());
-            list.Add(new CatalTurn("model", answer));
-            Trim(list);
+            lock (_historyGate)
+            {
+                var list = _history.GetOrAdd(message.Author.Id, _ => new List<CatalTurn>());
+                list.Add(new CatalTurn("model", answer));
+                Trim(list);
+            }
         }
 
         await ReplyChunksAsync(message, SplitAnswer(answer));
+    }
+
+    private async Task CallSupportAsync(SocketMessage message)
+    {
+        if (_supportRoleId == 0)
+        {
+            await ReplyChunksAsync(message, new[] {
+                "Позвал саппорта, но роль поддержки не настроена. Сообщите администратору."
+            });
+            return;
+        }
+
+        await message.Channel.SendMessageAsync(
+            MentionUtils.MentionRole(_supportRoleId) + " — пользователь просит помощи в этом тикете.",
+            allowedMentions: AllowedMentions.All,
+            messageReference: new MessageReference(message.Id));
+    }
+
+    private static bool IsSupportCall(string text)
+    {
+        return CallVerb.IsMatch(text) && SupportTarget.IsMatch(text);
     }
 
     private async Task<(string? Data, string? Error)> GetImageAsync(IReadOnlyCollection<IAttachment> attachments)
