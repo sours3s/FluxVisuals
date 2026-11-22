@@ -27,13 +27,16 @@ public static class Downloader
     }
 
     /// <summary>Скачивает URL в dest (через temp), пропускает, если файл уже валиден.</summary>
-    public static async Task DownloadAsync(string url, string dest, Action<long, long?>? progress = null, CancellationToken ct = default)
+    public static async Task DownloadAsync(string url, string dest, Action<long, long?>? progress = null,
+        CancellationToken ct = default, string? apiKey = null)
     {
         if (FileValid(dest)) return;
         Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
         string tmp = dest + ".part";
 
-        using var resp = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        if (!string.IsNullOrWhiteSpace(apiKey)) req.Headers.Add("x-api-key", apiKey);
+        using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
         resp.EnsureSuccessStatusCode();
         long total = resp.Content.Headers.ContentLength ?? -1;
 
@@ -65,6 +68,18 @@ public static class Downloader
                 await Task.Delay(300, ct);
             }
         }
+    }
+
+    public static async Task<string?> PostStringAsync(string url, string body, string? apiKey = null, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json")
+        };
+        if (!string.IsNullOrWhiteSpace(apiKey)) req.Headers.Add("x-api-key", apiKey);
+        using var resp = await Http.SendAsync(req, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadAsStringAsync(ct);
     }
 
     public static async Task<string?> GetStringAsync(string url, string? apiKey = null, CancellationToken ct = default)

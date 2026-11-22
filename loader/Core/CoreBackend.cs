@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace FluxVisualsLoader.Core;
 
@@ -8,6 +9,8 @@ public class CoreBackend
     private readonly MainWindow _window;
     private AppConfig _cfg;
     private GameSession? _session;
+    private readonly object _downloadPostLock = new();
+    private DateTime _lastDownloadPost = DateTime.MinValue;
 
     public CoreBackend(MainWindow window)
     {
@@ -45,6 +48,8 @@ public class CoreBackend
                 case "versions": await VersionsAsync(root); break;
                 case "openUrl": OpenUrl(root); break;
                 case "install": await InstallAsync(root); break;
+                case "installModpack": await InstallModpackAsync(root); break;
+                case "removeModpack": RemoveModpack(root); break;
                 case "listMods": SendMods(); break;
                 case "toggleMod": ToggleMod(root); break;
                 case "removeMod": RemoveMod(root); break;
@@ -64,10 +69,14 @@ public class CoreBackend
         SendMods();
         string? java = JavaResolver.FindJava(_cfg.JavaPath);
         LauncherLog.Info($"Состояние: java={(java ?? "НЕ НАЙДЕНА")} gameDir={_cfg.GameDir} (существует={Directory.Exists(_cfg.GameDir)})");
+        // Секреты не отдаём в WebView: токен и API-ключ остаются только в C#.
+        var safe = JsonNode.Parse(JsonSerializer.Serialize(_cfg))!.AsObject();
+        safe.Remove("authToken");
+        safe.Remove("curseforgeKey");
         Post(new
         {
             ev = "state",
-            config = _cfg,
+            config = safe,
             java = java != null,
             gameExists = Directory.Exists(_cfg.GameDir),
         });
@@ -88,6 +97,8 @@ public class CoreBackend
                 installed.Add(Path.GetFileName(d).ToLowerInvariant());
         }
         Post(new { ev = "files", files = ModManager.ListFiles(_cfg.GameDir, _cfg.ModIcons), installed });
+        var packs = ModpackManager.List();
+        Post(new { ev = "modpacks", modpacks = packs, installedIds = packs.Select(p => p.Id).ToList() });
     }
 
     private void SaveConfig(JsonElement root)
@@ -114,6 +125,12 @@ public class CoreBackend
         incoming.AuthToken = _cfg.AuthToken;
         incoming.IsAdmin = _cfg.IsAdmin;
         incoming.AuthServerUrl = _cfg.AuthServerUrl;
+        incoming.CurseforgeKey = _cfg.CurseforgeKey;
+        incoming.Role = _cfg.Role;
+        incoming.HasAccess = _cfg.HasAccess;
+        incoming.AccessExpiresAt = _cfg.AccessExpiresAt;
+        incoming.Username = _cfg.Username;
+        incoming.Uid = _cfg.Uid;
     }
 
     // ---------- запуск ----------
@@ -181,6 +198,7 @@ public class CoreBackend
             "mods" => Path.Combine(_cfg.GameDir, "mods"),
             "shaderpacks" => Path.Combine(_cfg.GameDir, "shaderpacks"),
             "resourcepacks" => Path.Combine(_cfg.GameDir, "resourcepacks"),
+            "modpacks" => _cfg.GameDir,
             _ => null,
         };
         if (string.IsNullOrWhiteSpace(path)) return;
@@ -225,9 +243,10 @@ public class CoreBackend
         if (string.IsNullOrEmpty(id)) return;
         string type = root.TryGetProperty("type", out var t) ? t.GetString() ?? "mod" : "mod";
         string loader = "fabric";
+        string versionLoader = type == "mod" || type == "modpack" ? loader : "";
         List<VersionInfo> versions = source == "curseforge"
-            ? await CurseForgeApi.VersionsAsync(id, _cfg.Version, type == "mod" ? loader : "", _cfg.CurseforgeKey)
-            : await ModrinthApi.VersionsAsync(id, _cfg.Version, type == "mod" ? loader : "");
+            ? await CurseForgeApi.VersionsAsync(id, _cfg.Version, versionLoader, _cfg.CurseforgeKey)
+            : await ModrinthApi.VersionsAsync(id, _cfg.Version, versionLoader);
         Post(new { ev = "versions", id, versions });
     }
 
@@ -250,53 +269,133 @@ public class CoreBackend
             _ => Path.Combine(_cfg.GameDir, "mods"),
         };
 
-        // если юзер выбрал конкретную версию — она уже в item.fileUrl
-        ModItem? resolved = item;
-        if (string.IsNullOrEmpty(resolved.FileUrl))
+        // Раньше выбранная в UI версия терялась: ModItem не имел поля selectedVersion.
+        ModItem resolved = item;
+        if (item.SelectedVersion != null && !string.IsNullOrWhiteSpace(item.SelectedVersion.FileUrl))
+        {
+            resolved = new ModItem
+            {
+                Id = item.Id,
+                ProjectUrl = item.ProjectUrl,
+                Title = item.Title,
+                Description = item.Description,
+                Author = item.Author,
+                Downloads = item.Downloads,
+                IconUrl = item.IconUrl,
+                VersionId = item.SelectedVersion.VersionId,
+                VersionNumber = item.SelectedVersion.VersionNumber,
+                FileUrl = item.SelectedVersion.FileUrl,
+                FileName = item.SelectedVersion.FileName,
+                FileSize = item.SelectedVersion.FileSize,
+            };
+        }
+        else if (string.IsNullOrEmpty(resolved.FileUrl))
         {
             bool isMod = type == "mod";
             resolved = source switch
             {
-                // шейдеры/ресурспаки: последний релиз без привязки к версии игры
-                "curseforge" when !isMod => await CurseForgeApi.ResolveLatestAnyAsync(item.Id, _cfg.CurseforgeKey),
-                "curseforge" => await CurseForgeApi.ResolveLatestAsync(item.Id, _cfg.Version, "fabric", _cfg.CurseforgeKey),
-                _ when !isMod => await ModrinthApi.ResolveLatestAnyAsync(item.Id),
-                _ => await ModrinthApi.ResolveLatestAsync(item.Id, _cfg.Version, "fabric"),
+                "curseforge" when !isMod => await CurseForgeApi.ResolveLatestAnyAsync(item.Id, _cfg.CurseforgeKey)
+                    ?? throw new Exception("Не удалось найти версию для установки"),
+                "curseforge" => await CurseForgeApi.ResolveLatestAsync(item.Id, _cfg.Version, "fabric", _cfg.CurseforgeKey)
+                    ?? throw new Exception("Не удалось найти версию для установки"),
+                _ when !isMod => await ModrinthApi.ResolveLatestAnyAsync(item.Id)
+                    ?? throw new Exception("Не удалось найти версию для установки"),
+                _ => await ModrinthApi.ResolveLatestAsync(item.Id, _cfg.Version, "fabric")
+                    ?? throw new Exception("Не удалось найти версию для установки"),
             };
         }
-        if (resolved == null || string.IsNullOrEmpty(resolved.FileUrl))
+        if (string.IsNullOrEmpty(resolved.FileUrl))
         {
             Post(new { ev = "installResult", ok = false, message = "Не удалось найти версию для установки" });
             return;
         }
 
-        // иконку несёт только элемент поиска — переносим её на выбранную версию
-        if (string.IsNullOrEmpty(resolved.IconUrl) && !string.IsNullOrEmpty(item.IconUrl))
-            resolved.IconUrl = item.IconUrl;
+        string downloadId = $"{source}:{item.Id}:{type}";
+        string fileName = Path.GetFileName(resolved.FileName ?? "");
+        if (string.IsNullOrWhiteSpace(fileName) && Uri.TryCreate(resolved.FileUrl, UriKind.Absolute, out var uri))
+            fileName = Path.GetFileName(uri.LocalPath);
+        if (string.IsNullOrWhiteSpace(fileName)) fileName = "file";
 
         await Task.Run(async () =>
         {
             try
             {
-                string dest = source switch
+                Directory.CreateDirectory(dir);
+                string dest = Path.Combine(dir, fileName);
+                await Downloader.DownloadAsync(resolved.FileUrl!, dest,
+                    (done, total) => PostDownloadProgress(downloadId, item.Title, done,
+                        total ?? resolved.FileSize, fileName),
+                    default, source == "curseforge" ? _cfg.CurseforgeKey : null);
+
+                Post(new { ev = "downloadDone", id = downloadId, ok = true });
+                Post(new { ev = "installResult", ok = true, file = fileName });
+                if (!string.IsNullOrEmpty(resolved.IconUrl))
                 {
-                    "curseforge" => await CurseForgeApi.DownloadFileAsync(resolved, dir),
-                    _ => await ModrinthApi.DownloadFileAsync(resolved, dir),
-                };
-                Post(new { ev = "installResult", ok = true, file = Path.GetFileName(dest) });
-                // запоминаем иконку источника для «Моих файлов»
-                string destName = Path.GetFileName(dest);
-                if (!string.IsNullOrEmpty(resolved.IconUrl) && !string.IsNullOrEmpty(destName))
-                {
-                    _cfg.ModIcons[destName] = resolved.IconUrl;
+                    _cfg.ModIcons[fileName] = resolved.IconUrl;
                     _cfg.Save();
                 }
                 SendMods();
             }
             catch (Exception ex)
             {
+                Post(new { ev = "downloadDone", id = downloadId, ok = false, message = ex.Message });
                 Post(new { ev = "installResult", ok = false, message = ex.Message });
             }
+        });
+    }
+
+    private async Task InstallModpackAsync(JsonElement root)
+    {
+        string source = root.GetProperty("source").GetString() ?? "modrinth";
+        var item = root.GetProperty("item").Deserialize<ModItem>() ?? throw new Exception("Нет данных о модпаке");
+        string downloadId = $"{source}:{item.Id}:modpack";
+
+        await Task.Run(async () =>
+        {
+            try
+            {
+                var pack = await ModpackManager.InstallAsync(source, item, _cfg.GameDir, _cfg.CurseforgeKey,
+                    (done, total, file) => PostDownloadProgress(downloadId, item.Title, done, total, file));
+                Post(new { ev = "downloadDone", id = downloadId, ok = true });
+                Post(new { ev = "installResult", ok = true, file = $"Модпак «{pack.Title}»" });
+                SendMods();
+            }
+            catch (Exception ex)
+            {
+                Post(new { ev = "downloadDone", id = downloadId, ok = false, message = ex.Message });
+                Post(new { ev = "installResult", ok = false, message = ex.Message });
+            }
+        });
+    }
+
+    private void RemoveModpack(JsonElement root)
+    {
+        string id = root.GetProperty("id").GetString() ?? "";
+        var pack = ModpackManager.List().FirstOrDefault(p => p.Id == id);
+        if (pack == null) return;
+        ModpackManager.Uninstall(pack, _cfg.GameDir);
+        SendMods();
+        Post(new { ev = "installResult", ok = true, file = $"Модпак «{pack.Title}» удалён" });
+    }
+
+    /// <summary>Присылает реальный прогресс загрузки в кнопку-монитор (с лёгким троттлингом).</summary>
+    private void PostDownloadProgress(string id, string title, long done, long total, string file)
+    {
+        lock (_downloadPostLock)
+        {
+            if (DateTime.Now - _lastDownloadPost < TimeSpan.FromMilliseconds(120)) return;
+            _lastDownloadPost = DateTime.Now;
+        }
+        double percent = total > 0 ? Math.Min(100, 100.0 * done / total) : 0;
+        Post(new
+        {
+            ev = "downloadProgress",
+            id,
+            title,
+            file,
+            done,
+            total,
+            percent = Math.Round(percent, 1),
         });
     }
 

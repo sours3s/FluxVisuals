@@ -17,7 +17,7 @@ public class AppConfig
     [JsonPropertyName("version")] public string Version { get; set; } = "1.21.11";
     [JsonPropertyName("gameDir")] public string GameDir { get; set; } = @"C:\FluxVisuals\game";
     [JsonPropertyName("javaPath")] public string JavaPath { get; set; } = "";
-    [JsonPropertyName("curseforgeKey")] public string CurseforgeKey { get; set; } = "";
+    [JsonPropertyName("curseforgeKey")] public string CurseforgeKey { get; set; } = Defaults.CurseforgeApiKey;
     [JsonPropertyName("clientName")] public string ClientName { get; set; } = "FluxVisuals";
     /// <summary>Никнейм Minecraft, с которым пользователь заходит на сервера (отдельно от ника аккаунта).</summary>
     [JsonPropertyName("mcNickname")] public string McNickname { get; set; } = "";
@@ -74,6 +74,7 @@ public class AppConfig
             catch { }
         }
         cfg ??= new AppConfig();
+        if (string.IsNullOrWhiteSpace(cfg.CurseforgeKey)) cfg.CurseforgeKey = Defaults.CurseforgeApiKey;
 
         // Авторитетный конфиг лежит в папке игры (сохраняется вместе с игрой).
         // Auth-поля переносим из exe-конфига, чтобы не разлогинило при расхождении.
@@ -93,6 +94,7 @@ public class AppConfig
                     gc.Username = cfg.Username;
                     gc.Uid = cfg.Uid;
                     gc.AccessExpiresAt = cfg.AccessExpiresAt;
+                    if (string.IsNullOrWhiteSpace(gc.CurseforgeKey)) gc.CurseforgeKey = Defaults.CurseforgeApiKey;
                     return gc;
                 }
             }

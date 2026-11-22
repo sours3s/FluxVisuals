@@ -16,6 +16,9 @@ public static class Defaults
     public static string UpdateCheckUrl => Build(
         "https://", "api.github", ".com/repos/", "sours3s/Flux", "Visuals/releases?per_page=30");
 
+    /// <summary>API-ключ CurseForge по умолчанию. Пользователь может переопределить его в config.json.</summary>
+    public static string CurseforgeApiKey => "$2a$10$JwFPGI2MAXdjVaGX.XWjduKm8fED605B6YqnsY8YsIpVM178ofZam";
+
     private static string Build(params string[] parts)
     {
         var sb = new StringBuilder();

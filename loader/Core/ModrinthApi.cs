@@ -19,6 +19,8 @@ public class ModItem
     [JsonPropertyName("fileUrl")] public string? FileUrl { get; set; }
     [JsonPropertyName("fileName")] public string? FileName { get; set; }
     [JsonPropertyName("fileSize")] public long FileSize { get; set; }
+    /// <summary>Конкретная версия, выбранная в UI. Раньше игнорировалась при установке.</summary>
+    [JsonPropertyName("selectedVersion")] public VersionInfo? SelectedVersion { get; set; }
 }
 
 /// <summary>Страница каталога: элементы + всего и текущий offset.</summary>
@@ -64,6 +66,7 @@ public static class ModrinthApi
     {
         "resourcepack" => "resourcepack",
         "shader" => "shader",
+        "modpack" => "modpack",
         _ => "mod",
     };
 
@@ -84,7 +87,7 @@ public static class ModrinthApi
 
         // Фильтр версии игры — только для модов.
         // Шейдеры/ресурспаки ищем без него: они не привязаны к версии.
-        if (type == "mod")
+        if (type == "mod" || type == "modpack")
         {
             string gameVersion = "1.21.11";
             url += $"&game_versions=[\"{gameVersion}\"]";
@@ -128,7 +131,7 @@ public static class ModrinthApi
                 foreach (var c in doc.RootElement.EnumerateArray())
                 {
                     string type = c.GetProperty("project_type").GetString() ?? "";
-                    if (type != "mod" && type != "resourcepack" && type != "shader") continue;
+                    if (type != "mod" && type != "resourcepack" && type != "shader" && type != "modpack") continue;
                     string name = c.GetProperty("name").GetString() ?? "";
                     list.Add(new CategoryInfo
                     {
@@ -160,6 +163,8 @@ public static class ModrinthApi
             var files = v.GetProperty("files");
             if (files.GetArrayLength() == 0) continue;
             var file = files[0];
+            foreach (var f in files.EnumerateArray())
+                if (f.TryGetProperty("primary", out var p) && p.ValueKind == JsonValueKind.True) { file = f; break; }
             result.Add(new VersionInfo
             {
                 VersionId = v.GetProperty("id").GetString(),
@@ -193,6 +198,8 @@ public static class ModrinthApi
             var files = v.GetProperty("files");
             if (files.GetArrayLength() == 0) continue;
             var file = files[0];
+            foreach (var f in files.EnumerateArray())
+                if (f.TryGetProperty("primary", out var p) && p.ValueKind == JsonValueKind.True) { file = f; break; }
             return new ModItem
             {
                 Id = projectId,

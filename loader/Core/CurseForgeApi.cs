@@ -16,6 +16,7 @@ public static class CurseForgeApi
     {
         "resourcepack" => 12,
         "shader" => 6552,
+        "modpack" => 4471, // class "Modpacks"
         _ => 6, // mods
     };
 
@@ -23,6 +24,7 @@ public static class CurseForgeApi
     {
         12 => "resourcepack",
         6552 => "shader",
+        4471 => "modpack",
         _ => "mod",
     };
 
@@ -42,12 +44,12 @@ public static class CurseForgeApi
         string url = $"{Base}/mods/search?gameId={GameId}&classId={ClassId(type)}&index={pageIndex}&pageSize={PageSize}";
 
         // Фильтр версии игры — только для модов. Шейдеры/ресурспаки ищем без него.
-        if (type == "mod")
+        if (type == "mod" || type == "modpack")
             url += "&gameVersion=1.21.11";
 
         if (int.TryParse(categoryId, out int cat) && cat > 0) url += $"&categoryId={cat}";
-        // Loader filter applies only to mods. Resource packs/shaders do not have modLoaderType.
-        if (type == "mod" && LoaderId(loader) is int ld) url += $"&modLoaderType={ld}";
+        // Loader filter applies to mods and modpacks. Resource packs/shaders do not have modLoaderType.
+        if ((type == "mod" || type == "modpack") && LoaderId(loader) is int ld) url += $"&modLoaderType={ld}";
         url += sort == "updated" ? "&sortField=3&sortOrder=desc" : "&sortField=2&sortOrder=desc";
         if (!string.IsNullOrWhiteSpace(query))
             url += $"&searchFilter={Uri.EscapeDataString(query)}";
@@ -65,7 +67,9 @@ public static class CurseForgeApi
             {
                 Id = m.GetProperty("id").GetInt32().ToString(),
                 Slug = slug,
-                ProjectUrl = string.IsNullOrEmpty(slug) ? "" : $"https://www.curseforge.com/minecraft/mc-mods/{slug}",
+                ProjectUrl = string.IsNullOrEmpty(slug) ? "" : type == "modpack"
+                    ? $"https://www.curseforge.com/minecraft/modpacks/{slug}"
+                    : $"https://www.curseforge.com/minecraft/mc-mods/{slug}",
                 Title = m.GetProperty("name").GetString() ?? "",
                 Description = m.TryGetProperty("summary", out var sum) ? sum.GetString() ?? "" : "",
                 Author = m.TryGetProperty("authors", out var au) && au.GetArrayLength() > 0
