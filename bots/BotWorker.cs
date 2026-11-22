@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -17,6 +18,8 @@ public sealed class BotWorker : BackgroundService
 
     private readonly string _mode;
     private readonly HashSet<ulong> _supportChannels;
+    private readonly HashSet<ulong> _supportCategories;
+    private readonly Regex? _supportNamePattern;
     private readonly ConcurrentDictionary<ulong, List<CatalTurn>> _history = new();
     private readonly object _historyGate = new();
     private int _commandsRegistered;
@@ -34,11 +37,14 @@ public sealed class BotWorker : BackgroundService
         _catal = catal;
         _log = log;
         _mode = (Environment.GetEnvironmentVariable("BOT_MODE") ?? "news").Trim().ToLowerInvariant();
-        _supportChannels = (Environment.GetEnvironmentVariable("SUPPORT_CHANNEL_IDS") ?? "")
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(s => ulong.TryParse(s, out var id) ? id : 0)
-            .Where(id => id != 0)
-            .ToHashSet();
+        _supportChannels = ParseIds("SUPPORT_CHANNEL_IDS");
+        _supportCategories = ParseIds("SUPPORT_CATEGORY_IDS");
+
+        // Ticket Tool создаёт каналы вида ticket-1234. По умолчанию берём их по имени,
+        // а точные ID категории можно задать через SUPPORT_CATEGORY_IDS.
+        string pattern = Environment.GetEnvironmentVariable("SUPPORT_CHANNEL_PATTERN") ?? "^ticket";
+        if (!string.IsNullOrWhiteSpace(pattern))
+            _supportNamePattern = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -58,8 +64,8 @@ public sealed class BotWorker : BackgroundService
         }
         else
         {
-            if (_supportChannels.Count == 0)
-                _log.LogWarning("SUPPORT_CHANNEL_IDS пуст — бот будет молчать. Укажите ID каналов через запятую.");
+            if (_supportChannels.Count == 0 && _supportCategories.Count == 0 && _supportNamePattern == null)
+                _log.LogWarning("Не заданы SUPPORT_CHANNEL_IDS / SUPPORT_CATEGORY_IDS / SUPPORT_CHANNEL_PATTERN — бот будет молчать.");
             _client.MessageReceived += OnMessageAsync;
         }
 
@@ -107,7 +113,7 @@ public sealed class BotWorker : BackgroundService
     private async Task OnMessageAsync(SocketMessage message)
     {
         if (message.Author.IsBot || message.Author.IsWebhook) return;
-        if (_supportChannels.Count == 0 || !_supportChannels.Contains(message.Channel.Id)) return;
+        if (!IsSupportChannel(message.Channel)) return;
         if (_client.CurrentUser == null) return;
 
         string text = message.Content.Replace(_client.CurrentUser.Mention, "").Trim();
@@ -188,6 +194,30 @@ public sealed class BotWorker : BackgroundService
                 messageReference: reference);
             first = false;
         }
+    }
+
+    private bool IsSupportChannel(IMessageChannel channel)
+    {
+        if (_supportChannels.Contains(channel.Id)) return true;
+
+        if (channel is ITextChannel text)
+        {
+            if (text.CategoryId is ulong categoryId && _supportCategories.Contains(categoryId))
+                return true;
+            if (_supportNamePattern?.IsMatch(text.Name) == true)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static HashSet<ulong> ParseIds(string variable)
+    {
+        return (Environment.GetEnvironmentVariable(variable) ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => ulong.TryParse(s, out var id) ? id : 0)
+            .Where(id => id != 0)
+            .ToHashSet();
     }
 
     private static void Trim(List<CatalTurn> list)

@@ -36,3 +36,7 @@ services:
         sync: false
       - key: SUPPORT_CHANNEL_IDS
         sync: false
+      - key: SUPPORT_CATEGORY_IDS
+        sync: false
+      - key: SUPPORT_CHANNEL_PATTERN
+        value: ^ticket
