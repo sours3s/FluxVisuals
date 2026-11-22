@@ -92,6 +92,7 @@ public sealed class BotWorker : BackgroundService
         {
             _client.Ready += RegisterCommandsAsync;
             _client.Ready += () => _client.SetStatusAsync(UserStatus.Online);
+            _client.InteractionCreated += OnInteractionCreatedAsync;
             _interactions.SlashCommandExecuted += OnSlashExecuted;
         }
         else
@@ -155,8 +156,33 @@ public sealed class BotWorker : BackgroundService
             await _interactions.RegisterCommandsGloballyAsync(true);
     }
 
+    private async Task OnInteractionCreatedAsync(SocketInteraction interaction)
+    {
+        var context = new SocketInteractionContext(_client, interaction);
+        try
+        {
+            await _interactions.ExecuteCommandAsync(context, _services);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Ошибка выполнения slash-команды {Command}", interaction.Type);
+            if (!interaction.HasResponded)
+            {
+                try
+                {
+                    await interaction.RespondAsync("Не удалось выполнить команду.", ephemeral: true);
+                }
+                catch { }
+            }
+        }
+    }
+
     private async Task OnSlashExecuted(SlashCommandInfo command, IInteractionContext context, Discord.Interactions.IResult result)
     {
+        if (!result.IsSuccess)
+            _log.LogWarning("Slash-команда {Command} завершилась с ошибкой: {Error} {Reason}",
+                command.Name, result.Error, result.ErrorReason);
+
         if (result.IsSuccess || context.Interaction.HasResponded) return;
 
         string text = result.Error?.ToString() switch
