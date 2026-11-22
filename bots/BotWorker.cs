@@ -9,6 +9,10 @@ namespace FluxVisualsBots;
 /// <summary>Один образ, два режима: news (slash-команда) и support (Catal в канале).</summary>
 public sealed class BotWorker : BackgroundService
 {
+    private const string Greeting =
+        "Привет! Я Catal — ИИ-саппорт FluxVisuals. Помогу с вопросами и ошибками по клиенту, лаунчеру, модам и аккаунту. " +
+        "Опишите проблему или прикрепите скриншот. Если нужен живой человек — напишите «позови саппорта».";
+
     private static readonly Regex IntroPrefix = new(
         @"^\s*(?:Привет[!,.]?\s*)?(?:Я\s*[—–-]\s*)?Catal\s*[—–-]\s*ИИ[\s-]?саппорт\s+FluxVisuals\.?\s*",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -31,6 +35,7 @@ public sealed class BotWorker : BackgroundService
     private readonly ulong _supportRoleId;
     private readonly ConcurrentDictionary<ulong, List<CatalTurn>> _history = new();
     private readonly ConcurrentDictionary<ulong, byte> _greeted = new();
+    private readonly ConcurrentDictionary<ulong, byte> _channelGreeted = new();
     private readonly object _historyGate = new();
     private int _commandsRegistered;
 
@@ -80,6 +85,7 @@ public sealed class BotWorker : BackgroundService
             if (_supportRoleId == 0)
                 _log.LogWarning("SUPPORT_ROLE_ID не задан — по просьбе «позови саппорта» бот ответит без упоминания роли.");
             _client.MessageReceived += OnMessageAsync;
+            _client.ChannelCreated += OnChannelCreatedAsync;
         }
 
         // Неверный токен не должен ронять хост: /ping обязан отвечать даже при сбое Discord.
@@ -149,8 +155,26 @@ public sealed class BotWorker : BackgroundService
     private async Task OnMessageAsync(SocketMessage message)
     {
         if (message.Author.IsBot || message.Author.IsWebhook) return;
-        if (!IsSupportChannel(message.Channel)) return;
+
+        bool supported = IsSupportChannel(message.Channel);
+        _log.LogInformation(
+            "Сообщение {MessageId} в канале {ChannelName} ({ChannelId}), подходит={Supported}",
+            message.Id, message.Channel.Name, message.Channel.Id, supported);
+        if (!supported) return;
         if (_client.CurrentUser == null) return;
+
+        bool channelHadGreeting = _channelGreeted.ContainsKey(message.Channel.Id);
+        if (_channelGreeted.TryAdd(message.Channel.Id, 0))
+        {
+            try
+            {
+                await message.Channel.SendMessageAsync(Greeting, allowedMentions: AllowedMentions.None);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Не удалось отправить приветствие в канал {ChannelId}", message.Channel.Id);
+            }
+        }
 
         string text = message.Content.Replace(_client.CurrentUser.Mention, "").Trim();
 
@@ -189,7 +213,7 @@ public sealed class BotWorker : BackgroundService
 
         CatalResult result = await _catal.AskAsync(question, history, image, message.Author.Id);
 
-        bool first = _greeted.TryAdd(message.Author.Id, 0);
+        bool first = _greeted.TryAdd(message.Author.Id, 0) && !channelHadGreeting;
         string answer = IntroPrefix.Replace(result.Text, "").Trim();
         if (answer.Length == 0) answer = result.Text.Trim();
 
@@ -225,6 +249,35 @@ public sealed class BotWorker : BackgroundService
             MentionUtils.MentionRole(_supportRoleId) + " — пользователь просит помощи в этом тикете.",
             allowedMentions: AllowedMentions.All,
             messageReference: new MessageReference(message.Id));
+    }
+
+    private async Task OnChannelCreatedAsync(SocketChannel channel)
+    {
+        if (channel is not ITextChannel text || !IsSupportChannel(text)) return;
+        if (!_channelGreeted.TryAdd(channel.Id, 0)) return;
+
+        // Ticket Tool ещё может настраивать права канала — повторяем несколько раз.
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            try
+            {
+                await text.SendMessageAsync(Greeting, allowedMentions: AllowedMentions.None);
+                _log.LogInformation("Приветствие отправлено в новый тикет {ChannelId}", channel.Id);
+                return;
+            }
+            catch (Exception ex)
+            {
+                if (attempt == 2)
+                {
+                    _log.LogWarning(ex, "Не удалось поприветствовать тикет {ChannelId}, попробуем при первом сообщении", channel.Id);
+                    _channelGreeted.TryRemove(channel.Id, out _);
+                }
+                else
+                {
+                    await Task.Delay(1500);
+                }
+            }
+        }
     }
 
     private static bool IsSupportCall(string text)
