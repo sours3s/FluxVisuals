@@ -5,316 +5,104 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
-import org.joml.Vector4f;
-import ru.fluxvisuals.client.FluxVisualsClient;
-import ru.fluxvisuals.util.render.core.Renderer2D;
 import ru.fluxvisuals.util.render.math.animation.AnimationMath;
-import ru.fluxvisuals.util.render.math.ScaleHelper;
-import ru.fluxvisuals.util.render.text.FontObject;
-import ru.fluxvisuals.util.render.text.FontRegistry;
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * TargetHUD — кастомный элемент с анимацией здоровья и предметов цели
- * <p>Показывает здоровье, никнейм, предметы цели под прицелом.
- * Видимость: в чате — последняя зафиксированная цель, в игре — цель под прицелом/наведением.
+ * TargetHUD в стиле исходного FluxVisuals: панель 150×34 с именем, дистанцией,
+ * полосой здоровья и полосой брони. Появляется только при цели под прицелом;
+ * с открытым чатом показывает самого игрока.
  */
 @Environment(EnvType.CLIENT)
-public class TargetHUD {
+public final class TargetHUD {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-    // Константы из исходника
-    private static final float WIDTH = 110f;
-    private static final float MAIN_HEIGHT = 28f;
-    private static final float HEAD_SIZE = 20f;
-    private static final float ITEM_BOX = 14.5f;
-    private static final float SPACING = 1.5f;
+    private static final float WIDTH = 150.0F;
+    private static final float HEIGHT = 34.0F;
+    private static final float BAR_WIDTH = 134.0F;
+    private static final float BAR_HEIGHT = 5.0F;
+    private static final int PADDING = 4;
 
-    // Анимация появления/скрытия
-    private static float animation = 0f;
-    private static float scrollAnim = 0f;
-    private static long scrollDelay = 0;
-    private static int scrollDir = 1;
+    private static float visibility = 0.0F;
 
-    // Состояние цели
-    private static LivingEntity lastHoveredEntity = null;
-    private static long lastHoverTime = 0;
-    private static LivingEntity prevTarget = null;
-
-    // Здоровье с анимацией (как в исходнике)
-    private static float healthAnim = 0f;
-    private static float absorptionAnim = 0f;
-    private static float healthFactor = 0f;
-
-    // Частицы (упрощенно, без движка частиц)
-    private static int particlesToSpawn = 0;
-
-    // Шрифт
-    private static FontObject font = FontRegistry.INTER_MEDIUM;
-
-    /**
-     * Рендерит TargetHUD — вызывается из Hud.onRender (как в исходнике)
-     */
-    public static void renderTargetHUD(DrawContext context, int mouseX, int mouseY) {
-        if (mc.player == null || mc.world == null) return;
-        if (font == null) return;
-
-        // Получаем цель под прицелом (как в исходнике: TargetsUtility.getTarget() или mc.targetedEntity)
-        LivingEntity target = getHoveredEntity();
-        LivingEntity hoveredEntity = (mc.targetedEntity instanceof LivingEntity living) ? living : null;
-
-        long now = System.currentTimeMillis();
-        if (hoveredEntity != null) {
-            lastHoverTime = now;
-            lastHoveredEntity = hoveredEntity;
-        }
-
-        boolean isInChat = mc.currentScreen instanceof ChatScreen;
-        boolean showOnHover = true; // настройка из исходника
-        boolean isHovering = showOnHover && lastHoveredEntity != null && (now - lastHoverTime < 2000);
-
-        // Логика показа:
-        // - В чате: показываем себя (mc.player)
-        // - В игре: показываем цель под прицелом или при наведении
-        boolean shown = isInChat || target != null || isHovering;
-
-        // Обновляем prevTarget
-        if (target != null) {
-            prevTarget = target;
-        } else if (isHovering) {
-            prevTarget = lastHoveredEntity;
-        } else if (isInChat) {
-            // В чате показываем себя
-            prevTarget = mc.player;
-        } else {
-            // Нет цели, не наведение, не чат - сбрасываем цель
-            prevTarget = null;
-        }
-
-        // Анимация появления/скрытия (как в исходнике: BACKWARDS = показывать)
-        animation = AnimationMath.animation(animation, shown ? 1.0f : 0.0f, 0.4f);
-        float anim = 1.0f - animation;
-        anim = Math.max(0.0f, Math.min(1.0f, anim));
-        if (anim < 0.01f) return;
-
-        if (prevTarget == null) return;
-
-        // Предметы цели
-        List<ItemStack> items = new ArrayList<>();
-        boolean showItems = true; // настройка из исходника
-        if (showItems) {
-            items.add(prevTarget.getMainHandStack());
-            items.add(prevTarget.getEquippedStack(EquipmentSlot.HEAD));
-            items.add(prevTarget.getEquippedStack(EquipmentSlot.CHEST));
-            items.add(prevTarget.getEquippedStack(EquipmentSlot.LEGS));
-            items.add(prevTarget.getEquippedStack(EquipmentSlot.FEET));
-            items.add(prevTarget.getOffHandStack());
-            items.removeIf(ItemStack::isEmpty);
-        }
-
-        float totalItemsW = items.size() * ITEM_BOX + Math.max(0, items.size() - 1) * SPACING;
-        float itemStartY = 0.0f;
-        float mainBoxY = showItems && !items.isEmpty() ? ITEM_BOX + 2.0f : 0.0f;
-        float panelH = mainBoxY + MAIN_HEIGHT + 6.0f;
-
-        // Позиция (ванильная: центр снизу)
-        float defX = Math.max(0.0f, (mc.getWindow().getFramebufferWidth() - WIDTH) / 2.0f);
-        float defY = Math.max(0.0f, mc.getWindow().getFramebufferHeight() * 0.55f);
-
-        // В FluxVisuals нет Drag системы, используем фиксированную позицию
-        float x = defX;
-        float y = defY;
-        float hudScale = 1.0f;
-
-        float width = WIDTH * hudScale;
-        float mainHeight = MAIN_HEIGHT * hudScale;
-        float headSize = HEAD_SIZE * hudScale;
-        float boxY = y + mainBoxY * hudScale;
-        float itemStartYScaled = y + itemStartY * hudScale;
-
-        Renderer2D r2 = FluxVisualsClient.getRenderer();
-        if (r2 == null) return;
-
-        try {
-            // Рендерим предметы
-            if (showItems && !items.isEmpty()) {
-                float itemStartX = x + (width / 2f) - (totalItemsW * hudScale / 2f);
-                for (int i = 0; i < items.size(); i++) {
-                    float ix = itemStartX + i * (ITEM_BOX + SPACING) * hudScale;
-                    float itemBoxScaled = ITEM_BOX * hudScale;
-                    drawStyle(r2, ix, itemStartYScaled, itemBoxScaled, itemBoxScaled, anim);
-                    if (context != null) {
-                        renderItem(context, items.get(i), ix + 2.0f * hudScale, itemStartYScaled + 2.0f * hudScale, itemBoxScaled - 4.0f * hudScale);
-                    }
-                }
-            }
-
-            // Основная панель
-            drawStyle(r2, x, boxY, width, mainHeight, anim);
-
-            // Голова цели
-            float headX = x + 4.0f * hudScale;
-            float headY = boxY + 4.0f * hudScale;
-            drawHead(r2, context, prevTarget, headX, headY, headSize, anim);
-
-            // Имя с скроллом (как в исходнике)
-            String name = prevTarget.getName().getString();
-            float nameX = headX + headSize + 5.0f * hudScale;
-            float nameW = width - (headSize + 15.0f * hudScale);
-            float nameSize = 9.0f * hudScale; // УВЕЛИЧЕНО от 7.5 до 9.0 как в исходнике
-
-            // Текст метрика
-            var metrics = r2.measureText(font, name, nameSize);
-            float tWidth = metrics != null ? metrics.width : 0;
-
-            // Скролл анимация (как в исходнике)
-            if (scrollDelay == 0L) scrollDelay = System.currentTimeMillis();
-            if (System.currentTimeMillis() - scrollDelay > 1000L) {
-                scrollDelay = System.currentTimeMillis();
-                scrollDir = -scrollDir;
-            }
-            float targetOffset = scrollDir > 0 ? Math.max(0.0f, tWidth - nameW) : 0.0f;
-            scrollAnim = AnimationMath.animation(scrollAnim, targetOffset, 0.05f);
-
-            // Имя (без scissor - просто рисуем)
-            r2.text(font, nameX - scrollAnim, boxY + 4.5f * hudScale, nameSize, name, Color.WHITE.getRGB());
-
-            // HP-бар
-            float barX = nameX;
-            float barY = boxY + mainHeight - 8.5f * hudScale;
-            float barW = nameW;
-            float barH = 3.5f * hudScale;
-
-            // Фон HP-бара
-            r2.rect(barX, barY, barW, barH, 1.5f, new Color(0, 0, 0, (int) (60 * anim)).getRGB());
-
-            // Анимация здоровья (как в исходнике)
-            float maxHp = prevTarget.getMaxHealth();
-            healthAnim = AnimationMath.animation(healthAnim, prevTarget.getHealth(), 0.2f);
-            absorptionAnim = AnimationMath.animation(absorptionAnim, prevTarget.getAbsorptionAmount(), 0.2f);
-
-            float hpFactor = Math.max(0, Math.min(1, healthAnim / maxHp));
-
-            // Цвета здоровья (как в исходнике)
-            Color c1 = new Color(0xFF, 0x44, 0x44); // красный
-            Color c2 = new Color(0xCC, 0x33, 0x33);
-            r2.rect(barX, barY, barW * hpFactor, barH, 1.5f, c1.getRGB());
-
-            // Поглощение (absorption)
-            float absWidth = 0;
-            if (absorptionAnim > 0.1f) {
-                float absFactor = Math.max(0, Math.min(1, absorptionAnim / maxHp));
-                absWidth = barW * absFactor;
-                Color gold1 = new Color(255, 215, 0, 200);
-                r2.rect(barX + barW - absWidth, barY, absWidth, barH, 1.5f, gold1.getRGB());
-            }
-
-            // HP текст — используем РЕАЛЬНОЕ здоровье (как в исходнике), не анимированное
-            float currentHealth = prevTarget.getHealth();
-            float currentAbsorption = prevTarget.getAbsorptionAmount();
-            float hValue = (float) (Math.round(currentHealth * 10.0f) / 10.0f);
-            float aValue = (float) (Math.round(currentAbsorption * 10.0f) / 10.0f);
-            String hStr = hValue + "";
-            String aStr = aValue > 0 ? " + " + aValue : "";
-            String suffix = " HP";
-            float hpTextSize = 8.0f * hudScale; // УВЕЛИЧЕНО от 6.5 до 8.0
-
-            // Измеряем ширину текста через measureText
-            var hMetrics = r2.measureText(font, hStr, hpTextSize);
-            var aMetrics = r2.measureText(font, aStr, hpTextSize);
-            var sMetrics = r2.measureText(font, suffix, hpTextSize);
-            float hWidth = hMetrics != null ? hMetrics.width : 0;
-            float aWidth = aMetrics != null ? aMetrics.width : 0;
-            float sWidth = sMetrics != null ? sMetrics.width : 0;
-            float fullTextW = hWidth + aWidth + sWidth;
-
-            float drawX = barX + barW - fullTextW;
-            float drawY = barY - 7.0f * hudScale;
-            r2.text(font, drawX, drawY, hpTextSize, hStr, new Color(0xE0, 0xE0, 0xE0).getRGB());
-            float off = hWidth;
-            if (aValue > 0) {
-                r2.text(font, drawX + off, drawY, hpTextSize, aStr, new Color(0xFF, 0xD7, 0x00).getRGB());
-                off += aWidth;
-            }
-            r2.text(font, drawX + off, drawY, hpTextSize, suffix, new Color(255, 255, 255, (int) (150 * anim)).getRGB());
-
-        } catch (Exception e) {
-            // Ignore render errors
-        }
+    private TargetHUD() {
     }
 
-    /**
-     * Получает сущность под прицелом (как TargetsUtility.getTarget в исходнике)
-     */
-    private static LivingEntity getHoveredEntity() {
+    public static void renderTargetHUD(DrawContext context) {
+        if (mc.player == null || mc.world == null) {
+            visibility = AnimationMath.animation(visibility, 0.0F, 0.05F);
+            return;
+        }
+
+        boolean chatOpen = mc.currentScreen instanceof ChatScreen;
+        LivingEntity target = chatOpen ? mc.player : getCrosshairTarget();
+        boolean shown = target != null && target.isAlive();
+
+        visibility = AnimationMath.animation(visibility, shown ? 1.0F : 0.0F, 0.05F);
+        if (visibility <= 0.01F || target == null) {
+            return;
+        }
+
+        float alpha = Math.min(1.0F, visibility);
+        int sw = context.getScaledWindowWidth();
+        int sh = context.getScaledWindowHeight();
+        float x = PADDING;
+        // Ватермарка занимает верхние 16 px — панель ставим сразу под ней.
+        float y = PADDING + 20.0F;
+        if (x + WIDTH > sw) {
+            x = Math.max(1.0F, sw - WIDTH - PADDING);
+        }
+        if (y + HEIGHT > sh) {
+            y = Math.max(1.0F, sh - HEIGHT - PADDING);
+        }
+
+        int left = (int) x;
+        int top = (int) y;
+        int right = (int) (x + WIDTH);
+        int bottom = (int) (y + HEIGHT);
+
+        context.fill(left, top, right, bottom,
+              DonorHudTheme.withAlpha(DonorHudTheme.BG, (int) (DonorHudTheme.BG_ALPHA * alpha)));
+        int border = DonorHudTheme.withAlpha(DonorHudTheme.ACCENT, (int) (90 * alpha));
+        context.fill(left, top, right, top + 1, border);
+        context.fill(left, bottom - 1, right, bottom, border);
+        context.fill(left, top, left + 1, bottom, border);
+        context.fill(right - 1, top, right, bottom, border);
+
+        String name = target.getDisplayName().getString();
+        String distance = String.format("%.1fm", mc.player.distanceTo(target));
+        context.drawTextWithShadow(mc.textRenderer, name, left + 8, top + 6,
+              DonorHudTheme.mulAlpha(DonorHudTheme.TEXT, alpha));
+        context.drawTextWithShadow(mc.textRenderer, distance,
+              right - 8 - mc.textRenderer.getWidth(distance), top + 6,
+              DonorHudTheme.mulAlpha(DonorHudTheme.TEXT_DIM, alpha));
+
+        float maxHealth = Math.max(1.0F, target.getMaxHealth());
+        float healthPercent = Math.max(0.0F, Math.min(1.0F, target.getHealth() / maxHealth));
+        int hpColor = DonorHudTheme.healthColor(healthPercent);
+        int barX = left + 8;
+        int barY = top + 20;
+        int barRight = (int) (barX + BAR_WIDTH);
+        int barBottom = (int) (barY + BAR_HEIGHT);
+        int barBg = DonorHudTheme.withAlpha(0xFF000000, (int) (0.35F * 255.0F * alpha));
+        context.fill(barX, barY, barRight, barBottom, barBg);
+        context.fill(barX, barY, (int) (barX + BAR_WIDTH * healthPercent), barBottom,
+              DonorHudTheme.withAlpha(hpColor, (int) (255 * alpha)));
+
+        float armorPercent = Math.max(0.0F, Math.min(1.0F, target.getArmor() / 20.0F));
+        int armorY = barBottom + 2;
+        context.fill(barX, armorY, barRight, armorY + 2, barBg);
+        context.fill(barX, armorY, (int) (barX + BAR_WIDTH * armorPercent), armorY + 2,
+              DonorHudTheme.withAlpha(DonorHudTheme.ARMOR, (int) (255 * alpha)));
+    }
+
+    private static LivingEntity getCrosshairTarget() {
         HitResult hit = mc.crosshairTarget;
-        if (hit != null && hit.getType() == HitResult.Type.ENTITY) {
-            net.minecraft.util.hit.EntityHitResult entityHit = (net.minecraft.util.hit.EntityHitResult) hit;
-            if (entityHit.getEntity() instanceof LivingEntity living) {
-                return living;
-            }
+        if (hit instanceof EntityHitResult entityHit && entityHit.getEntity() instanceof LivingEntity living) {
+            return living;
         }
         return null;
-    }
-
-    /**
-     * Рисует стиль панели (glass/blur)
-     */
-    private static void drawStyle(Renderer2D r2, float x, float y, float w, float h, float anim) {
-        if (ru.fluxvisuals.module.impl.visuals.Hud.blur.get("HUD")) {
-            r2.prepareBlur(23.0f);
-            r2.blur(x, y, w, h, 4f, anim);
-        }
-
-        // Glass style
-        int bgColor = Renderer2D.ColorUtil.replAlpha(0xFF141419, (int) (180 * anim));
-        r2.rect(x, y, w, h, 4f, bgColor);
-
-        // Outline
-        int outAlpha = (int) (30 * anim);
-        int outColor = Renderer2D.ColorUtil.replAlpha(0xFFFFFFFF, outAlpha);
-        r2.rectOutline(x, y, w, h, 4f, outColor, 0.5f);
-    }
-
-    /**
-     * Рисует голову цели (как в исходнике)
-     */
-    private static void drawHead(Renderer2D r2, DrawContext context, LivingEntity target, float headX, float headY, float headSize, float anim) {
-        // Для игроков и мобов используем дефолтную голову
-        drawDefaultHead(r2, headX, headY, headSize);
-    }
-
-    /**
-     * Дефолтная голова для мобов
-     */
-    private static void drawDefaultHead(Renderer2D r2, float headX, float headY, float headSize) {
-        // Рисуем простой прямоугольник как placeholder для головы
-        r2.rect(headX, headY, headSize, headSize, 2f, new Color(0x3E, 0x3E, 0x47, 255).getRGB());
-        r2.rectOutline(headX, headY, headSize, headSize, 2f, new Color(0xFF, 0xFF, 0xFF, 80).getRGB(), 0.5f);
-    }
-
-    /**
-     * Рендерит предмет (упрощенно)
-     */
-    private static void renderItem(DrawContext context, ItemStack stack, float x, float y, float size) {
-        if (stack.isEmpty()) return;
-
-        context.getMatrices().pushMatrix();
-        try {
-            context.getMatrices().translate(x, y);
-            float scale = size / 16f;
-            context.getMatrices().scale(scale, scale);
-            context.drawItem(stack, 0, 0);
-            context.drawStackOverlay(mc.textRenderer, stack, 0, 0);
-        } finally {
-            context.getMatrices().popMatrix();
-        }
     }
 }

@@ -30,7 +30,9 @@ public final class WorldRenderLayers {
                               .withVertexFormat(VertexFormats.POSITION_COLOR, DrawMode.QUADS)
                               .withCull(false)
                               .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
-                              .withDepthWrite(true)
+                              // Полупрозрачные оверлеи не должны писать depth: иначе после них
+                              // рука игрока и небо получают "дырки" в буфере глубины.
+                              .withDepthWrite(false)
                               .build());
       private static final RenderPipeline POSITION_COLOR_QUADS_NO_DEPTH_PIPELINE = RenderPipelines.register(
                   RenderPipeline.builder(new Snippet[] { RenderPipelines.POSITION_COLOR_SNIPPET })
@@ -55,7 +57,9 @@ public final class WorldRenderLayers {
                               .withLocation(Identifier.of("fluxvisuals", "pipeline/world/lines"))
                               .withVertexFormat(VertexFormats.POSITION_COLOR_NORMAL_LINE_WIDTH, DrawMode.LINES)
                               .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
-                              .withDepthWrite(true)
+                              // Jump Circle "Blocks" рисует Lines ПОСЛЕ мира, но ДО руки.
+                              // depthWrite=true забивал буфер глубины и делал руку прозрачной.
+                              .withDepthWrite(false)
                               .build());
       private static final RenderPipeline LINES_NO_DEPTH_PIPELINE = RenderPipelines.register(
                   RenderPipeline.builder(new Snippet[] { RenderPipelines.RENDERTYPE_LINES_SNIPPET })

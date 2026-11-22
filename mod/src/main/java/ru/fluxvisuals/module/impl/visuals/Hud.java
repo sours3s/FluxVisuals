@@ -213,6 +213,13 @@ public class Hud extends Module {
       if (mc.player != null && mc.world != null) {
          Renderer2D r2 = e.renderer();
          if (r2 != null) {
+            // HUD-blur ломал текст и вызывал мерцание — держим выключенным даже если в конфиге true.
+            for (BooleanSetting blurSetting : blur.settings) {
+               if ("HUD".equals(blurSetting.name)) {
+                  blurSetting.set(false);
+               }
+            }
+
             // Правило для ВСЕХ элементов: пустой элемент не виден в игре,
             // а при открытом чате показывается (чтобы его можно было передвинуть).
             // Если в элементе есть контент — он виден всегда.
@@ -223,7 +230,7 @@ public class Hud extends Module {
             }
 
             if (element.get("Watermark")) {
-               WaterMark.waterMark(r2);
+               WaterMark.waterMark(e.drawContext());
             }
 
             // Раньше здесь дополнительно рисовался CustomHotbarHud — из-за этого на экране
@@ -250,16 +257,14 @@ public class Hud extends Module {
             }
 
             if (element.get("TargetHUD")) {
-               int mouseX = (int) mc.mouse.getScaledX(mc.getWindow());
-               int mouseY = (int) mc.mouse.getScaledY(mc.getWindow());
-               TargetHUD.renderTargetHUD(e.drawContext(), mouseX, mouseY);
+               TargetHUD.renderTargetHUD(e.drawContext());
             }
 
             if (element.get("ArrayList")) {
                if (ArrayListHUD.hasContent()) {
-                  ArrayListHUD.arraylist(r2);
+                  ArrayListHUD.arraylist(e.drawContext());
                } else if (chatOpen) {
-                  renderEmptyPlaceholder(r2, "arrayList", "ArrayList", 20.0F, 120.0F);
+                  ArrayListHUD.renderEmpty(e.drawContext());
                }
             }
 
