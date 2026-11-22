@@ -76,9 +76,22 @@ public sealed class BotWorker : BackgroundService
             return;
         }
 
+        _client.Log += msg =>
+        {
+            if (msg.Severity is LogSeverity.Warning or LogSeverity.Error or LogSeverity.Critical)
+                _log.LogWarning("Discord: {Message}", msg.ToString());
+            return Task.CompletedTask;
+        };
+        _client.Disconnected += ex =>
+        {
+            _log.LogWarning(ex, "Discord-соединение потеряно, бот попробует переподключиться");
+            return Task.CompletedTask;
+        };
+
         if (_mode == "news")
         {
             _client.Ready += RegisterCommandsAsync;
+            _client.Ready += () => _client.SetStatusAsync(UserStatus.Online);
             _interactions.SlashCommandExecuted += OnSlashExecuted;
         }
         else

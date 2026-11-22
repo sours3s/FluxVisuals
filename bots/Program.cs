@@ -33,5 +33,12 @@ var app = builder.Build();
 // Render Free засыпает через ~15 минут. UptimeRobot дёргает /ping каждые 5 минут.
 app.MapGet("/ping", () => Results.Text("ok"));
 app.MapGet("/", () => Results.Text($"FluxVisuals bot: {mode}"));
+app.MapGet("/bot-status", (DiscordSocketClient client) => Results.Json(new
+{
+    connection = client.ConnectionState.ToString(),
+    user = client.CurrentUser?.Username,
+    userId = client.CurrentUser?.Id.ToString(),
+    guilds = client.Guilds.Count
+}));
 
 app.Run();
