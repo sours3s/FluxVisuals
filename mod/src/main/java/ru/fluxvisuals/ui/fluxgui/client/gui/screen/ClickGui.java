@@ -306,9 +306,9 @@ public class ClickGui extends Screen {
     static final float SETTINGS_Y = 10.0F;
     static final float SETTINGS_W = 360.0F;
     static final float SETTINGS_H = 516.0F;
-    static final float SETTINGS_TOP = 76.0F;
-    static final float SETTINGS_BOTTOM = 514.0F;
     static Module settingsModule = null;
+    static boolean settingsPanelOpen = false;
+    float settingsPanelProgress = 0.0F;
     static float settingsScroll = 0.0F;
     static float settingsTargetScroll = 0.0F;
     NumberSetting draggingSlider = null;
@@ -452,6 +452,16 @@ public class ClickGui extends Screen {
 
         this.modePopupScroll = this.approach(this.modePopupScroll, this.modePopupTargetScroll, 12.0F);
         this.updateModePopupPosition();
+
+        boolean settingsShouldShow = settingsModule != null && this.settingsPanelOpen
+            && selectedCategory != Category.CONFIGS && selectedCategory != Category.MARKS;
+        this.settingsPanelProgress = this.approach(this.settingsPanelProgress, settingsShouldShow ? 1.0F : 0.0F, 14.0F);
+        if (!settingsShouldShow && this.settingsPanelProgress <= 0.001F && settingsModule != null) {
+            settingsModule = null;
+            settingsScroll = 0.0F;
+            settingsTargetScroll = 0.0F;
+        }
+
         this.sliderCursorRequested = this.draggingSlider != null;
         float designMouseX = (mouseX - this.originX) / this.scale;
         float designMouseY = (mouseY - this.originY) / this.scale;
@@ -537,7 +547,7 @@ public class ClickGui extends Screen {
         if (Math.abs(settingsScroll - settingsTargetScroll) < 0.02F) {
             settingsScroll = settingsTargetScroll;
         }
-        if (settingsModule != null && selectedCategory != Category.CONFIGS && selectedCategory != Category.MARKS) {
+        if (this.settingsPanelProgress > 0.001F && settingsModule != null) {
             this.renderSettingsPanel(context, designMouseX, designMouseY);
         }
 
@@ -2021,16 +2031,34 @@ public class ClickGui extends Screen {
             return;
         }
 
+        float eased = 1.0F - (float)Math.pow(1.0F - this.settingsPanelProgress, 3.0F);
+        float slide = (1.0F - eased) * 16.0F;
         float x = SETTINGS_X;
-        float y = SETTINGS_Y;
+        float y = SETTINGS_Y + slide;
         float w = SETTINGS_W;
-        RoundedRenderer.drawRoundedRect(context, x, y, w, SETTINGS_H, 12.0F, 0xD0101420);
-        RoundedRenderer.drawRoundedOutline(context, x + 1.0F, y + 1.0F, w - 2.0F, SETTINGS_H - 2.0F, 11.0F, 1.1F, withAlpha(ACCENT, 120));
-        TextRender.draw(context, module.getName(), x + 16.0F, y + 19.0F, 14.85F, -1);
-        TextRender.draw(context, "×", x + w - 28.0F, y + 18.0F, 14.0F, -1);
+        float panelH = this.settingsPanelHeight(module);
+        float top = this.settingsPanelTop() + slide;
+        float bottom = this.settingsPanelBottom(module) + slide;
 
-        context.enableScissor((int)(x + 8.0F), (int)SETTINGS_TOP, (int)(x + w - 8.0F), (int)SETTINGS_BOTTOM);
-        float settingY = SETTINGS_TOP + 6.0F - settingsScroll;
+        boolean liquidGlass = ru.fluxvisuals.ui.fluxgui.module.render.ClickGui.isLiquidGlassStyle();
+        if (liquidGlass) {
+            Color selected = ru.fluxvisuals.ui.fluxgui.module.render.ClickGui.guiGlassColor.getColor();
+            int glassRgb = selected.getRGB() & 16777215;
+            int materialAlpha = MathHelper.clamp(Math.round(108.0F + selected.getAlpha() * 0.45F), 108, 223);
+            Color tint = new Color(materialAlpha << 24 | glassRgb, true);
+            FluxGlassPipeline.drawLiquidAt(context, x, y, w, panelH, 12.0F, 78.784F, 1.0F, 0.46F, eased, tint, true);
+            int contourRgb = 191 << 16 | 191 << 8 | 191;
+            RoundedRenderer.drawRoundedOutline(context, x + 1.0F, y + 1.0F, w - 2.0F, panelH - 2.0F, 11.0F, 1.1F, fade(withAlpha(contourRgb, 92), eased));
+        } else {
+            RoundedRenderer.drawRoundedRect(context, x, y, w, panelH, 12.0F, fade(0xD0101420, eased));
+            RoundedRenderer.drawRoundedOutline(context, x + 1.0F, y + 1.0F, w - 2.0F, panelH - 2.0F, 11.0F, 1.1F, fade(withAlpha(ACCENT, 120), eased));
+        }
+        TextRender.draw(context, trimText(module.getName(), 14.85F, w - 64.0F), x + 16.0F, y + 19.0F, 14.85F, fade(-1, eased));
+        TextRender.draw(context, "×", x + w - 28.0F, y + 18.0F, 14.0F, fade(-1, eased));
+        RoundedRenderer.drawRoundedRect(context, x + 12.0F, y + 38.0F, w - 24.0F, 1.0F, 0.5F, fade(SEPARATOR_COLOR, eased));
+
+        context.enableScissor((int)(x + 8.0F), (int)top, (int)(x + w - 8.0F), (int)bottom);
+        float settingY = top + 6.0F - settingsScroll;
         for (Setting<?> setting : module.getSettings()) {
             float visibility = SETTING_VISIBILITY_ANIMS.compute(setting, (key, previous) -> {
                 float target = setting.isVisible() ? 1.0F : 0.0F;
@@ -2090,7 +2118,7 @@ public class ClickGui extends Screen {
             );
             this.drawCompactSettingSwitch(context, swX, swY, switchWidth, switchHeight, toggle, x, y);
         } else if (setting instanceof BooleanSetting boolSetting) {
-            TextRender.draw(context, boolSetting.getDisplayName(), x + 8.0F, y + 17.6F, 12.65F, -1);
+            TextRender.draw(context, trimText(boolSetting.getDisplayName(), 12.65F, w - 48.0F), x + 8.0F, y + 17.6F, 12.65F, -1);
             boolean val = boolSetting.getValue();
             float toggleAnim = SETTING_TOGGLE_ANIMS.compute(boolSetting, (settingKey, previous) -> {
                 float target = val ? 1.0F : 0.0F;
@@ -2151,10 +2179,10 @@ public class ClickGui extends Screen {
             float shownWidth = TextRender.width(shownValue, 12.65F);
             TextRender.draw(context, shownValue, valX + (valW - shownWidth) / 2.0F, y + 17.6F, 12.65F, accentAt(valX, y));
         } else if (setting instanceof MultiBooleanSetting multiSetting) {
-            TextRender.draw(context, multiSetting.getDisplayName(), x + 8.0F, y + 17.6F, 12.65F, -1);
             String full = multiDisplayValue(multiSetting);
             float valW = multiFieldWidth(multiSetting);
             float valX = x + w - valW - 8.0F;
+            TextRender.draw(context, trimText(multiSetting.getDisplayName(), 12.65F, Math.max(24.0F, valX - x - 16.0F)), x + 8.0F, y + 17.6F, 12.65F, -1);
             boolean hovered = inside(mouseX, mouseY, valX, y + 4.4F, valW, h - 8.8F);
             float hoverAnim = MULTI_HOVER_ANIMS.compute(multiSetting, (keyx, previous) -> {
                 float target = hovered ? 1.0F : 0.0F;
@@ -2204,7 +2232,7 @@ public class ClickGui extends Screen {
             );
         } else if (setting instanceof StringSetting stringSetting) {
             float macroShift = this.renderMacroDeleteAffordance(context, module, setting, x, y, w, h, mouseX, mouseY);
-            TextRender.draw(context, stringSetting.getDisplayName(), x + 8.0F + macroShift, y + 17.6F, 12.65F, -1);
+            TextRender.draw(context, trimText(stringSetting.getDisplayName(), 12.65F, Math.max(24.0F, w - 176.0F - macroShift)), x + 8.0F + macroShift, y + 17.6F, 12.65F, -1);
             float fieldW = 154.0F;
             float fieldX = x + w - fieldW - 8.0F;
             boolean focused = activeTextSetting == stringSetting;
@@ -2218,7 +2246,7 @@ public class ClickGui extends Screen {
                 RoundedRenderer.drawRoundedRect(context, cursorX, y + 7.0F, 1.2F, h - 14.0F, 0.6F, -1);
             }
         } else if (setting instanceof ColorSetting colorSetting) {
-            TextRender.draw(context, colorSetting.getDisplayName(), x + 8.0F, y + 17.6F, 12.65F, -1);
+            TextRender.draw(context, trimText(colorSetting.getDisplayName(), 12.65F, w - 92.0F), x + 8.0F, y + 17.6F, 12.65F, -1);
             int col = colorSetting.getValue();
             float boxSize = 15.4F;
             float boxX = x + w - boxSize - 8.0F;
@@ -2229,7 +2257,7 @@ public class ClickGui extends Screen {
             TextRender.draw(context, hex, boxX - TextRender.width(hex, 11.0F) - 6.6F, y + 16.5F, 11.0F, hexCol);
         } else if (setting instanceof BindSetting bindSetting) {
             float macroShift = this.renderMacroDeleteAffordance(context, module, setting, x, y, w, h, mouseX, mouseY);
-            TextRender.draw(context, bindSetting.getDisplayName(), x + 8.0F + macroShift, y + 17.6F, 12.65F, -1);
+            TextRender.draw(context, trimText(bindSetting.getDisplayName(), 12.65F, Math.max(24.0F, w - 78.0F - macroShift)), x + 8.0F + macroShift, y + 17.6F, 12.65F, -1);
             boolean isThisBinding = bindingSetting == bindSetting;
             String bindName = isThisBinding
                 ? "[...]"
@@ -2653,11 +2681,15 @@ public class ClickGui extends Screen {
 
         float mouseX = ((float)click.comp_4798() - this.originX) / this.scale;
         float mouseY = ((float)click.comp_4799() - this.originY) / this.scale;
-        if (settingsModule != null && click.button() == 0
+        if (this.settingsPanelOpen && click.button() == 0
             && inside(mouseX, mouseY, SETTINGS_X + SETTINGS_W - 42.0F, SETTINGS_Y + 8.0F, 32.0F, 28.0F)) {
-            settingsModule = null;
+            this.settingsPanelOpen = false;
             settingsScroll = 0.0F;
             settingsTargetScroll = 0.0F;
+            return true;
+        }
+        if (this.settingsPanelOpen && click.button() == 0
+            && this.handleSettingsPanelClick(mouseX, mouseY)) {
             return true;
         }
         if (this.handleModePopupClick(mouseX, mouseY)) {
@@ -2759,6 +2791,10 @@ public class ClickGui extends Screen {
                     this.markerInputFocus = 0;
                     configInputFocus = false;
                     friendsSearchFocus = false;
+                    this.settingsPanelOpen = false;
+                    this.modePopupOpen = false;
+                    this.colorPickerOpen = false;
+                    activeTextSetting = null;
                     targetScroll = 0.0F;
                     scrollOffset = 0.0F;
                     return true;
@@ -2973,7 +3009,9 @@ public class ClickGui extends Screen {
 
                     if (click.button() == 1) {
                         if (!settings.isEmpty()) {
-                            settingsModule = settingsModule == module ? null : module;
+                            boolean alreadyOpen = settingsModule == module && this.settingsPanelOpen;
+                            settingsModule = module;
+                            this.settingsPanelOpen = !alreadyOpen;
                             settingsScroll = 0.0F;
                             settingsTargetScroll = 0.0F;
                             modePopupOpen = false;
@@ -2989,156 +3027,185 @@ public class ClickGui extends Screen {
                     }
                 }
 
-                if (settingsModule == module
-                    && inside(mouseX, mouseY, SETTINGS_X + 8.0F, SETTINGS_TOP, SETTINGS_W - 16.0F, SETTINGS_BOTTOM - SETTINGS_TOP)) {
-                    float settingY = SETTINGS_TOP + 6.0F - settingsScroll;
+            }
 
-                    for (Setting<?> setting : settings) {
-                        float visibility = SETTING_VISIBILITY_ANIMS.getOrDefault(setting, setting.isVisible() ? 1.0F : 0.0F);
-                        if (!(visibility <= 0.01F)) {
-                            float sX = SETTINGS_X + 12.0F;
-                            float sW = SETTINGS_W - 24.0F;
-                            float sH = 26.8F;
-                            float visibleHeight = Math.min(sH, 30.8F * visibility);
-                            if (setting.isVisible() && visibility > 0.55F && inside(mouseX, mouseY, sX, settingY, sW, visibleHeight)) {
-                                int macroIndex = macroSettingIndex(module, setting);
-                                if (macroIndex >= 0
-                                    && MACRO_DELETE_ANIMS.getOrDefault(setting, 0.0F) > 0.15F
-                                    && inside(mouseX, mouseY, sX + 3.0F, settingY + 2.0F, 21.0F, sH - 4.0F)) {
-                                    ((Macros)module).removeMacro(macroIndex);
-                                    return true;
-                                }
+            return super.mouseClicked(click, doubled);
+        }
+    }
 
-                                if (setting instanceof ItemHighlightSetting itemSetting) {
-                                    float switchWidth = 24.2F;
-                                    float previewSize = 13.2F;
-                                    float swX = sX + sW - switchWidth - 6.6F;
-                                    float previewX = swX - previewSize - 7.0F;
-                                    float previewY = settingY + (sH - previewSize) / 2.0F;
-                                    if (inside(mouseX, mouseY, previewX - 2.0F, previewY - 2.0F, previewSize + 4.0F, previewSize + 4.0F)) {
-                                        ColorSetting proxy = ITEM_COLOR_PROXIES.computeIfAbsent(
-                                            itemSetting,
-                                            keyx -> new ColorSetting(keyx.getName() + " — цвет", new Color(0xFF000000 | keyx.getColor() & 16777215, true))
-                                        );
-                                        this.openColorPicker(proxy);
-                                        return true;
-                                    }
+    float settingsPanelHeight(Module module) {
+        int count = 0;
+        for (Setting<?> setting : module.getSettings()) {
+            if (setting.isVisible()) {
+                count++;
+            }
+        }
+        return MathHelper.clamp(78.0F + count * 30.8F, 132.0F, SETTINGS_H);
+    }
 
-                                    itemSetting.toggle();
-                                    return true;
-                                }
+    float settingsPanelTop() {
+        return SETTINGS_Y + 66.0F;
+    }
 
-                                if (setting instanceof ItemScaleSetting itemSetting) {
-                                    itemSetting.toggle();
-                                    return true;
-                                }
+    float settingsPanelBottom(Module module) {
+        return SETTINGS_Y + this.settingsPanelHeight(module) - 12.0F;
+    }
 
-                                if (setting instanceof BooleanSetting boolSetting) {
-                                    boolSetting.setValue(!boolSetting.getValue());
-                                    return true;
-                                }
+    boolean handleSettingsPanelClick(float mouseX, float mouseY) {
+        Module module = settingsModule;
+        if (module == null || !this.settingsPanelOpen) {
+            return false;
+        }
+        float top = this.settingsPanelTop();
+        float bottom = this.settingsPanelBottom(module);
+        if (!inside(mouseX, mouseY, SETTINGS_X + 8.0F, top, SETTINGS_W - 16.0F, bottom - top)) {
+            return false;
+        }
 
-                                if (setting instanceof ModeSetting modeSetting) {
-                                    float fieldW = modeFieldWidth(modeSetting);
-                                    float fieldX = sX + sW - fieldW - 8.0F;
-                                    if (inside(mouseX, mouseY, fieldX, settingY + 4.4F, fieldW, sH - 8.8F)) {
-                                        this.openModePopup(modeSetting, sX, settingY + settingsScroll - scrollOffset, 0);
-                                        return true;
-                                    }
-                                } else if (setting instanceof MultiBooleanSetting multiSetting) {
-                                    float fieldW = multiFieldWidth(multiSetting);
-                                    float fieldX = sX + sW - fieldW - 8.0F;
-                                    if (inside(mouseX, mouseY, fieldX, settingY + 4.4F, fieldW, sH - 8.8F)) {
-                                        this.openModePopup(multiSetting, sX, settingY + settingsScroll - scrollOffset, 0);
-                                        return true;
-                                    }
-                                } else if (setting instanceof NumberSetting numSetting) {
-                                    float sliderW = 132.0F;
-                                    float sliderX = sX + sW - sliderW - 8.0F;
-                                    if (inside(mouseX, mouseY, sliderX - 6.0F, settingY, sliderW + 12.0F, sH)) {
-                                        float ratio = MathHelper.clamp((mouseX - sliderX) / sliderW, 0.0F, 1.0F);
-                                        double newVal = numSetting.getMin() + ratio * (numSetting.getMax() - numSetting.getMin());
-                                        numSetting.setValue(newVal);
-                                        this.draggingSlider = numSetting;
-                                        this.draggingSliderX = sliderX;
-                                        this.draggingSliderWidth = sliderW;
-                                        return true;
-                                    }
-                                } else {
-                                    if (setting instanceof ActionSetting actionSetting) {
-                                        actionSetting.trigger();
-                                        return true;
-                                    }
+        float settingY = top + 6.0F - settingsScroll;
+        for (Setting<?> setting : module.getSettings()) {
+            float visibility = SETTING_VISIBILITY_ANIMS.getOrDefault(setting, setting.isVisible() ? 1.0F : 0.0F);
+            if (visibility <= 0.01F) {
+                continue;
+            }
+            float sX = SETTINGS_X + 12.0F;
+            float sW = SETTINGS_W - 24.0F;
+            float sH = 26.8F;
+            float visibleHeight = Math.min(sH, 30.8F * visibility);
+            if (setting.isVisible() && visibility > 0.55F && inside(mouseX, mouseY, sX, settingY, sW, visibleHeight)) {
+                int macroIndex = macroSettingIndex(module, setting);
+                if (macroIndex >= 0
+                    && MACRO_DELETE_ANIMS.getOrDefault(setting, 0.0F) > 0.15F
+                    && inside(mouseX, mouseY, sX + 3.0F, settingY + 2.0F, 21.0F, sH - 4.0F)) {
+                    ((Macros)module).removeMacro(macroIndex);
+                    return true;
+                }
 
-                                    if (setting instanceof StringSetting stringSetting) {
-                                        float fieldX = sX + sW - 154.0F - 8.0F;
-                                        if (inside(mouseX, mouseY, fieldX, settingY + 4.4F, 154.0F, sH - 8.8F)) {
-                                            activeTextSetting = stringSetting;
-                                            isSearching = false;
-                                            return true;
-                                        }
-                                    } else {
-                                        if (setting instanceof ColorSetting colorSetting) {
-                                            this.openColorPicker(colorSetting);
-                                            return true;
-                                        }
+                if (setting instanceof ItemHighlightSetting itemSetting) {
+                    float switchWidth = 24.2F;
+                    float previewSize = 13.2F;
+                    float swX = sX + sW - switchWidth - 6.6F;
+                    float previewX = swX - previewSize - 7.0F;
+                    float previewY = settingY + (sH - previewSize) / 2.0F;
+                    if (inside(mouseX, mouseY, previewX - 2.0F, previewY - 2.0F, previewSize + 4.0F, previewSize + 4.0F)) {
+                        ColorSetting proxy = ITEM_COLOR_PROXIES.computeIfAbsent(
+                            itemSetting,
+                            keyx -> new ColorSetting(keyx.getName() + " — цвет", new Color(0xFF000000 | keyx.getColor() & 16777215, true))
+                        );
+                        this.openColorPicker(proxy);
+                        return true;
+                    }
 
-                                        if (setting instanceof BindSetting bindSetting) {
-                                            bindingSetting = bindingSetting == bindSetting ? null : bindSetting;
-                                            bindingFriendSetting = null;
-                                            return true;
-                                        }
+                    itemSetting.toggle();
+                    return true;
+                }
 
-                                        if (setting instanceof FriendRequestRowSetting reqSetting) {
-                                            float declineW = 64.0F;
-                                            float declineX = sX + sW - declineW - 8.0F;
-                                            float btnW = 58.0F;
-                                            float acceptX = declineX - btnW - 8.0F;
-                                            float btnH = sH - 9.0F;
-                                            float btnY = settingY + 4.5F;
-                                            if (inside(mouseX, mouseY, acceptX, btnY, btnW, btnH)) {
-                                                reqSetting.accept();
-                                                return true;
-                                            }
+                if (setting instanceof ItemScaleSetting itemSetting) {
+                    itemSetting.toggle();
+                    return true;
+                }
 
-                                            if (inside(mouseX, mouseY, declineX, btnY, declineW, btnH)) {
-                                                reqSetting.decline();
-                                                return true;
-                                            }
-                                        } else if (setting instanceof FriendRowSetting friendSetting) {
-                                            int key = friendSetting.getKey();
-                                            String bindText = bindingFriendSetting == friendSetting
-                                                ? "[...]"
-                                                : "[" + (key == 0 ? "-" : Type.KEYSYM.createFromCode(key).getLocalizedText().getString()) + "]";
-                                            float bindW = Math.max(34.0F, TextRender.width(bindText, 12.65F) + 8.0F);
-                                            float bindX = sX + sW - bindW - 8.0F;
-                                            float btnHx = sH - 9.0F;
-                                            float btnYx = settingY + 4.5F;
-                                            if (inside(mouseX, mouseY, bindX, btnYx, bindW, btnHx)) {
-                                                bindingFriendSetting = bindingFriendSetting == friendSetting ? null : friendSetting;
-                                                bindingSetting = null;
-                                                return true;
-                                            }
+                if (setting instanceof BooleanSetting boolSetting) {
+                    boolSetting.setValue(!boolSetting.getValue());
+                    return true;
+                }
 
-                                            float toggleW = 62.0F;
-                                            float toggleX = bindX - toggleW - 6.0F;
-                                            if (inside(mouseX, mouseY, toggleX, btnYx, toggleW, btnHx)) {
-                                                friendSetting.toggle();
-                                                return true;
-                                            }
-                                        }
-                                    }
-                                }
+                if (setting instanceof ModeSetting modeSetting) {
+                    float fieldW = modeFieldWidth(modeSetting);
+                    float fieldX = sX + sW - fieldW - 8.0F;
+                    if (inside(mouseX, mouseY, fieldX, settingY + 4.4F, fieldW, sH - 8.8F)) {
+                        this.openModePopup(modeSetting, sX, settingY + settingsScroll - scrollOffset, 0);
+                        return true;
+                    }
+                } else if (setting instanceof MultiBooleanSetting multiSetting) {
+                    float fieldW = multiFieldWidth(multiSetting);
+                    float fieldX = sX + sW - fieldW - 8.0F;
+                    if (inside(mouseX, mouseY, fieldX, settingY + 4.4F, fieldW, sH - 8.8F)) {
+                        this.openModePopup(multiSetting, sX, settingY + settingsScroll - scrollOffset, 0);
+                        return true;
+                    }
+                } else if (setting instanceof NumberSetting numSetting) {
+                    float sliderW = 132.0F;
+                    float sliderX = sX + sW - sliderW - 8.0F;
+                    if (inside(mouseX, mouseY, sliderX - 6.0F, settingY, sliderW + 12.0F, sH)) {
+                        float ratio = MathHelper.clamp((mouseX - sliderX) / sliderW, 0.0F, 1.0F);
+                        double newVal = numSetting.getMin() + ratio * (numSetting.getMax() - numSetting.getMin());
+                        numSetting.setValue(newVal);
+                        this.draggingSlider = numSetting;
+                        this.draggingSliderX = sliderX;
+                        this.draggingSliderWidth = sliderW;
+                        return true;
+                    }
+                } else {
+                    if (setting instanceof ActionSetting actionSetting) {
+                        actionSetting.trigger();
+                        return true;
+                    }
+
+                    if (setting instanceof StringSetting stringSetting) {
+                        float fieldX = sX + sW - 154.0F - 8.0F;
+                        if (inside(mouseX, mouseY, fieldX, settingY + 4.4F, 154.0F, sH - 8.8F)) {
+                            activeTextSetting = stringSetting;
+                            isSearching = false;
+                            return true;
+                        }
+                    } else {
+                        if (setting instanceof ColorSetting colorSetting) {
+                            this.openColorPicker(colorSetting);
+                            return true;
+                        }
+
+                        if (setting instanceof BindSetting bindSetting) {
+                            bindingSetting = bindingSetting == bindSetting ? null : bindSetting;
+                            bindingFriendSetting = null;
+                            return true;
+                        }
+
+                        if (setting instanceof FriendRequestRowSetting reqSetting) {
+                            float declineW = 64.0F;
+                            float declineX = sX + sW - declineW - 8.0F;
+                            float btnW = 58.0F;
+                            float acceptX = declineX - btnW - 8.0F;
+                            float btnH = sH - 9.0F;
+                            float btnY = settingY + 4.5F;
+                            if (inside(mouseX, mouseY, acceptX, btnY, btnW, btnH)) {
+                                reqSetting.accept();
+                                return true;
                             }
 
-                            settingY += 30.8F * visibility;
+                            if (inside(mouseX, mouseY, declineX, btnY, declineW, btnH)) {
+                                reqSetting.decline();
+                                return true;
+                            }
+                        } else if (setting instanceof FriendRowSetting friendSetting) {
+                            int key = friendSetting.getKey();
+                            String bindText = bindingFriendSetting == friendSetting
+                                ? "[...]"
+                                : "[" + (key == 0 ? "-" : Type.KEYSYM.createFromCode(key).getLocalizedText().getString()) + "]";
+                            float bindW = Math.max(34.0F, TextRender.width(bindText, 12.65F) + 8.0F);
+                            float bindX = sX + sW - bindW - 8.0F;
+                            float btnHx = sH - 9.0F;
+                            float btnYx = settingY + 4.5F;
+                            if (inside(mouseX, mouseY, bindX, btnYx, bindW, btnHx)) {
+                                bindingFriendSetting = bindingFriendSetting == friendSetting ? null : friendSetting;
+                                bindingSetting = null;
+                                return true;
+                            }
+
+                            float toggleW = 62.0F;
+                            float toggleX = bindX - toggleW - 6.0F;
+                            if (inside(mouseX, mouseY, toggleX, btnYx, toggleW, btnHx)) {
+                                friendSetting.toggle();
+                                return true;
+                            }
                         }
                     }
                 }
             }
 
-            return super.mouseClicked(click, doubled);
+            settingY += 30.8F * visibility;
         }
+        return false;
     }
 
     @Override
@@ -3221,17 +3288,20 @@ public class ClickGui extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         float designMouseX = ((float)mouseX - this.originX) / this.scale;
         float designMouseY = ((float)mouseY - this.originY) / this.scale;
-        if (settingsModule != null
-            && inside(designMouseX, designMouseY, SETTINGS_X, SETTINGS_TOP, SETTINGS_W, SETTINGS_BOTTOM - SETTINGS_TOP)) {
-            int count = 0;
-            for (Setting<?> setting : settingsModule.getSettings()) {
-                if (setting.isVisible()) {
-                    count++;
+        if (this.settingsPanelOpen && settingsModule != null) {
+            float top = this.settingsPanelTop();
+            float bottom = this.settingsPanelBottom(settingsModule);
+            if (inside(designMouseX, designMouseY, SETTINGS_X, top, SETTINGS_W, bottom - top)) {
+                int count = 0;
+                for (Setting<?> setting : settingsModule.getSettings()) {
+                    if (setting.isVisible()) {
+                        count++;
+                    }
                 }
+                float maxSettingsScroll = Math.max(0.0F, count * 30.8F - (bottom - top));
+                settingsTargetScroll = MathHelper.clamp(settingsTargetScroll - (float)verticalAmount * 34.0F, 0.0F, maxSettingsScroll);
+                return true;
             }
-            float maxSettingsScroll = Math.max(0.0F, count * 30.8F - (SETTINGS_BOTTOM - SETTINGS_TOP));
-            settingsTargetScroll = MathHelper.clamp(settingsTargetScroll - (float)verticalAmount * 34.0F, 0.0F, maxSettingsScroll);
-            return true;
         }
         if (selectedCategory == Category.FRIENDS && !isSearchMode()) {
             if (inside(designMouseX, designMouseY, 267.0F, 174.0F, 700.0F, 352.0F)) {
