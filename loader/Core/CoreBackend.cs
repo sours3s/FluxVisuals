@@ -509,7 +509,8 @@ public class CoreBackend
     {
         string username = root.GetProperty("username").GetString() ?? "";
         string password = root.GetProperty("password").GetString() ?? "";
-        string authUrl = root.TryGetProperty("authUrl", out var au) ? au.GetString() ?? _cfg.AuthServerUrl : _cfg.AuthServerUrl;
+        // Сервер авторизации берётся только из конфигурации лаунчера.
+        string authUrl = _cfg.AuthServerUrl;
 
         var result = await AuthService.LoginAsync(username, password, authUrl);
         if (result?.Success == true)

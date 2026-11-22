@@ -90,6 +90,12 @@
         <p>Всё готово к запуску. Выберите, сколько памяти выделить игре, и нажмите «Играть».</p>
       </div>
 
+      <div class="home-nick glass">
+        <label for="homeNick">Ник Minecraft</label>
+        <input id="homeNick" type="text" maxlength="32" autocomplete="off" spellcheck="false" placeholder="Player">
+        <small>Имя, с которым игра появится в Minecraft</small>
+      </div>
+
       <div class="launch-card glass">
         <div class="launch-card-shine"></div>
         <div class="launch-fields">
@@ -239,7 +245,6 @@
       <div class="settings-grid">
         <div class="settings-card glass">
           <h3>Аккаунт</h3>
-          <label class="setting-row"><span>Имя игрока</span><input id="setUsername" type="text" placeholder="Player"></label>
           <div class="setting-row"><span>Аккаунт</span><strong id="setClientNameVal">—</strong></div>
           <div class="setting-row"><span>Версия Minecraft</span><strong id="setVersion">1.21.11</strong></div>
           <label class="setting-row"><span>Цвет интерфейса</span><input id="setAccent" type="color" value="#7C5CFF"></label>
@@ -350,7 +355,6 @@
     <p>Войдите в аккаунт, чтобы запустить клиент</p>
     <label class="login-field"><span>Логин</span><input id="loginUser" type="text" autocomplete="off" spellcheck="false" placeholder="Ваш логин"></label>
     <label class="login-field"><span>Пароль</span><input id="loginPass" type="password" placeholder="••••••••"></label>
-    <label class="login-field"><span>Сервер</span><input id="loginUrl" type="text" spellcheck="false" placeholder="http://сервер:5001"></label>
     <div class="login-error" id="loginError"></div>
     <button class="button button-accent login-submit" id="btnLogin">Войти</button>
     <div class="login-hint">Доступ бесплатный — нужен только аккаунт.</div>

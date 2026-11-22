@@ -48,7 +48,6 @@
   // ---------- Авторизация ----------
   function showLogin() {
     $('#loginOverlay').classList.add('show');
-    if (state.config && state.config.authServerUrl) $('#loginUrl').value = state.config.authServerUrl;
     setTimeout(() => $('#loginUser').focus(), 50);
   }
   function hideLogin() {
@@ -72,14 +71,13 @@
   function doLogin() {
     const username = $('#loginUser').value.trim();
     const password = $('#loginPass').value;
-    const authUrl = $('#loginUrl').value.trim() || state.config?.authServerUrl || '';
     if (!username || !password) {
       $('#loginError').textContent = 'Введите логин и пароль';
       return;
     }
     $('#btnLogin').disabled = true;
     $('#loginError').textContent = '';
-    send({ cmd: 'login', username, password, authUrl });
+    send({ cmd: 'login', username, password });
   }
 
   // ---------- Навигация ----------
@@ -151,7 +149,6 @@
         state.hasAccess = !!msg.config?.hasAccess;
         state.accessExpiresAt = msg.config?.accessExpiresAt || null;
         applyAccent(msg.config || {});
-        if (msg.config?.authServerUrl) $('#loginUrl').value = msg.config.authServerUrl;
         renderHome(msg.config);
         renderSettings(msg.config);
         break;
@@ -322,7 +319,9 @@
   // ---------- Главная ----------
   function renderHome(cfg) {
     if (!cfg) return;
-    $('#homeUser').textContent = cfg.mcNickname || cfg.username || 'Player';
+    $('#homeUser').textContent = cfg.username || 'Player';
+    const nickInput = $('#homeNick');
+    if (nickInput && document.activeElement !== nickInput) nickInput.value = cfg.mcNickname || cfg.username || '';
     $('#homeUid').textContent = cfg.username || '—';
     $('#homeVersion').textContent = cfg.version || '1.21.11';
     $('#homeRam').textContent = (cfg.ramMb || 4096) + ' МБ';
@@ -980,7 +979,6 @@
   // ---------- Настройки ----------
   function renderSettings(cfg) {
     if (!cfg) return;
-    $('#setUsername').value = cfg.mcNickname || cfg.username || 'Player';
     const clientVal = $('#setClientNameVal');
     if (clientVal) clientVal.textContent = cfg.username || '—';
     $('#setVersion').textContent = cfg.version ?? '1.21.11';
@@ -994,7 +992,7 @@
 
   function collectConfig() {
     const cfg = Object.assign({}, state.config || {});
-    cfg.mcNickname = $('#setUsername').value || 'Player';
+    cfg.mcNickname = ($('#homeNick')?.value || '').trim() || 'Player';
     cfg.isAdmin = state.isAdmin;
     cfg.accent = (parseInt($('#setAccent').value.replace('#', ''), 16) | 0xff000000) >>> 0;
     cfg.ramMb = parseInt($('#setRam').value) || 4096;
@@ -1003,7 +1001,8 @@
     return cfg;
   }
 
-  $('#setUsername').addEventListener('change', saveSettings);
+  $('#homeNick').addEventListener('change', saveSettings);
+  $('#homeNick').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
   $('#setAccent').addEventListener('change', saveSettings);
   $('#setRam').addEventListener('input', () => {
     $('#setRamVal').textContent = $('#setRam').value + ' МБ';

@@ -203,6 +203,12 @@ body {
 .home-heading h1 { margin-top: 10px; font-size: 38px; line-height: 1.14; letter-spacing: -1px; font-weight: 820; }
 .home-heading h1 span { color: var(--muted); }
 .home-heading p { margin-top: 12px; font-size: 13.5px; color: var(--muted); max-width: 560px; }
+.home-nick { display: flex; align-items: center; gap: 14px; padding: 12px 18px; margin-bottom: 18px; border-radius: 14px; }
+.home-nick label { flex-shrink: 0; font-size: 12.5px; color: var(--muted); }
+.home-nick input { width: 220px; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05); color: var(--text); font: inherit; font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; }
+.home-nick input:focus { border-color: rgba(var(--accent-rgb), .65); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .1); }
+.home-nick small { font-size: 11.5px; color: var(--muted-2); }
 .launch-card { display: flex; align-items: center; justify-content: space-between; gap: 26px; padding: 28px 30px; margin-bottom: 18px; }
 .launch-card-shine { position: absolute; width: 320px; height: 320px; border-radius: 50%; right: -80px; top: -190px; pointer-events: none;
   background: radial-gradient(circle, rgba(var(--accent-rgb), .20), transparent 68%); }
@@ -537,6 +543,8 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px;
   .content { padding: 26px 24px 60px; }
   .tips-grid { grid-template-columns: 1fr; }
   .launch-card { flex-direction: column; align-items: stretch; }
+  .home-nick { flex-wrap: wrap; }
+  .home-nick input { flex: 1; width: auto; }
   .play-button { justify-content: center; }
   .settings-grid { grid-template-columns: 1fr; }
   .ai-layout { grid-template-columns: 1fr; }
