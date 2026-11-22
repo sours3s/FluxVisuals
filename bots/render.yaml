@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: fluxvisuals-news-bot
+    runtime: docker
+    plan: free
+    dockerfilePath: ./bots/Dockerfile
+    healthCheckPath: /ping
+    envVars:
+      - key: BOT_MODE
+        value: news
+      - key: AUTH_SERVER_URL
+        value: https://fluxvisuals-server.onrender.com
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_OWNER_ID
+        sync: false
+      - key: FLUXVISUALS_BOT_SECRET
+        sync: false
+      - key: COMMAND_GUILD_ID
+        sync: false
+
+  - type: web
+    name: fluxvisuals-support-bot
+    runtime: docker
+    plan: free
+    dockerfilePath: ./bots/Dockerfile
+    healthCheckPath: /ping
+    envVars:
+      - key: BOT_MODE
+        value: support
+      - key: AUTH_SERVER_URL
+        value: https://fluxvisuals-server.onrender.com
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: FLUXVISUALS_BOT_SECRET
+        sync: false
+      - key: SUPPORT_CHANNEL_IDS
+        sync: false

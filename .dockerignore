@@ -1,0 +1,16 @@
+.git
+.opencode
+graphify-out
+game
+dist
+publish
+releases
+server-repo
+tasks
+*.log
+**/bin/
+**/obj/
+**/.vs/
+**/AuthServer/auth.db
+**/config.json
+**/state.json

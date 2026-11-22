@@ -1,0 +1,155 @@
+# Discord-боты FluxVisuals
+
+Один Docker-образ, два бота. Переключатель — переменная `BOT_MODE`:
+
+- `news` — бот **FluxVisuals**, публикует новостиslash-командой `/news`;
+- `support` — бот **FluxVisuals Support**, тот же Catal, отвечает в указанных каналах.
+
+Токены ботов и общий секрет хранятся только в переменных окружения Render. В репозиторий и чат их писать нельзя.
+
+---
+
+## 1. Discord Developer Portal
+
+### 1.1. Два приложения
+
+1. Откройте <https://discord.com/developers/applications>.
+2. Создайте приложение **FluxVisuals** — для новостей.
+3. Создайте приложение **FluxVisuals Support** — для ответов.
+4. В каждом: `Bot` → `Add Bot` → `Reset Token`. Token понадобится позже как `DISCORD_TOKEN` для соответствующего сервиса.
+5. Скопируйте `APPLICATION ID` из раздела `General Information` — он понадобится для приглашения бота.
+
+### 1.2. Права и приглашение
+
+В `OAuth2` → `URL Generator` у новостного бота отметьте:
+
+- scopes: `bot`, `applications.commands`;
+- permissions: `View Channels`, `Send Messages`, `Embed Links`, `Use Slash Commands`.
+
+У support-бота:
+
+- scope: `bot`;
+- permissions: `View Channels`, `Read Message History`, `Send Messages`, `Attach Files`.
+
+Сгенерируйте ссылку и пригласите обоих ботов на сервер.
+
+### 1.3. Важно для support-бота
+
+В `Bot` → `Privileged Gateway Intents` включите **MESSAGE CONTENT INTENT**. Без этого бот не увидит текст вопросов в каналах.
+
+### 1.4. ID, которые нужны в настройках
+
+В Discord включите `User Settings` → `Advanced` → `Developer Mode`:
+
+- ПКМ по своему имени → **Copy User ID** → это `DISCORD_OWNER_ID`;
+- ПКМ по каналу «вопрос-ответ» → **Copy Channel ID** → это `SUPPORT_CHANNEL_IDS`;
+- ПКМ по серверу → **Copy Server ID** → это `COMMAND_GUILD_ID` (необязательно, но ускоряет появление `/news`).
+
+---
+
+## 2. Общий секрет
+
+Создайте одну случайную строку 32+ символов. Например, в PowerShell:
+
+```powershell
+[guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
+```
+
+Эту же строку нужно задать:
+
+- на AuthServer: `FLUXVISUALS_BOT_SECRET`;
+- у обоих ботов: `FLUXVISUALS_BOT_SECRET`.
+
+AuthServer уже должен иметь `FLUXVISUALS_AI_KEY` — Catal и Discord-боты используют один и тот же движок и одну базу знаний.
+
+---
+
+## 3. Render
+
+### 3.1. AuthServer
+
+В уже существующем сервисе `fluxvisuals-server` добавьте переменную `FLUXVISUALS_BOT_SECRET` и redeploy. Без неё `/api/bot/ask` будет возвращать 401.
+
+### 3.2. Два сервиса ботов
+
+В репозитории `FluxVisuals` есть `bots/render.yaml`. Можно импортировать его через Render Dashboard → **Blueprints**, либо создать два Web Service вручную:
+
+- Repository: `sours3s/FluxVisuals`;
+- Branch: `master`;
+- Runtime: `Docker`;
+- Dockerfile Path: `bots/Dockerfile`;
+- Plan: `Free`.
+
+Переменные для **fluxvisuals-news-bot**:
+
+```text
+BOT_MODE=news
+DISCORD_TOKEN=<token приложения FluxVisuals>
+DISCORD_OWNER_ID=<ваш Discord user ID>
+FLUXVISUALS_BOT_SECRET=<общий секрет>
+AUTH_SERVER_URL=https://fluxvisuals-server.onrender.com
+COMMAND_GUILD_ID=<ID сервера, необязательно>
+```
+
+Переменные для **fluxvisuals-support-bot**:
+
+```text
+BOT_MODE=support
+DISCORD_TOKEN=<token приложения FluxVisuals Support>
+FLUXVISUALS_BOT_SECRET=<тот же общий секрет>
+AUTH_SERVER_URL=https://fluxvisuals-server.onrender.com
+SUPPORT_CHANNEL_IDS=<ID каналов через запятую>
+```
+
+`PORT` Render задаёт сам — трогать не нужно.
+
+### 3.3. Проверка
+
+Откройте `https://<имя-сервиса>.onrender.com/ping` у каждого бота. В ответе должно быть `ok`.
+
+---
+
+## 4. UptimeRobot
+
+Render Free засыпает после ~15 минут простоя. UptimeRobot будет будить сервисы:
+
+1. Создайте монитор типа **HTTP(s)**.
+2. URL: `https://<news-bot>.onrender.com/ping`.
+3. Interval: `5 minutes` (минимум бесплатного тарифа).
+4. Keyword: `ok`.
+5. Повторите для `https://<support-bot>.onrender.com/ping`.
+
+Точно так же можно повесить монитор на AuthServer, если он тоже на Render Free.
+
+---
+
+## 5. Как пользоваться
+
+### Новости
+
+В любом канале сервера:
+
+```text
+/news channel:#новости message:Долгожданное обновление FluxVisuals...
+```
+
+Команду может выполнить только `DISCORD_OWNER_ID`. Бот отвечает «Опубликовано…» в личном (ephemeral) сообщении.
+
+Если `/news` не появился: задайте `COMMAND_GUILD_ID` и перезапустите сервис. Без него глобальные команды Discord может поднимать до часа.
+
+### Support
+
+В каналах из `SUPPORT_CHANNEL_IDS` бот читает сообщения пользователей и отвечает прямо на сообщение черезreply. Скриншоты можно прикреплять к сообщению — бот передаёт их Catal. Ответы режутся на куски до 1900 символов и не пингуют пользователей.
+
+Catal отвечает только по FluxVisuals: клиент, визуалы, лаунчер, сайт, аккаунты, запуск, ошибки, модпаки. На посторонние задачи он отвечает отказом.
+
+---
+
+## 6. Локальная сборка
+
+```powershell
+cd bots
+dotnet build -c Release
+```
+
+Без `DISCORD_TOKEN` бот не логинится, но `/ping` работает — так удобно проверять хост.
