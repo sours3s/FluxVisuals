@@ -64,7 +64,13 @@
     "screen.TitleScreenMixin",
     "screen.SplashOverlayMixin",
     "screen.LogoTextureMixin",
-    "compat.CPMSubmitNodeCollectorCompatMixin"
+    "compat.CPMSubmitNodeCollectorCompatMixin",
+    "accessor.AbstractTextureAccessor",
+    "accessor.BossBarHudAccessor",
+    "accessor.ItemCooldownManagerAccessor",
+    "accessor.ItemCooldownManagerEntryAccessor",
+    "GuiRenderStateMixin",
+    "GuiRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

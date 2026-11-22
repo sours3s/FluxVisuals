@@ -39,6 +39,12 @@ public final class ModuleManager {
     }
 
     public <T> T getModule(Class<T> type) {
+        if (type == ru.fluxvisuals.ui.fluxgui.module.render.Animations.class) {
+            return type.cast(ru.fluxvisuals.ui.fluxgui.module.render.Animations.INSTANCE);
+        }
+        if (type == ru.fluxvisuals.ui.fluxgui.module.render.Cooldowns.class) {
+            return type.cast(ru.fluxvisuals.ui.fluxgui.module.render.Cooldowns.INSTANCE);
+        }
         return null;
     }
 

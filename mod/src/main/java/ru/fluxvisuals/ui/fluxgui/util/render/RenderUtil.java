@@ -253,7 +253,7 @@ public class RenderUtil {
 
     private static void prepareNativeBlurFrame() {
         try {
-            FluxGlassPipeline.captureFrame();
+            MirageGlassPipeline.captureFrame();
             blurReady = true;
             blurPreparePending = false;
             blurFailureLogged = false;
@@ -392,8 +392,8 @@ public class RenderUtil {
         float a = MathHelper.clamp(alpha, 0.0F, 1.0F);
         if (!(a <= 0.0F) && !(w <= 0.0F) && !(h <= 0.0F)) {
             try {
-                FluxGlassPipeline.captureFrame();
-                FluxGlassPipeline.drawBlurAt(context, x, y, w, h, Math.max(0.0F, radius), nativeBlurRadius, a);
+                MirageGlassPipeline.captureFrame();
+                MirageGlassPipeline.drawBlurAt(context, x, y, w, h, Math.max(0.0F, radius), nativeBlurRadius, a);
                 blurReady = true;
                 blurFailureLogged = false;
             } catch (Throwable error) {

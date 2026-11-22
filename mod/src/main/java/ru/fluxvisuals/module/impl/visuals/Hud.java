@@ -125,6 +125,9 @@ public class Hud extends Module {
    private long lastDurabilityWarnAt = 0L;
 
    public Hud() {
+      ru.fluxvisuals.ui.fluxgui.client.gui.hud.HudEditor.install(
+            ru.fluxvisuals.ui.fluxgui.client.gui.hud.Hud.INSTANCE
+      );
       this.addSettings(new Setting[]{
          element, notify, blur, healthThreshold, durabilityThreshold,
          InformationHUD.metrics, ArrayListHUD.sortByWidth, ArrayListHUD.smooth,
@@ -211,97 +214,20 @@ public class Hud extends Module {
       currentDrawContext = e.drawContext();
       try {
       if (mc.player != null && mc.world != null) {
-         Renderer2D r2 = e.renderer();
-         if (r2 != null) {
-            // HUD-blur ломал текст и вызывал мерцание — держим выключенным даже если в конфиге true.
-            for (BooleanSetting blurSetting : blur.settings) {
-               if ("HUD".equals(blurSetting.name)) {
-                  blurSetting.set(false);
-               }
+         // HUD-blur ломал текст и вызывал мерцание — держим выключенным даже если в конфиге true.
+         for (BooleanSetting blurSetting : blur.settings) {
+            if ("HUD".equals(blurSetting.name)) {
+               blurSetting.set(false);
             }
-
-            // Правило для ВСЕХ элементов: пустой элемент не виден в игре,
-            // а при открытом чате показывается (чтобы его можно было передвинуть).
-            // Если в элементе есть контент — он виден всегда.
-            boolean chatOpen = mc.currentScreen instanceof ChatScreen;
-
-            if (element.get("Notifications")) {
-               this.renderNotifications(r2, e.drawContext());
-            }
-
-            if (element.get("Watermark")) {
-               WaterMark.waterMark(e.drawContext());
-            }
-
-            // Раньше здесь дополнительно рисовался CustomHotbarHud — из-за этого на экране
-            // одновременно висели два хотбара (новый и донорский HotBarHUD). Оставляем один.
-
-            if (element.get("Armor HUD") && ArmorHud.hasContent()) {
-               ArmorHud.render(r2, e.drawContext());
-            }
-
-            if (element.get("Inventory HUD") && InventoryHud.hasContent()) {
-               InventoryHud.render(r2, e.drawContext());
-            }
-
-            if (element.get("Media Player") && MediaPlayerHud.hasContent()) {
-               MediaPlayerHud.render(r2, e.drawContext());
-            }
-
-            if (element.get("Cooldowns") && CooldownsHud.hasContent()) {
-               CooldownsHud.render(r2, e.drawContext());
-            }
-
-            if (element.get("Information")) {
-               InformationHUD.information(r2);
-            }
-
-            if (element.get("TargetHUD")) {
-               TargetHUD.renderTargetHUD(e.drawContext());
-            }
-
-            if (element.get("ArrayList")) {
-               if (ArrayListHUD.hasContent()) {
-                  ArrayListHUD.arraylist(e.drawContext());
-               } else if (chatOpen) {
-                  ArrayListHUD.renderEmpty(e.drawContext());
-               }
-            }
-
-            if (element.get("Potion List")) {
-               if (PotionsHUD.hasContent()) {
-                  PotionsHUD.potions(r2, e.drawContext());
-               } else if (chatOpen) {
-                  PotionsHUD.renderEmpty(r2);
-               }
-            }
-
-            if (element.get("Keybind List")) {
-               if (KeyBindHUD.hasContent()) {
-                  KeyBindHUD.keybind(r2);
-               } else if (chatOpen) {
-                  KeyBindHUD.renderEmpty(r2);
-               }
-            }
-
-            // Компактный список хоткеев — альтернатива Keybind List, по умолчанию выключен,
-            // чтобы два похожих элемента не накладывались друг на друга.
-            if (element.get("Hotkeys")) {
-               if (HotkeysHud.hasContent()) {
-                  HotkeysHud.render(r2);
-               } else if (chatOpen) {
-                  renderEmptyPlaceholder(r2, "hotkeysHud", "Hotkeys", 20.0F, 200.0F);
-               }
-            }
-
-            if (element.get("Hotbar Binds")) {
-               if (mc.player != null && mc.world != null) {
-                  HotBarHUD.renderHotbar(e.drawContext(), mc.getRenderTickCounter());
-               }
-            }
-
-            renderEditHints(r2, e.viewportWidth(), e.viewportHeight());
          }
+         ru.fluxvisuals.ui.fluxgui.module.render.Hud.blur.setValue(false);
+
+         // Рендер HUD полностью перенесён из донорских исходников: ватермарка,
+         // таргет, список модулей, хотбар, броня, зелья, кулдауны, медиа и т.д.
+         ru.fluxvisuals.ui.fluxgui.client.gui.hud.Hud donorHud =
+               ru.fluxvisuals.ui.fluxgui.client.gui.hud.Hud.INSTANCE;
+         donorHud.render(e.drawContext());
+         donorHud.renderNotifications(e.drawContext());
       }
       } finally {
          currentDrawContext = null;
@@ -322,13 +248,11 @@ public class Hud extends Module {
    }
 
    public void showNotification(String icon, String text, long duration) {
-      Hud.Notification notification = new Hud.Notification(icon, text, duration);
-      this.notifications.add(notification);
+      ru.fluxvisuals.ui.fluxgui.client.gui.hud.Notifications.postMessage(text);
    }
 
    public void showNotification(String icon, String text, long duration, int iconColor) {
-      Hud.Notification notification = new Hud.Notification(icon, text, duration, iconColor);
-      this.notifications.add(notification);
+      ru.fluxvisuals.ui.fluxgui.client.gui.hud.Notifications.postMessage(text);
    }
 
    public void showNotification(String icon, String text) {
@@ -340,9 +264,7 @@ public class Hud extends Module {
       if (stack == null || stack.isEmpty()) {
          return;
       }
-      Hud.Notification notification = new Hud.Notification("item", text, duration, iconColor);
-      notification.itemStack = stack.copy();
-      this.notifications.add(notification);
+      ru.fluxvisuals.ui.fluxgui.client.gui.hud.Notifications.postMessage(text);
    }
 
    // Two-part item notification: "prefix" (who + action, muted) + "highlight" (item name, accented/bold).
@@ -351,11 +273,7 @@ public class Hud extends Module {
          return;
       }
       String fullText = highlight == null || highlight.isEmpty() ? prefix : prefix + " " + highlight;
-      Hud.Notification notification = new Hud.Notification("item", fullText, duration, accentColor);
-      notification.itemStack = stack.copy();
-      notification.prefix = prefix;
-      notification.highlight = highlight;
-      this.notifications.add(notification);
+      ru.fluxvisuals.ui.fluxgui.client.gui.hud.Notifications.postMessage(fullText);
    }
 
    public void renderNotifications(Renderer2D matrix, DrawContext drawContext) {

@@ -2,7 +2,7 @@
   "providers": [
     {
       "type": "ttf",
-      "file": "fluxvisuals:custom.ttf",
+      "file": "auravisuals:custom.ttf",
       "shift": [0.0, 0.0],
       "size": 11.0,
       "oversample": 2.0
