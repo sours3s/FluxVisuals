@@ -13,7 +13,7 @@ public partial class App : Application
         {
             try
             {
-                File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "crash.log"),
+                File.AppendAllText(Path.Combine(Core.LauncherLog.LogDir, "crash.log"),
                     $"[{DateTime.Now:O}] {args.Exception}\n\n");
             }
             catch { }

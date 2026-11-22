@@ -8,11 +8,13 @@ namespace FluxVisualsLoader;
 public partial class MainWindow : Window
 {
     private Core.CoreBackend _backend = null!;
+    private string? _webDir;
 
     public MainWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
+        Closed += OnClosed;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -26,6 +28,7 @@ public partial class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "FluxVisuals", "WebView2");
         Directory.CreateDirectory(webViewDataDir);
+        CleanupStaleTempDirs();
         var env = await CoreWebView2Environment.CreateAsync(userDataFolder: webViewDataDir);
 
         // Автообновление лоадера: проверка GitHub на старте. Если есть новая версия —
@@ -45,11 +48,16 @@ public partial class MainWindow : Window
 
         WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
         WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
+#if DEBUG
         WebView.CoreWebView2.Settings.AreDevToolsEnabled = true;
+#else
+        WebView.CoreWebView2.Settings.AreDevToolsEnabled = false;
+#endif
         WebView.CoreWebView2.Settings.IsZoomControlEnabled = false;
 
         // Извлекаем Web-файлы из Embedded Resources во временную папку (single-file)
         string webDir = ExtractWebFiles();
+        _webDir = webDir;
         WebView.CoreWebView2.SetVirtualHostNameToFolderMapping("app.local", webDir,
             CoreWebView2HostResourceAccessKind.Allow);
         WebView.CoreWebView2.WebMessageReceived += OnWebMessage;
@@ -76,9 +84,7 @@ public partial class MainWindow : Window
             var update = await Core.UpdateService.CheckAsync(cfg.UpdateCheckUrl);
             if (update == null) return;
 
-            string exeDir = Path.GetDirectoryName(Environment.ProcessPath ?? AppDomain.CurrentDomain.BaseDirectory)
-                            ?? AppDomain.CurrentDomain.BaseDirectory;
-            string newExe = Path.Combine(exeDir, "FluxVisualsLoader.update.exe");
+            string newExe = Path.Combine(Core.UpdateService.UpdateDir, "FluxVisualsLoader.update.exe");
 
             var win = new UpdateWindow(update, newExe) { Owner = this };
             win.ShowDialog();
@@ -92,6 +98,33 @@ public partial class MainWindow : Window
         {
             Core.LauncherLog.Warn($"Update flow error: {ex.Message}");
         }
+    }
+
+    /// <summary>Удаляет временные папки WebView2 от прошлых запусков (старше одного дня).</summary>
+    private static void CleanupStaleTempDirs()
+    {
+        try
+        {
+            string root = Path.Combine(Path.GetTempPath(), "FluxVisuals");
+            if (!Directory.Exists(root)) return;
+            foreach (string dir in Directory.EnumerateDirectories(root, "web_*"))
+            {
+                var info = new DirectoryInfo(dir);
+                if (DateTime.Now - info.CreationTime > TimeSpan.FromDays(1))
+                    Directory.Delete(dir, true);
+            }
+        }
+        catch { }
+    }
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(_webDir) && Directory.Exists(_webDir))
+                Directory.Delete(_webDir, true);
+        }
+        catch { }
     }
 
     private static string ExtractWebFiles()

@@ -197,14 +197,11 @@ public static class AuthService
 
             var hash = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
             var hwid = Convert.ToHexString(hash)[..32];
-            LauncherLog.Info($"HWID (WMI): {hwid}");
             return hwid;
         }
-        catch (Exception ex)
+        catch
         {
-            var hwid = Environment.MachineName + Environment.OSVersion.Version;
-            LauncherLog.Warn($"HWID fallback (WMI failed: {ex.Message}): {hwid}");
-            return hwid;
+            return Environment.MachineName + Environment.OSVersion.Version;
         }
     }
 }

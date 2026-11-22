@@ -27,6 +27,17 @@ public static class UpdateService
     public static Version CurrentVersion =>
         Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
 
+    /// <summary>Временная папка обновления. Не лежит рядом с exe — рабочий стол остаётся чистым.</summary>
+    public static string UpdateDir
+    {
+        get
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "FluxVisuals", "update");
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+    }
+
     /// <summary>Находит последний релиз с ассетом FluxVisualsLoader.exe и сравнивает с текущей версией.
     /// Возвращает null, если обновлений нет (или не удалось проверить).</summary>
     public static async Task<UpdateInfo?> CheckAsync(string updateCheckUrl, CancellationToken ct = default)
@@ -83,11 +94,11 @@ public static class UpdateService
     public static Task DownloadAsync(string url, string dest, Action<long, long?>? progress = null, CancellationToken ct = default)
         => Downloader.DownloadAsync(url, dest, progress, ct);
 
-    /// <summary>Скачивает новый exe рядом с текущим и запускает скрытый updater.bat:
+    /// <summary>Скачивает новый exe во временную папку и запускает скрытый updater.bat оттуда же:
     /// ждёт выхода текущего процесса, заменяет exe и перезапускает его. config.json не трогаем.</summary>
     public static void ApplyAndRestart(string currentExePath, string newExePath)
     {
-        string dir = Path.GetDirectoryName(currentExePath)!;
+        string dir = UpdateDir;
         string exeName = Path.GetFileName(currentExePath);
         string batPath = Path.Combine(dir, "updater.bat");
 
