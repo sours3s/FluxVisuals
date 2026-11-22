@@ -66,8 +66,32 @@ public static class ModpackManager
         File.WriteAllText(StatePath, JsonSerializer.Serialize(packs, JsonOptions));
     }
 
+    /// <summary>Обновить метаданные уже установленного модпака (иконку/ссылку/описание).</summary>
+    public static void Update(InstalledModpack pack)
+    {
+        var all = List();
+        int index = all.FindIndex(p => p.Id == pack.Id && p.Source == pack.Source);
+        if (index >= 0) all[index] = pack;
+        else all.Insert(0, pack);
+        Save(all);
+    }
+
+    /// <summary>Определить источник локального архива по его манифесту.</summary>
+    public static string DetectSource(string archive)
+    {
+        try
+        {
+            using var zip = ZipFile.OpenRead(archive);
+            if (zip.GetEntry("modrinth.index.json") != null) return "modrinth";
+            if (zip.GetEntry("manifest.json") != null) return "curseforge";
+        }
+        catch { }
+        return "modrinth";
+    }
+
     public static async Task<InstalledModpack> InstallAsync(
-        string source, ModItem item, string gameDir, string apiKey, ProgressHandler report, CancellationToken ct = default)
+        string source, ModItem item, string gameDir, string apiKey, ProgressHandler report, CancellationToken ct = default,
+        string? localArchive = null)
     {
         string modrinth = string.Equals(source, "modrinth", StringComparison.OrdinalIgnoreCase)
             ? "modrinth" : "curseforge";
@@ -79,7 +103,7 @@ public static class ModpackManager
         string versionNumber = item.SelectedVersion?.VersionNumber ?? item.VersionNumber ?? "";
         long archiveSize = item.SelectedVersion?.FileSize ?? item.FileSize;
 
-        if (string.IsNullOrWhiteSpace(url))
+        if (localArchive == null && string.IsNullOrWhiteSpace(url))
         {
             ModItem? latest = modrinth == "modrinth"
                 ? await ModrinthApi.ResolveLatestAsync(item.Id, "1.21.11", "fabric", ct)
@@ -93,19 +117,30 @@ public static class ModpackManager
             archiveSize = latest.FileSize;
         }
 
+        bool tempArchive = string.IsNullOrWhiteSpace(localArchive);
         string workDir = Path.Combine(Path.GetTempPath(), "FluxVisuals", "modpacks");
         Directory.CreateDirectory(workDir);
         string safeName = SanitizeFileName(fileName);
-        string archive = Path.Combine(workDir, $"{SanitizeFileName(item.Id)}_{SanitizeFileName(versionId)}_{safeName}");
-        if (File.Exists(archive)) File.Delete(archive);
+        string archive = tempArchive
+            ? Path.Combine(workDir, $"{SanitizeFileName(item.Id)}_{SanitizeFileName(versionId)}_{safeName}")
+            : localArchive!;
+        if (tempArchive && File.Exists(archive)) File.Delete(archive);
 
         try
         {
-            // 2. Качаем сам архив модпака с настоящим прогрессом в байтах.
-            report(0, archiveSize > 0 ? archiveSize : 0, safeName);
-            await Downloader.DownloadAsync(url, archive,
-                (done, total) => report(done, total ?? archiveSize, safeName), ct,
-                modrinth == "curseforge" ? apiKey : null);
+            // 2. Архив: скачиваем или берём уже выбранный пользователем файл.
+            if (tempArchive)
+            {
+                report(0, archiveSize > 0 ? archiveSize : 0, safeName);
+                await Downloader.DownloadAsync(url, archive,
+                    (done, total) => report(done, total ?? archiveSize, safeName), ct,
+                    modrinth == "curseforge" ? apiKey : null);
+            }
+            else
+            {
+                long size = new FileInfo(archive).Length;
+                report(size, size, safeName);
+            }
 
             // 3. Читаем манифест и строим план установки.
             using var zip = ZipFile.OpenRead(archive);
@@ -188,7 +223,7 @@ public static class ModpackManager
         }
         finally
         {
-            try { if (File.Exists(archive)) File.Delete(archive); } catch { }
+            try { if (tempArchive && File.Exists(archive)) File.Delete(archive); } catch { }
         }
     }
 

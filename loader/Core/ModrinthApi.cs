@@ -70,7 +70,17 @@ public static class ModrinthApi
         _ => "mod",
     };
 
-    public static async Task<SearchPage> SearchAsync(string query, string type, string category, string loader, string sort, int offset, CancellationToken ct = default)
+    /// <summary>Правильный адрес страницы проекта — /project/ работает через редирект, но тип точнее.</summary>
+    public static string ProjectUrl(string type, string slug) => ProjectType(type) switch
+    {
+        "resourcepack" => $"https://modrinth.com/resourcepack/{slug}",
+        "shader" => $"https://modrinth.com/shader/{slug}",
+        "modpack" => $"https://modrinth.com/modpack/{slug}",
+        _ => $"https://modrinth.com/mod/{slug}",
+    };
+
+    public static async Task<SearchPage> SearchAsync(string query, string type, string category, string loader,
+        string sort, int offset, CancellationToken ct = default, string? gameVersion = "1.21.11")
     {
         string facets = BuildFacets(type, category, loader);
         string index = sort switch
@@ -87,11 +97,8 @@ public static class ModrinthApi
 
         // Фильтр версии игры — только для модов.
         // Шейдеры/ресурспаки ищем без него: они не привязаны к версии.
-        if (type == "mod" || type == "modpack")
-        {
-            string gameVersion = "1.21.11";
+        if (!string.IsNullOrWhiteSpace(gameVersion) && (type == "mod" || type == "modpack"))
             url += $"&game_versions=[\"{gameVersion}\"]";
-        }
 
         var page = new SearchPage { Offset = offset };
         string? json = await Downloader.GetStringAsync(url, ct: ct);
@@ -105,7 +112,7 @@ public static class ModrinthApi
             {
                 Id = h.GetProperty("project_id").GetString() ?? "",
                 Slug = slug,
-                ProjectUrl = string.IsNullOrEmpty(slug) ? "" : $"https://modrinth.com/project/{slug}",
+                ProjectUrl = string.IsNullOrEmpty(slug) ? "" : ProjectUrl(type, slug),
                 Title = h.GetProperty("title").GetString() ?? "",
                 Description = Truncate(h.GetProperty("description").GetString() ?? "", 120),
                 Author = h.TryGetProperty("author", out var a) ? a.GetString() ?? "" : "",
@@ -114,6 +121,32 @@ public static class ModrinthApi
             });
         }
         return page;
+    }
+
+    /// <summary>Данные проекта с Modrinth по его ID — иконка/описание/ссылка именно этого источника.</summary>
+    public static async Task<ModItem?> GetProjectAsync(string projectId, CancellationToken ct = default)
+    {
+        string? json = await Downloader.GetStringAsync($"{Base}/project/{Uri.EscapeDataString(projectId)}", ct: ct);
+        if (json == null) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var p = doc.RootElement;
+            string type = p.TryGetProperty("project_type", out var pt) ? pt.GetString() ?? "mod" : "mod";
+            string slug = p.TryGetProperty("slug", out var s) ? s.GetString() ?? "" : "";
+            return new ModItem
+            {
+                Id = p.TryGetProperty("id", out var id) ? id.GetString() ?? "" : projectId,
+                Slug = slug,
+                ProjectUrl = string.IsNullOrEmpty(slug) ? "" : ProjectUrl(type, slug),
+                Title = p.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
+                Description = p.TryGetProperty("description", out var d) ? Truncate(d.GetString() ?? "", 200) : "",
+                IconUrl = p.TryGetProperty("icon_url", out var i) && i.ValueKind == JsonValueKind.String
+                    ? i.GetString() ?? "" : "",
+                Downloads = p.TryGetProperty("downloads", out var dl) ? dl.GetInt32() : 0,
+            };
+        }
+        catch { return null; }
     }
 
     public static async Task<List<CategoryInfo>> FetchCategoriesAsync(CancellationToken ct = default)

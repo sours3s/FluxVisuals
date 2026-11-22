@@ -32,6 +32,12 @@ public class AppConfig
     [JsonPropertyName("modUrls")] public Dictionary<string, string> ModUrls { get; set; } = new();
     /// <summary>Описания установленных файлов: fileName -> description (в «Моих файлах»).</summary>
     [JsonPropertyName("modDescriptions")] public Dictionary<string, string> ModDescriptions { get; set; } = new();
+    /// <summary>Откуда скачан файл: modrinth | curseforge. Метаданные берём только оттуда.</summary>
+    [JsonPropertyName("modSources")] public Dictionary<string, string> ModSources { get; set; } = new();
+    /// <summary>ID проекта в исходном источнике — по нему обновляем иконку, описание и ссылку.</summary>
+    [JsonPropertyName("modProjectIds")] public Dictionary<string, string> ModProjectIds { get; set; } = new();
+    /// <summary>Файлы, для которых уже искались метаданные — чтобы не опрашивать API каждый раз.</summary>
+    [JsonPropertyName("modMetaTried")] public HashSet<string> ModMetaTried { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     [JsonPropertyName("authServerUrl")] public string AuthServerUrl { get; set; } = Defaults.AuthServerUrl;
     [JsonPropertyName("authToken")] public string AuthToken { get; set; } = "";
     [JsonPropertyName("updateCheckUrl")] public string UpdateCheckUrl { get; set; } = UpdateService.DefaultUpdateCheckUrl;

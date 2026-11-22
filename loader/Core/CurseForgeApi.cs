@@ -38,6 +38,15 @@ public static class CurseForgeApi
         return "mod";
     }
 
+    /// <summary>У CurseForge разные разделы для модов, модпаков, РП и шейдеров.</summary>
+    public static string ProjectUrl(string type, string slug) => type switch
+    {
+        "modpack" => $"https://www.curseforge.com/minecraft/modpacks/{slug}",
+        "resourcepack" => $"https://www.curseforge.com/minecraft/texture-packs/{slug}",
+        "shader" => $"https://www.curseforge.com/minecraft/shaders/{slug}",
+        _ => $"https://www.curseforge.com/minecraft/mc-mods/{slug}",
+    };
+
     private static int? LoaderId(string loader) => loader switch
     {
         "fabric" => 4,
@@ -77,9 +86,7 @@ public static class CurseForgeApi
             {
                 Id = m.GetProperty("id").GetInt32().ToString(),
                 Slug = slug,
-                ProjectUrl = string.IsNullOrEmpty(slug) ? "" : type == "modpack"
-                    ? $"https://www.curseforge.com/minecraft/modpacks/{slug}"
-                    : $"https://www.curseforge.com/minecraft/mc-mods/{slug}",
+                ProjectUrl = string.IsNullOrEmpty(slug) ? "" : ProjectUrl(type, slug),
                 Title = m.GetProperty("name").GetString() ?? "",
                 Description = m.TryGetProperty("summary", out var sum) ? sum.GetString() ?? "" : "",
                 Author = m.TryGetProperty("authors", out var au) && au.GetArrayLength() > 0
@@ -90,6 +97,39 @@ public static class CurseForgeApi
             });
         }
         return page;
+    }
+
+    /// <summary>Данные проекта с CurseForge по его ID — иконка/описание/ссылка именно этого источника.</summary>
+    public static async Task<ModItem?> GetProjectAsync(string modId, string apiKey,
+        CancellationToken ct = default, string? type = null)
+    {
+        string? json = await Downloader.GetStringAsync($"{Base}/mods/{Uri.EscapeDataString(modId)}", apiKey, ct);
+        if (json == null) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var m = doc.RootElement.GetProperty("data");
+            string slug = m.TryGetProperty("slug", out var s) ? s.GetString() ?? "" : "";
+            string name = m.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+            if (string.IsNullOrWhiteSpace(type))
+            {
+                int id = m.TryGetProperty("classId", out var cid) && cid.ValueKind == JsonValueKind.Number
+                    ? cid.GetInt32() : -1;
+                type = id >= 0 ? TypeOf(id) : TypeByName(name);
+            }
+            return new ModItem
+            {
+                Id = m.TryGetProperty("id", out var idEl) ? idEl.GetInt32().ToString() : modId,
+                Slug = slug,
+                ProjectUrl = string.IsNullOrEmpty(slug) ? "" : ProjectUrl(type, slug),
+                Title = name,
+                Description = m.TryGetProperty("summary", out var sum) ? sum.GetString() ?? "" : "",
+                IconUrl = m.TryGetProperty("logo", out var lg) && lg.ValueKind == JsonValueKind.Object
+                    ? lg.GetProperty("url").GetString() ?? "" : "",
+                Downloads = m.TryGetProperty("downloadCount", out var dc) ? dc.GetInt32() : 0,
+            };
+        }
+        catch { return null; }
     }
 
     public static async Task<List<CategoryInfo>> FetchCategoriesAsync(string apiKey, CancellationToken ct = default)

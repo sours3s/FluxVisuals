@@ -91,6 +91,7 @@
       $('#page-' + item.dataset.page).classList.add('active');
       if (item.dataset.page === 'mods') send({ cmd: 'listMods' });
       if (item.dataset.page === 'shop' && !state.shop.catsLoaded) loadCategories();
+      if (item.dataset.page === 'support') send({ cmd: 'aiStatus' });
     });
   });
 
@@ -293,6 +294,22 @@
           toast('Ошибка запуска: ' + msg.message, true);
         }
         break;
+      case 'aiStatus':
+        setAiStatus(msg.available, msg.reason);
+        break;
+      case 'aiThinking':
+        setAiBusy(!!msg.busy);
+        break;
+      case 'aiAnswer':
+        setAiBusy(false);
+        appendAiMessage('model', msg.answer);
+        aiHistory.push({ role: 'model', text: msg.answer || '' });
+        trimAiHistory();
+        break;
+      case 'aiError':
+        setAiBusy(false);
+        appendAiMessage('error', msg.message || 'Catal не ответил. Попробуйте ещё раз.');
+        break;
       case 'error':
         toast(msg.message, true);
         break;
@@ -337,6 +354,7 @@
 
   // ---------- Мои файлы ----------
   const FILE_TYPE_NAMES = { mod: 'Мод', shader: 'Шейдер', resourcepack: 'Ресурспак', modpack: 'Модпак' };
+  const ADD_LABELS = { mod: 'Добавить мод', shader: 'Добавить шейдер', resourcepack: 'Добавить ресурспак', modpack: 'Добавить модпак' };
   const SITE_ICON = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" stroke="currentColor" stroke-width="1.5"/></svg>';
   const DELETE_ICON = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
   const FILE_ICONS = {
@@ -346,11 +364,27 @@
     modpack: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M3 9h18M8 4v5M8 14h8M8 17h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   };
 
+  const FILE_SECTIONS = { mod: 'mods', shader: 'shaders', resourcepack: 'resourcepacks', modpack: 'modpacks' };
+
+  function cleanFileName(name) {
+    return (name || '')
+      .replace(/\.(jar|zip|mcpack)(\.disabled)?$/i, '')
+      .replace(/[-_ ]?[rv]?(\d+\.)+\d+.*$/i, '')
+      .replace(/\+.*$/, '')
+      .replace(/[-_ +]+(fabric|forge|neoforge|quilt|mc|minecraft)\b.*$/i, '')
+      .replace(/(fabric|forge|neoforge|quilt)$/i, '')
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[-_]+/g, ' ')
+      .trim();
+  }
+
   function fileSiteUrl(m) {
     if (m.projectUrl) return m.projectUrl;
-    const name = (m.title || m.name || '').trim();
-    if (!name) return 'https://modrinth.com/mods';
-    return 'https://modrinth.com/search?query=' + encodeURIComponent(name);
+    const name = cleanFileName(m.title || m.name);
+    const section = FILE_SECTIONS[m.type] || 'mods';
+    return name
+      ? 'https://modrinth.com/' + section + '?q=' + encodeURIComponent(name)
+      : 'https://modrinth.com/' + section;
   }
 
   function renderFiles(files) {
@@ -377,17 +411,20 @@
       const icon = m.iconUrl || '';
       const url = fileSiteUrl(m);
       const isPack = filter === 'modpack';
+      const source = m.source === 'curseforge' ? 'CurseForge'
+        : m.source === 'modrinth' ? 'Modrinth' : '';
+      const glyph = FILE_ICONS[type] || `<span>${letter}</span>`;
       const desc = m.description || (isPack
         ? `${typeName} · ${m.fileCount || 0} файлов · ${fmtDl(m.downloads || 0)} скачиваний`
         : '');
 
       card.innerHTML = `
         <div class="mod-icon type-${esc(type)}">${icon
-          ? `<img src="${esc(icon)}" alt="" loading="lazy" onerror="this.style.display='none'">${FILE_ICONS[type] || ''}`
-          : (FILE_ICONS[type] || `<span>${letter}</span>`)}</div>
+          ? `<img class="file-img" src="${esc(icon)}" alt="" loading="lazy"><span class="file-glyph" style="display:none">${glyph}</span>`
+          : `<span class="file-glyph">${glyph}</span>`}</div>
         <div class="mod-info">
           <div class="mod-name">${esc(m.title || m.name)}</div>
-          <div class="mod-size">${typeName}${isPack
+          <div class="mod-size">${typeName}${source ? ` · ${source}` : ''}${isPack
             ? ` · ${esc(m.versionNumber || '')} · ${fmtDl(m.downloads || 0)} скач.`
             : ` · ${fmt(m.size)}`}</div>
           ${desc ? `<div class="mod-desc">${esc(desc)}</div>` : ''}
@@ -400,6 +437,12 @@
                <button class="del-btn" title="Удалить">${DELETE_ICON}</button>`}
         </div>`;
 
+      const img = card.querySelector('.file-img');
+      if (img) img.addEventListener('error', () => {
+        img.remove();
+        const glyphEl = card.querySelector('.file-glyph');
+        if (glyphEl) glyphEl.style.display = '';
+      });
       const site = card.querySelector('.file-site');
       if (site) site.addEventListener('click', () => send({ cmd: 'openUrl', url }));
       const del = card.querySelector('.del-btn');
@@ -426,13 +469,52 @@
         cats.forEach((c) => c.classList.remove('active'));
         chip.classList.add('active');
         state.fileFilter = chip.dataset.type || '';
+        $('#btnAddMod').textContent = ADD_LABELS[state.fileFilter] || 'Добавить файл';
         renderFiles(state.mods);
       });
     });
   }
   bindFileCats();
+  $('#btnAddMod').textContent = ADD_LABELS[state.fileFilter || 'mod'] || 'Добавить файл';
 
-  $('#btnAddMod').addEventListener('click', () => send({ cmd: 'addMod' }));
+  // Диалог «архив или папка» рисуется внутри лаунчера, отдельным WPF-окном больше не пользуемся.
+  let addType = 'mod';
+  function openAddDialog(type) {
+    addType = type;
+    const label = ADD_LABELS[type] || 'Добавить файл';
+    const noun = type === 'shader' ? 'шейдеров' : 'ресурспаков';
+    $('#addModeTitle').textContent = label;
+    $('#addModeText').textContent = `Добавьте архив ${noun} или распакованную папку — файл появится в этом разделе.`;
+    $$('.choice-desc').forEach((el) => {
+      el.textContent = el.closest('.choice').id === 'addModeArchive'
+        ? (type === 'shader' ? '.zip — архив шейдеров' : '.zip — архив ресурспаков')
+        : 'Распакованная папка';
+    });
+    $('#addModeOverlay').classList.add('show');
+  }
+  function closeAddDialog() { $('#addModeOverlay').classList.remove('show'); }
+  function chooseAddMode(mode) {
+    closeAddDialog();
+    send({ cmd: 'addMod', type: addType, mode });
+  }
+
+  $('#btnAddMod').addEventListener('click', () => {
+    const type = state.fileFilter || 'mod';
+    if (type === 'shader' || type === 'resourcepack') openAddDialog(type);
+    else send({ cmd: 'addMod', type });
+  });
+  $('#addModeArchive').addEventListener('click', () => chooseAddMode('file'));
+  $('#addModeFolder').addEventListener('click', () => chooseAddMode('folder'));
+  $('#addModeCancel').addEventListener('click', closeAddDialog);
+  $('#addModeOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'addModeOverlay') closeAddDialog();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('#addModeOverlay').classList.contains('show')) closeAddDialog();
+  });
+
+  // Вкладка «Поддержка»: ссылка открывается системным браузером через лаунчер.
+  $$('[data-open-url]').forEach((b) => b.addEventListener('click', () => send({ cmd: 'openUrl', url: b.dataset.openUrl })));
   $('#btnOpenMods').addEventListener('click', () => {
     const type = state.fileFilter || '';
     const key = type === 'shader' ? 'shaderpacks'
@@ -441,7 +523,221 @@
     send({ cmd: 'openPath', key });
   });
 
+  // ---------- Catal: ИИ-помощник ----------
+  let aiHistory = [];
+  let aiBusy = false;
+  let aiImage = null;
+  let aiTyping = null;
+
+  function setAiStatus(available, reason) {
+    const el = $('#aiStatus');
+    if (!el) return;
+    el.textContent = available ? 'На связи · может видеть скриншоты' : (reason || 'Сейчас недоступен');
+    el.style.color = available ? 'var(--green)' : 'var(--yellow)';
+  }
+
+  function trimAiHistory() {
+    if (aiHistory.length > 10) aiHistory = aiHistory.slice(-10);
+  }
+
+  function renderAiText(text) {
+    const holder = document.createElement('div');
+    holder.textContent = text || '';
+    let html = holder.innerHTML; // текст уже экранирован
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    return html;
+  }
+
+  function scrollAi() {
+    const box = $('#aiMessages');
+    if (box) box.scrollTop = box.scrollHeight;
+  }
+
+  function appendAiMessage(role, text, image) {
+    const box = $('#aiMessages');
+    if (!box) return;
+    const empty = $('#aiEmpty');
+    if (empty) empty.remove();
+    const el = document.createElement('div');
+    el.className = 'ai-msg ' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'model');
+    el.innerHTML = renderAiText(text);
+    if (image) {
+      const img = document.createElement('img');
+      img.className = 'ai-msg-image';
+      img.src = image;
+      img.alt = 'Прикреплённый скриншот';
+      el.appendChild(img);
+    }
+    box.appendChild(el);
+    scrollAi();
+  }
+
+  function setAiSendState() {
+    const btn = $('#aiSend');
+    const input = $('#aiInput');
+    if (btn) btn.disabled = aiBusy || !((input?.value || '').trim() || aiImage);
+  }
+
+  function setAiBusy(busy) {
+    aiBusy = busy;
+    setAiSendState();
+    const box = $('#aiMessages');
+    if (busy && box) {
+      if (!aiTyping) {
+        aiTyping = document.createElement('div');
+        aiTyping.className = 'ai-typing';
+        aiTyping.innerHTML = '<i></i><i></i><i></i>';
+        box.appendChild(aiTyping);
+      }
+      scrollAi();
+    } else if (aiTyping) {
+      aiTyping.remove();
+      aiTyping = null;
+    }
+  }
+
+  function prepareAiImage(file) {
+    return new Promise((resolve, reject) => {
+      if (!file || !file.type.startsWith('image/')) { reject(new Error('Нужен файл изображения.')); return; }
+      if (file.size > 20 * 1024 * 1024) { reject(new Error('Изображение слишком большое — максимум 20 МБ.')); return; }
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Не удалось прочитать изображение.'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Не удалось открыть изображение.'));
+        img.onload = () => {
+          const max = 1600;
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
+          const scale = Math.min(1, max / Math.max(w, h));
+          w = Math.max(1, Math.round(w * scale));
+          h = Math.max(1, Math.round(h * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('Браузер не смог обработать изображение.')); return; }
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function updateAiAttachment() {
+    const chip = $('#aiAttachment');
+    if (!chip) return;
+    chip.hidden = !aiImage;
+    const thumb = $('#aiAttachmentThumb');
+    if (thumb) {
+      thumb.hidden = !aiImage;
+      thumb.src = aiImage || '';
+    }
+    $('#aiAttachmentName').textContent = aiImage ? 'Скриншот прикреплён' : '';
+    setAiSendState();
+  }
+
+  async function attachAiFile(file) {
+    if (!file) return;
+    try {
+      const prepared = await prepareAiImage(file);
+      aiImage = prepared;
+      updateAiAttachment();
+    } catch (err) {
+      appendAiMessage('error', err.message || 'Не удалось прикрепить изображение.');
+    }
+  }
+
+  function sendAi() {
+    if (aiBusy) return;
+    const input = $('#aiInput');
+    const text = (input.value || '').trim();
+    if (!text && !aiImage) return;
+    const image = aiImage;
+    const shown = text || '[скриншот]';
+    const history = aiHistory.slice();
+    aiHistory.push({ role: 'user', text: shown });
+    trimAiHistory();
+    appendAiMessage('user', shown, image);
+    input.value = '';
+    input.style.height = '';
+    aiImage = null;
+    updateAiAttachment();
+    setAiBusy(true);
+    send({ cmd: 'aiAsk', message: text || 'Посмотри на скриншот и помоги разобраться.', history, image });
+  }
+
+  $('#aiSend')?.addEventListener('click', sendAi);
+  $('#aiInput')?.addEventListener('input', (e) => {
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 130) + 'px';
+    setAiSendState();
+  });
+  $('#aiInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAi(); }
+  });
+
+  // Ctrl+V со скриншотом работает в любом месте вкладки «Поддержка», а не только в поле ввода.
+  document.addEventListener('paste', (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.kind !== 'file' || !(item.type || '').startsWith('image/')) continue;
+      const blob = item.getAsFile();
+      if (!blob) continue;
+      e.preventDefault();
+      const file = (blob.type || '').startsWith('image/')
+        ? blob
+        : new File([blob], 'screenshot.png', { type: item.type || 'image/png' });
+      attachAiFile(file);
+      return;
+    }
+  }, true);
+
+  $('#aiAttach')?.addEventListener('click', () => $('#aiImageInput').click());
+  $('#aiImageInput')?.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    attachAiFile(file);
+  });
+  $('#aiAttachmentRemove')?.addEventListener('click', () => {
+    aiImage = null;
+    const input = $('#aiImageInput');
+    if (input) input.value = '';
+    updateAiAttachment();
+  });
+  setAiSendState();
+
   // ---------- Мастерская ----------
+  function setFiltersOpen(open) {
+    $('#shopLayout').classList.toggle('filters-closed', !open);
+    const toggle = $('#filterToggle');
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.title = open ? 'Скрыть фильтры' : 'Показать фильтры';
+    $('#filterToggleLabel').textContent = open ? 'Фильтры' : 'Показать';
+  }
+  $('#filterToggle').addEventListener('click', () => setFiltersOpen($('#shopLayout').classList.contains('filters-closed')));
+  $('#filterClose').addEventListener('click', () => setFiltersOpen(false));
+
+  $('#shopReset').addEventListener('click', () => {
+    $$('.shop-tab').forEach((t) => t.classList.toggle('active', t.dataset.src === 'modrinth'));
+    $$('.type-btn').forEach((b) => b.classList.toggle('active', b.dataset.type === 'mod'));
+    state.shop.source = 'modrinth';
+    state.shop.type = 'mod';
+    state.shop.category = '';
+    state.shop.loader = 'fabric';
+    state.shop.sort = 'downloads';
+    state.shop.offset = 0;
+    $('#shopLoader').value = 'fabric';
+    $('#shopSort').value = 'downloads';
+    $('#shopQuery').value = '';
+    loadCategories();
+    search();
+  });
+
   $$('.shop-tab').forEach((tab) => {
     tab.addEventListener('click', () => {
       $$('.shop-tab').forEach((t) => t.classList.remove('active'));
@@ -487,6 +783,8 @@
       state.shop.category = chip.dataset.id;
     } else {
       state.shop.category = '';
+      const all = $('#shopCats .cat-chip');
+      if (all) all.classList.add('active');
     }
     state.shop.offset = 0;
     search();
@@ -505,6 +803,7 @@
     state.shop.offset = 0;
     state.shop.total = 0;
     $('#shopGrid').innerHTML = '<div class="shop-empty">Загрузка…</div>';
+    $('#shopListHint').textContent = 'Ищем в каталоге…';
     send({
       cmd: 'search',
       source: state.shop.source, type: state.shop.type,
@@ -556,6 +855,10 @@
 
   function renderShop(items) {
     const grid = $('#shopGrid');
+    const hint = $('#shopListHint');
+    hint.textContent = state.shop.total
+      ? `Найдено ${state.shop.total.toLocaleString('ru')} · показано ${items.length.toLocaleString('ru')}`
+      : 'Ничего не найдено — попробуйте другие фильтры';
     grid.innerHTML = '';
     if (!items.length) {
       grid.innerHTML = '<div class="shop-empty">Ничего не найдено</div>';
@@ -659,6 +962,12 @@
   function renderCategories(cats) {
     const box = $('#shopCats');
     box.innerHTML = '';
+    $('#shopCatGroup').hidden = !(cats && cats.length);
+    const all = document.createElement('div');
+    all.className = 'cat-chip' + (state.shop.category ? '' : ' active');
+    all.dataset.id = '';
+    all.textContent = 'Все';
+    box.appendChild(all);
     (cats || []).forEach((c) => {
       const chip = document.createElement('div');
       chip.className = 'cat-chip' + (state.shop.category === c.id ? ' active' : '');

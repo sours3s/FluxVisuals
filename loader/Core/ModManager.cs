@@ -14,6 +14,8 @@ public class ModEntry
     [JsonPropertyName("iconUrl")] public string IconUrl { get; set; } = "";
     [JsonPropertyName("projectUrl")] public string ProjectUrl { get; set; } = "";
     [JsonPropertyName("description")] public string Description { get; set; } = "";
+    [JsonPropertyName("source")] public string Source { get; set; } = "";
+    [JsonPropertyName("projectId")] public string ProjectId { get; set; } = "";
 }
 
 /// <summary>
@@ -23,18 +25,20 @@ public class ModEntry
 public static class ModManager
 {
     public static List<ModEntry> ListFiles(string gameDir, IReadOnlyDictionary<string, string>? icons = null,
-        IReadOnlyDictionary<string, string>? urls = null, IReadOnlyDictionary<string, string>? descriptions = null)
+        IReadOnlyDictionary<string, string>? urls = null, IReadOnlyDictionary<string, string>? descriptions = null,
+        IReadOnlyDictionary<string, string>? sources = null, IReadOnlyDictionary<string, string>? projectIds = null)
     {
         var result = new List<ModEntry>();
-        AddFolder(result, Path.Combine(gameDir, "mods"), "mod", icons, urls, descriptions);
-        AddFolder(result, Path.Combine(gameDir, "shaderpacks"), "shader", icons, urls, descriptions);
-        AddFolder(result, Path.Combine(gameDir, "resourcepacks"), "resourcepack", icons, urls, descriptions);
+        AddFolder(result, Path.Combine(gameDir, "mods"), "mod", icons, urls, descriptions, sources, projectIds);
+        AddFolder(result, Path.Combine(gameDir, "shaderpacks"), "shader", icons, urls, descriptions, sources, projectIds);
+        AddFolder(result, Path.Combine(gameDir, "resourcepacks"), "resourcepack", icons, urls, descriptions, sources, projectIds);
         return result;
     }
 
     private static void AddFolder(List<ModEntry> result, string dir, string type,
         IReadOnlyDictionary<string, string>? icons, IReadOnlyDictionary<string, string>? urls,
-        IReadOnlyDictionary<string, string>? descriptions)
+        IReadOnlyDictionary<string, string>? descriptions, IReadOnlyDictionary<string, string>? sources,
+        IReadOnlyDictionary<string, string>? projectIds)
     {
         if (!Directory.Exists(dir)) return;
 
@@ -57,12 +61,13 @@ public static class ModManager
             // Скрываем сам FluxVisuals из списка модов
             if (type == "mod" && display.Contains("fluxvisuals", StringComparison.OrdinalIgnoreCase)) continue;
 
-            string? icon = null;
-            string? url = null;
-            string? description = null;
-            icons?.TryGetValue(fileName, out icon);
-            urls?.TryGetValue(fileName, out url);
-            descriptions?.TryGetValue(fileName, out description);
+            // Метаданные сохраняются без суффикса .disabled — при выключении/включении
+            // иконка и ссылка не должны пропадать.
+            Lookup(icons, fileName, display, out string? icon);
+            Lookup(urls, fileName, display, out string? url);
+            Lookup(descriptions, fileName, display, out string? description);
+            Lookup(sources, fileName, display, out string? source);
+            Lookup(projectIds, fileName, display, out string? projectId);
             result.Add(new ModEntry
             {
                 Name = DisplayName(display, type),
@@ -74,6 +79,8 @@ public static class ModManager
                 IconUrl = icon ?? "",
                 ProjectUrl = url ?? "",
                 Description = description ?? "",
+                Source = source ?? "",
+                ProjectId = projectId ?? "",
             });
         }
 
@@ -86,12 +93,11 @@ public static class ModManager
                 bool enabled = !dirName.EndsWith(".disabled");
                 string display = enabled ? dirName : dirName[..^9];
                 if (display.StartsWith('.')) continue; // служебные папки
-                string? dicon = null;
-                string? durl = null;
-                string? ddesc = null;
-                icons?.TryGetValue(display, out dicon);
-                urls?.TryGetValue(display, out durl);
-                descriptions?.TryGetValue(display, out ddesc);
+                Lookup(icons, dirName, display, out string? dicon);
+                Lookup(urls, dirName, display, out string? durl);
+                Lookup(descriptions, dirName, display, out string? ddesc);
+                Lookup(sources, dirName, display, out string? dsource);
+                Lookup(projectIds, dirName, display, out string? dprojectId);
                 result.Add(new ModEntry
                 {
                     Name = display,
@@ -103,6 +109,8 @@ public static class ModManager
                     IconUrl = dicon ?? "",
                     ProjectUrl = durl ?? "",
                     Description = ddesc ?? "",
+                    Source = dsource ?? "",
+                    ProjectId = dprojectId ?? "",
                 });
             }
         }
@@ -114,6 +122,15 @@ public static class ModManager
             && !display.StartsWith("fluxvisuals-", StringComparison.OrdinalIgnoreCase))
             return display[..^4];
         return Path.GetFileNameWithoutExtension(display);
+    }
+
+    private static void Lookup(IReadOnlyDictionary<string, string>? dict, string rawName, string display,
+        out string? value)
+    {
+        value = null;
+        if (dict == null) return;
+        if (dict.TryGetValue(rawName, out var raw) && !string.IsNullOrWhiteSpace(raw)) { value = raw; return; }
+        if (dict.TryGetValue(display, out var normal) && !string.IsNullOrWhiteSpace(normal)) value = normal;
     }
 
     public static void Toggle(string path, bool enable)
@@ -136,11 +153,37 @@ public static class ModManager
         else if (File.Exists(path)) File.Delete(path);
     }
 
-    public static void Add(string srcFile, string gameDir)
+    public static void Add(string srcFile, string gameDir, string type = "mod")
     {
-        string modsDir = Path.Combine(gameDir, "mods");
-        Directory.CreateDirectory(modsDir);
-        string dest = Path.Combine(modsDir, Path.GetFileName(srcFile));
+        string subDir = type switch
+        {
+            "shader" => "shaderpacks",
+            "resourcepack" => "resourcepacks",
+            _ => "mods",
+        };
+        string destDir = Path.Combine(gameDir, subDir);
+        Directory.CreateDirectory(destDir);
+        string dest = Path.Combine(destDir, Path.GetFileName(srcFile));
         File.Copy(srcFile, dest, true);
+    }
+
+    /// <summary>Добавить распакованный шейдер/ресурспак целиком.</summary>
+    public static void AddFolder(string srcDir, string gameDir, string type)
+    {
+        string subDir = type == "shader" ? "shaderpacks" : "resourcepacks";
+        string name = Path.GetFileName(srcDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        string dest = Path.Combine(gameDir, subDir, name);
+        if (Directory.Exists(dest)) Directory.Delete(dest, true);
+        Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+        CopyTree(srcDir, dest);
+    }
+
+    private static void CopyTree(string src, string dest)
+    {
+        Directory.CreateDirectory(dest);
+        foreach (string file in Directory.EnumerateFiles(src))
+            File.Copy(file, Path.Combine(dest, Path.GetFileName(file)), true);
+        foreach (string dir in Directory.EnumerateDirectories(src))
+            CopyTree(dir, Path.Combine(dest, Path.GetFileName(dir)));
     }
 }

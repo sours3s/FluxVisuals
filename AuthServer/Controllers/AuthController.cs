@@ -42,9 +42,9 @@ public class AuthController : ControllerBase
         if (await _db.Users.AnyAsync(u => u.Username == req.Username))
             return Conflict(new { error = "Username already exists" });
 
-        // Публичная регистрация всегда создаёт обычного юзера.
-        // Админов/клиентов заводит админ через админ-панель.
-        var user = new User { Username = req.Username, Role = "user" };
+        // Публичная регистрация всегда создаёт пользователя с бесплатным доступом.
+        // Админов создаёт админ через админ-панель.
+        var user = new User { Username = req.Username, Role = "free" };
         user.SetPassword(req.Password);
         user.Uid = (await _db.Users.MaxAsync(u => (int?)u.Uid) ?? 0) + 1; // первый зарегистрировавшийся = UID 1
         _db.Users.Add(user);

@@ -45,7 +45,7 @@ public class DownloadController : ControllerBase
         if (!user.HasAccess(DateTime.UtcNow))
             return StatusCode(StatusCodes.Status403Forbidden, new
             {
-                error = "Доступ не оплачен. Купите клиент в личном кабинете."
+                error = "Доступ к клиенту закрыт. Проверьте аккаунт в личном кабинете."
             });
 
         string url = _configuration["Loader:DownloadUrl"] ?? "";

@@ -220,18 +220,48 @@ public partial class MainWindow : Window
     public void ToggleMaximize()
         => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
-    public string? PickFolder()
+    public string? PickFolder(string? initialDir = null, string title = "Выберите папку")
     {
-        var dlg = new OpenFolderDialog { Title = "Выберите папку" };
+        var dlg = new OpenFolderDialog { Title = title };
+        if (!string.IsNullOrEmpty(initialDir) && Directory.Exists(initialDir))
+            dlg.InitialDirectory = initialDir;
         return dlg.ShowDialog(this) == true ? dlg.FolderName : null;
     }
 
-    public string? PickFile(string? initialDir = null)
+    public string? PickFile(string? initialDir = null, string title = "Выберите мод (.jar)",
+        string filter = "Minecraft mods (*.jar)|*.jar")
     {
-        var dlg = new OpenFileDialog { Title = "Выберите мод (.jar)", Filter = "Minecraft mods (*.jar)|*.jar" };
+        var dlg = new OpenFileDialog { Title = title, Filter = filter };
         if (!string.IsNullOrEmpty(initialDir) && Directory.Exists(initialDir))
             dlg.InitialDirectory = initialDir;
         return dlg.ShowDialog(this) == true ? dlg.FileName : null;
+    }
+
+    /// <summary>Файловый диалог для выбранной вкладки. Выбор «архив/папка» делается внутри WebView.</summary>
+    public string? PickAddFile(string type, string initialDir, string mode = "file")
+    {
+        string typeName = type switch
+        {
+            "shader" => "шейдер",
+            "resourcepack" => "ресурспак",
+            "modpack" => "модпак",
+            _ => "мод",
+        };
+
+        if (mode == "folder" && (type is "shader" or "resourcepack"))
+        {
+            if (!Directory.Exists(initialDir)) Directory.CreateDirectory(initialDir);
+            return PickFolder(initialDir, "Выберите папку: " + typeName);
+        }
+
+        string filter = type switch
+        {
+            "shader" => "Шейдеры (*.zip;*.mcpack)|*.zip;*.mcpack",
+            "resourcepack" => "Ресурспаки (*.zip;*.mcpack)|*.zip;*.mcpack",
+            "modpack" => "Модпаки (*.mrpack;*.zip)|*.mrpack;*.zip",
+            _ => "Minecraft mods (*.jar)|*.jar",
+        };
+        return PickFile(initialDir, "Выберите " + typeName + ":", filter);
     }
 
     public string? PickJava()

@@ -53,7 +53,9 @@ public class CoreBackend
                 case "listMods": SendMods(); break;
                 case "toggleMod": ToggleMod(root); break;
                 case "removeMod": RemoveMod(root); break;
-                case "addMod": await AddModAsync(); break;
+                case "addMod": await AddModAsync(root); break;
+                case "aiStatus": await AiStatusAsync(); break;
+                case "aiAsk": await AiAskAsync(root); break;
             }
         }
         catch (Exception ex)
@@ -96,7 +98,11 @@ public class CoreBackend
             foreach (string d in Directory.EnumerateDirectories(dir))
                 installed.Add(Path.GetFileName(d).ToLowerInvariant());
         }
-        Post(new { ev = "files", files = ModManager.ListFiles(_cfg.GameDir, _cfg.ModIcons, _cfg.ModUrls, _cfg.ModDescriptions), installed });
+        var files = ModManager.ListFiles(_cfg.GameDir, _cfg.ModIcons, _cfg.ModUrls, _cfg.ModDescriptions,
+            _cfg.ModSources, _cfg.ModProjectIds);
+        ModMetaService.Enrich(files, _cfg, SendMods);
+        Post(new { ev = "files", files, installed });
+        ModMetaService.RefreshModpacks(_cfg, SendMods);
         var packs = ModpackManager.List();
         Post(new { ev = "modpacks", modpacks = packs, installedIds = packs.Select(p => p.Id).ToList() });
     }
@@ -135,6 +141,9 @@ public class CoreBackend
         incoming.ModIcons = _cfg.ModIcons;
         incoming.ModUrls = _cfg.ModUrls;
         incoming.ModDescriptions = _cfg.ModDescriptions;
+        incoming.ModMetaTried = _cfg.ModMetaTried;
+        incoming.ModSources = _cfg.ModSources;
+        incoming.ModProjectIds = _cfg.ModProjectIds;
     }
 
     // ---------- запуск ----------
@@ -349,6 +358,10 @@ public class CoreBackend
                     if (!string.IsNullOrEmpty(resolved.IconUrl)) _cfg.ModIcons[fileName] = resolved.IconUrl;
                     if (!string.IsNullOrEmpty(resolved.ProjectUrl)) _cfg.ModUrls[fileName] = resolved.ProjectUrl;
                     if (!string.IsNullOrEmpty(resolved.Description)) _cfg.ModDescriptions[fileName] = resolved.Description;
+                    // Источник и ID проекта нужны, чтобы иконку/описание/ссылку брать
+                    // из того же каталога, откуда файл скачан, а не из первого попавшегося.
+                    if (!string.IsNullOrEmpty(source)) _cfg.ModSources[fileName] = source;
+                    if (!string.IsNullOrEmpty(item.Id)) _cfg.ModProjectIds[fileName] = item.Id;
                     _cfg.Save();
                 }
                 SendMods();
@@ -433,12 +446,60 @@ public class CoreBackend
         SendMods();
     }
 
-    private async Task AddModAsync()
+    private async Task AddModAsync(JsonElement root)
     {
-        string modsDir = Path.Combine(_cfg.GameDir, "mods");
-        string? file = _window.PickFile(modsDir);
-        if (file == null) return;
-        ModManager.Add(file, _cfg.GameDir);
+        string type = root.TryGetProperty("type", out var t) ? t.GetString() ?? "mod" : "mod";
+        string mode = root.TryGetProperty("mode", out var md) ? md.GetString() ?? "file" : "file";
+        string initialDir = type switch
+        {
+            "shader" => Path.Combine(_cfg.GameDir, "shaderpacks"),
+            "resourcepack" => Path.Combine(_cfg.GameDir, "resourcepacks"),
+            "modpack" => Path.Combine(_cfg.GameDir, "mods"),
+            _ => Path.Combine(_cfg.GameDir, "mods"),
+        };
+        string? path = _window.PickAddFile(type, initialDir, mode);
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        // Распакованный шейдер/ресурспак — копируем всей папкой.
+        if (Directory.Exists(path))
+        {
+            if (type is "shader" or "resourcepack") ModManager.AddFolder(path, _cfg.GameDir, type);
+            SendMods();
+            return;
+        }
+
+        if (type == "modpack")
+        {
+            string downloadId = "local:" + Path.GetFileName(path);
+            await Task.Run(async () =>
+            {
+                try
+                {
+                    string source = ModpackManager.DetectSource(path);
+                    var item = new ModItem
+                    {
+                        Id = downloadId,
+                        Title = Path.GetFileNameWithoutExtension(path),
+                        FileName = Path.GetFileName(path),
+                        FileUrl = "",
+                    };
+                    var pack = await ModpackManager.InstallAsync(source, item, _cfg.GameDir, _cfg.CurseforgeKey,
+                        (done, total, file) => PostDownloadProgress(downloadId, item.Title, done, total, file),
+                        default, path);
+                    Post(new { ev = "downloadDone", id = downloadId, ok = true });
+                    Post(new { ev = "installResult", ok = true, file = $"Модпак «{pack.Title}»" });
+                    SendMods();
+                }
+                catch (Exception ex)
+                {
+                    Post(new { ev = "downloadDone", id = downloadId, ok = false, message = ex.Message });
+                    Post(new { ev = "error", message = ex.Message });
+                }
+            });
+            return;
+        }
+
+        ModManager.Add(path, _cfg.GameDir, type);
         SendMods();
     }
 
@@ -525,6 +586,92 @@ public class CoreBackend
             Post(new { ev = "modVersion", downloadUrl = info.DownloadUrl, version = info.Version, fileName = info.FileName });
         else
             Post(new { ev = "modVersion", error = "Failed to check mod version" });
+    }
+
+    // ---------- Catal: ИИ-помощник ----------
+
+    private async Task AiStatusAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_cfg.AuthToken))
+        {
+            Post(new { ev = "aiStatus", available = false, reason = "Войдите в аккаунт, чтобы использовать Catal." });
+            return;
+        }
+
+        var result = await AiClient.StatusAsync(_cfg);
+        Post(new { ev = "aiStatus", available = result.Available, reason = result.Error });
+    }
+
+    private async Task AiAskAsync(JsonElement root)
+    {
+        string message = root.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            Post(new { ev = "aiError", message = "Напишите вопрос." });
+            return;
+        }
+
+        var history = root.TryGetProperty("history", out var h) && h.ValueKind == JsonValueKind.Array
+            ? h.Clone()
+            : JsonSerializer.SerializeToElement(Array.Empty<string>());
+        string? image = root.TryGetProperty("image", out var im) && im.ValueKind == JsonValueKind.String
+            ? im.GetString()
+            : null;
+
+        // Диагностику собираем сами — JS не может подсунуть фейковый контекст или токен.
+        var context = BuildAiContext();
+        Post(new { ev = "aiThinking", busy = true });
+        var result = await AiClient.AskAsync(_cfg, message, history, image, context);
+        Post(new { ev = "aiThinking", busy = false });
+        if (result.Error != null)
+            Post(new { ev = "aiError", message = result.Error });
+        else
+            Post(new { ev = "aiAnswer", answer = result.Answer, model = result.Model });
+    }
+
+    private JsonElement BuildAiContext()
+    {
+        string version = GetType().Assembly.GetName().Version?.ToString() ?? "unknown";
+        var ctx = new JsonObject
+        {
+            ["launcherVersion"] = version,
+            ["modVersion"] = _cfg.ModVersion,
+            ["role"] = _cfg.Role,
+            ["hasAccess"] = _cfg.HasAccess,
+            ["gameDirExists"] = Directory.Exists(_cfg.GameDir),
+            ["javaFound"] = JavaResolver.FindJava(_cfg.JavaPath) != null,
+            ["ramMb"] = _cfg.RamMb
+        };
+
+        var installed = new List<string>();
+        foreach (string dir in new[] { "mods", "resourcepacks", "shaderpacks" })
+        {
+            string path = Path.Combine(_cfg.GameDir, dir);
+            if (!Directory.Exists(path)) continue;
+            try
+            {
+                foreach (string f in Directory.EnumerateFiles(path).Take(30))
+                    installed.Add(Path.GetFileName(f));
+                foreach (string d in Directory.EnumerateDirectories(path).Take(10))
+                    installed.Add(Path.GetFileName(d) + "/");
+            }
+            catch { }
+        }
+        ctx["installedFiles"] = installed.Count == 0 ? "(пусто)" : string.Join(", ", installed.Take(40));
+
+        try
+        {
+            string log = LauncherLog.LogPath;
+            if (File.Exists(log))
+                ctx["lastLog"] = string.Join(" | ", File.ReadLines(log).TakeLast(12));
+            string crash = Path.Combine(LauncherLog.LogDir, "crash.log");
+            if (File.Exists(crash))
+                ctx["lastCrash"] = string.Join(" | ", File.ReadLines(crash).TakeLast(8));
+        }
+        catch { }
+
+        using var doc = JsonDocument.Parse(ctx.ToJsonString());
+        return doc.RootElement.Clone();
     }
 
     // ---------- транспорт ----------
