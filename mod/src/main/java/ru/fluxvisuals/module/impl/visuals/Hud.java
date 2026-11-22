@@ -550,15 +550,7 @@ public class Hud extends Module {
    }
 
    public static void drawClientRect(Renderer2D r2, float x, float y, float w, float h, float radius, float alpha, float thickness) {
-      if (currentDrawContext != null && blur.get("HUD")) {
-         drawClientRect(currentDrawContext, r2, x, y, w, h, radius, alpha, thickness);
-         return;
-      }
       r2.shadow(x, y, w, h, radius, 8.6F, 0.5F, ColorUtil.getColor(0, alpha * 0.15F));
-      if (blur.get("HUD")) {
-         r2.prepareBlur(23.0F);
-         r2.blur(x, y, w, h, radius, alpha);
-      }
 
       if (thickness > 0.0F) {
          r2.rectOutline(x - 1.0F, y - 1.0F, w + 2.0F, h + 2.0F, radius, ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), alpha * 0.1F), thickness);
