@@ -37,7 +37,7 @@ public class InGameHudMixin {
     /** Кастомный хотбар рисуется FluxVisuals, поэтому ванильный нужно спрятать. */
     @Inject(method = "renderHotbar", at = @At("HEAD"), cancellable = true, require = 0)
     private void onRenderHotbar(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        if (FluxVisualsClient.isModInitialized() && Hud.isCustomHotbarActive()) {
+        if (FluxVisualsClient.isModInitialized() && Hud.isHotbarBindsActive()) {
             ci.cancel();
         }
     }

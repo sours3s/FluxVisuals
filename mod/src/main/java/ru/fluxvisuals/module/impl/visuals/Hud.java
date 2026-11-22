@@ -114,11 +114,10 @@ public class Hud extends Module {
    public final SliderSetting durabilityThreshold = new SliderSetting("Durability %", 15.0F, 5.0F, 60.0F, 5.0F, true);
    public static MultiBooleanSetting blur = new MultiBooleanSetting(
       "Blur",
-      // Liquid-glass/root FBO пока отключён и для GUI и для HUD: вложенный RenderPass
-      // перехватывал вывод и ломал текст, иконки и предметы. ProGuard-слои и шейдеры
-      // оставлены на месте, чтобы вернуть эффект после отдельной проверки.
+      // HUD: root-FBO blur ломал текст, иконки и предметы — держим выключенным.
+      // GUI: blur рисуется внутри ClickGUI и не трогает игровой HUD — включаем.
       new BooleanSetting("HUD", false),
-      new BooleanSetting("GUI", false)
+      new BooleanSetting("GUI", true)
    );
    private final List<Hud.Notification> notifications = new ArrayList<>();
    private final List<Hud.NotifItem> pendingNotificationItems = new ArrayList<>();
@@ -227,9 +226,8 @@ public class Hud extends Module {
                WaterMark.waterMark(r2);
             }
 
-            if (element.get("Custom Hotbar") && CustomHotbarHud.isActive()) {
-               CustomHotbarHud.render(r2, e.drawContext());
-            }
+            // Раньше здесь дополнительно рисовался CustomHotbarHud — из-за этого на экране
+            // одновременно висели два хотбара (новый и донорский HotBarHUD). Оставляем один.
 
             if (element.get("Armor HUD") && ArmorHud.hasContent()) {
                ArmorHud.render(r2, e.drawContext());

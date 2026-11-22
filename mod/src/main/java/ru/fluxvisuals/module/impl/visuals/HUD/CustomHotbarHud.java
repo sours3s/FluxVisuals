@@ -57,7 +57,7 @@ public final class CustomHotbarHud {
       float step = slot + gap;
       float panelW = SLOT_COUNT * slot + (SLOT_COUNT - 1) * gap;
       float panelH = slot;
-      float x = (mc.getWindow().getWidth() - panelW) * 0.5F;
+      float x = (mc.getWindow().getWidth() - panelW * gs) * 0.5F;
       float y = (mc.getWindow().getScaledHeight() - SLOT_SIZE - 2.0F) * gs;
 
       selectedAnim = AnimationMath.animation(selectedAnim, mc.player.getInventory().getSelectedSlot(), 0.41F);
