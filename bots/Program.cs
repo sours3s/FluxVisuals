@@ -12,12 +12,15 @@ if (mode is not ("news" or "support"))
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Новостному боту не нужно читать сообщения — не запрашиваем привилегированный интент.
+// Support-бот читает вопросы в тикетах, поэтому ему нужны GuildMessages + MessageContent.
+GatewayIntents intents = GatewayIntents.Guilds;
+if (mode == "support")
+    intents |= GatewayIntents.GuildMessages | GatewayIntents.MessageContent | GatewayIntents.DirectMessages;
+
 builder.Services.AddSingleton(new DiscordSocketConfig
 {
-    GatewayIntents = GatewayIntents.Guilds
-        | GatewayIntents.GuildMessages
-        | GatewayIntents.MessageContent
-        | GatewayIntents.DirectMessages,
+    GatewayIntents = intents,
     AlwaysDownloadUsers = false,
     MessageCacheSize = 20
 });
