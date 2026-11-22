@@ -80,6 +80,7 @@ public class KeyBindHUD {
          for (Module module : FluxVisualsClient.get.manager.getModules()) {
             if (module.bind > 0 && (module.enable || module.mAnim.getValue() > 0.001)) {
                Item item = getModuleItem(module);
+               if (item == null) continue;
                ItemStack stack = item.getDefaultStack();
                if (!mc.player.getItemCooldownManager().isCoolingDown(stack)) {
                   active.add(new BindEntry(item, module.bind, item.getDefaultStack()));
@@ -234,7 +235,9 @@ public class KeyBindHUD {
       if (name.contains("freecam")) return Items.COMPASS;
       if (name.contains("xray") || name.contains("esp")) return Items.GLOWSTONE;
       if (name.contains("tracers")) return Items.REDSTONE;
-      return null;
+      // Раньше здесь был null, из-за чего каждый кадр падал EventManager-хендлер
+      // с NPE в getDefaultStack(), когда включался модуль без известного икон-мэппинга.
+      return Items.BOOK;
    }
 
    private static class BindEntry {
@@ -256,6 +259,7 @@ public class KeyBindHUD {
          for (Module module : FluxVisualsClient.get.manager.getModules()) {
             if (module.bind > 0 && (module.enable || module.mAnim.getValue() > 0.001)) {
                Item item = getModuleItem(module);
+               if (item == null) continue;
                ItemStack stack = item.getDefaultStack();
                if (!mc.player.getItemCooldownManager().isCoolingDown(stack)) {
                   return true;

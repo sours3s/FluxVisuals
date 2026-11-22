@@ -46,6 +46,11 @@ public final class HudRenderBridge {
       if (!FluxVisualsClient.isModInitialized()) {
          return;
       }
+      // Не рисуем HUD-оверлей поверх инвентаря/креатива/ClickGUI: это только мешает
+      // отрисовке слотов и создаёт лишние render pass'ы. Чат — исключение, там HUD нужен.
+      if (client.currentScreen != null && !(client.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen)) {
+         return;
+      }
       FluxVisualsClient.ensureRendererInitialized();
       int width = client.getWindow().getFramebufferWidth();
       int height = client.getWindow().getFramebufferHeight();

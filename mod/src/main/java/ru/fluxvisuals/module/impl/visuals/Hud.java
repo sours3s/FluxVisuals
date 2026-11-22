@@ -114,7 +114,9 @@ public class Hud extends Module {
    public final SliderSetting durabilityThreshold = new SliderSetting("Durability %", 15.0F, 5.0F, 60.0F, 5.0F, true);
    public static MultiBooleanSetting blur = new MultiBooleanSetting(
       "Blur",
-      new BooleanSetting("HUD", true),
+      // Размытие HUD отключено по умолчанию: оно ломало отрисовку текста/иконок
+      // и предметов в GUI. Liquid-glass остаётся только в ClickGUI.
+      new BooleanSetting("HUD", false),
       new BooleanSetting("GUI", true)
    );
    private final List<Hud.Notification> notifications = new ArrayList<>();
@@ -570,27 +572,11 @@ public class Hud extends Module {
     * у которых есть DrawContext и которые рисуются внутри одного кадра с captureHudFrame().
     */
    public static void drawClientRect(DrawContext context, Renderer2D r2, float x, float y, float w, float h, float radius, float alpha, float thickness) {
-      if (context == null || !blur.get("HUD")) {
-         drawClientRect(r2, x, y, w, h, radius, alpha, thickness);
-         return;
-      }
-      Color tint = new Color(Renderer2D.ColorUtil.getBackGroundColor(1, 1) & 0xFFFFFF);
-      FluxGlassPipeline.drawLiquidAt(context, x, y, w, h, radius, 34.0F, 4.0F, 0.42F, Math.max(0.0F, Math.min(1.0F, alpha)), tint);
-      if (thickness > 0.0F) {
-         r2.rectOutline(x - 1.0F, y - 1.0F, w + 2.0F, h + 2.0F, radius, ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), alpha * 0.35F), thickness);
-      }
+      drawClientRect(r2, x, y, w, h, radius, alpha, thickness);
    }
 
    public static void drawClientRectLight(DrawContext context, Renderer2D r2, float x, float y, float w, float h, float radius, float alpha, float thickness) {
-      if (context == null || !blur.get("HUD")) {
-         drawClientRectLight(r2, x, y, w, h, radius, alpha, thickness);
-         return;
-      }
-      Color tint = new Color(Renderer2D.ColorUtil.getBackGroundColor(1, 1) & 0xFFFFFF);
-      FluxGlassPipeline.drawLiquidAt(context, x, y, w, h, radius, 24.0F, 2.5F, 0.32F, Math.max(0.0F, Math.min(1.0F, alpha)), tint);
-      if (thickness > 0.0F) {
-         r2.rectOutline(x - 1.0F, y - 1.0F, w + 2.0F, h + 2.0F, radius, ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), alpha * 0.3F), thickness);
-      }
+      drawClientRectLight(r2, x, y, w, h, radius, alpha, thickness);
    }
 
    /**
