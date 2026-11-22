@@ -1,5 +1,7 @@
 package ru.fluxvisuals.utils.cosmetics;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -128,7 +130,22 @@ public final class CosmeticsRepository {
       } else {
          kind = CosmeticEntry.Kind.MODEL;
       }
-      return new CosmeticEntry(dir, id, label(dir.getFileName().toString()), kind);
+      String displayName = label(dir.getFileName().toString());
+      Path metadata = dir.resolve(AVATAR_FILE);
+      if (Files.isRegularFile(metadata)) {
+         try (InputStream in = Files.newInputStream(metadata)) {
+            JsonObject object = JsonParser.parseString(new String(in.readAllBytes(), StandardCharsets.UTF_8)).getAsJsonObject();
+            if (object.has("name") && object.get("name").isJsonPrimitive()) {
+               String customName = object.get("name").getAsString().trim();
+               if (!customName.isEmpty()) {
+                  displayName = customName;
+               }
+            }
+         } catch (Exception ignored) {
+            // Бракованный avatar.json не должен ломать весь каталог косметики.
+         }
+      }
+      return new CosmeticEntry(dir, id, displayName, kind);
    }
 
    private static String label(String folderName) {

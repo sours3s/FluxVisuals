@@ -1,6 +1,7 @@
 package ru.fluxvisuals.ui.fluxgui.config;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 /** Конфигурации GUI FluxVisuals. */
@@ -11,7 +12,8 @@ public final class ConfigManager {
     }
 
     public List<String> listConfigs() {
-        return List.of("default");
+        // Callers sort this list in place, so it must be mutable.
+        return new ArrayList<>(List.of("default"));
     }
 
     public String getActiveConfigName() {

@@ -6,7 +6,7 @@ import ru.fluxvisuals.ui.gui.clickgui.util.model.Translation;
 public enum SpeedMode implements DisplayNamed {
     MATRIX(Lang.SPEED_MODE_MATRIX),
     COLLISION(Lang.SPEED_MODE_COLLISION),
-    HOLYWORLD(Translation.clearText("HolyWorld"));
+    CUSTOM_WORLD(Translation.clearText("Custom World"));
 
     public final Translation displayName;
 

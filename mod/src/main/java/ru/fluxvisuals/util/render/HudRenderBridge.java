@@ -17,6 +17,7 @@ import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.impl.EventScreen;
 import ru.fluxvisuals.event.render.EventRender2D;
 import ru.fluxvisuals.ui.draggable.DraggableManager;
+import ru.fluxvisuals.ui.fluxgui.util.render.FluxGlassPipeline;
 import ru.fluxvisuals.util.render.animation.AnimationSystem;
 import ru.fluxvisuals.util.render.backends.gl.GlState;
 import ru.fluxvisuals.util.render.core.Renderer2D;
@@ -54,9 +55,10 @@ public final class HudRenderBridge {
 
       Framebuffer mainFramebuffer = client.getFramebuffer();
       int tempFbo = 0;
-      int savedDrawFbo = GL11.glGetInteger(36009);
-      int savedReadFbo = GL11.glGetInteger(36008);
-      int savedFbo = GL11.glGetInteger(36006);
+      // glGetInteger принимает именно *BINDING-константы (36011/36010),
+      // а не GL_DRAW_FRAMEBUFFER/GL_READ_FRAMEBUFFER (36009/36008), которые нужны только для glBindFramebuffer.
+      int savedDrawFbo = GL30.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
+      int savedReadFbo = GL30.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING);
       if (mainFramebuffer != null) {
          int mainFramebufferTextureId = ru.fluxvisuals.util.render.utils.FramebufferUtils.getColorTextureId(mainFramebuffer);
          if (mainFramebufferTextureId > 0) {
@@ -68,7 +70,6 @@ public final class HudRenderBridge {
             if (status != 36053) {
                GL30.glDeleteFramebuffers(tempFbo);
                tempFbo = 0;
-               GL30.glBindFramebuffer(36160, savedFbo);
             }
          } else {
             GL30.glBindFramebuffer(36160, 0);
@@ -86,6 +87,8 @@ public final class HudRenderBridge {
          AnimationSystem.getInstance().tick();
          Renderer2D renderer = FluxVisualsClient.getRenderer();
          if (renderer != null) {
+            // Снимок кадра для liquid-glass делает InGameHudMixin на HEAD render,
+            // чтобы стекло размывало мир, а не уже нарисованный ванильный HUD.
             DraggableManager draggableManager = DraggableManager.getInstance();
             draggableManager.beginFrame(client, renderer, width, height);
             boolean rendererBegun = false;
@@ -101,6 +104,8 @@ public final class HudRenderBridge {
                   renderer.end();
                }
                draggableManager.endFrame();
+               // Разблокируем захват кадра для ClickGUI после отрисовки HUD.
+               FluxGlassPipeline.beginRenderFrame();
             }
          }
       } finally {
@@ -129,9 +134,8 @@ public final class HudRenderBridge {
             GL30.glFramebufferTexture2D(36160, 36064, 3553, 0, 0);
          }
 
-         GL30.glBindFramebuffer(36009, savedDrawFbo);
-         GL30.glBindFramebuffer(36008, savedReadFbo);
-         GL30.glBindFramebuffer(36160, savedFbo);
+         GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, savedDrawFbo);
+         GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, savedReadFbo);
          if (tempFbo != 0) {
             GL30.glDeleteFramebuffers(tempFbo);
          }

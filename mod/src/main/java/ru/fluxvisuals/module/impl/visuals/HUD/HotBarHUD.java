@@ -16,7 +16,7 @@ import ru.fluxvisuals.util.render.math.ScaleHelper;
 import java.awt.Color;
 
 /**
- * HotBar HUD — полная реализация из GodWeer (HotbarElement)
+ * HotBar HUD — кастомный хотбар с оффхендом и индикаторами состояния игрока
  * <p>Кастомный хотбар с рендерингом слотов, оффхенда, HP, голод, уровень XP.
  * Не перетаскиваемый, позиция ванильная.
  */

@@ -108,6 +108,18 @@ public class FluxVisualsClient implements ClientModInitializer {
          }
       }
 
+      // HUD — базовый интерфейс клиента. Если в сохранённом конфиге он выключен
+      // (например, после сброса настроек), события рендера не регистрируются и
+      // весь оверлей молча пропадает. Гарантируем, что модуль активен.
+      try {
+         ru.fluxvisuals.module.impl.visuals.Hud hudModule = this.manager.get(ru.fluxvisuals.module.impl.visuals.Hud.class);
+         if (hudModule != null && !hudModule.enable) {
+            hudModule.setState(true);
+         }
+      } catch (Exception e) {
+         LOGGER.warn("{} failed to enable Hud module: {}", NAME, e.getMessage());
+      }
+
       this.guiClient = new GuiClient();
       GuiClient.registerEventHandlers();
       // Register Dynamic Lights world renderer
@@ -122,6 +134,14 @@ public class FluxVisualsClient implements ClientModInitializer {
 
       // Register all tooltips for ClickGUI
       TooltipRegistrar.registerAll();
+
+      // Медиа-сессия Windows для HUD-плеера. Все потоки демонические, поэтому
+      // отдельный shutdown не требуется — процесс завершится вместе с JVM.
+      try {
+         ru.fluxvisuals.util.media.MediaSessionReader.getInstance().start();
+      } catch (Exception e) {
+         LOGGER.warn("{} failed to start media session reader: {}", NAME, e.getMessage());
+      }
 
       modInitialized = true;
       LOGGER.info("{} client initialized ({} modules)", NAME, manager.getModules().size());

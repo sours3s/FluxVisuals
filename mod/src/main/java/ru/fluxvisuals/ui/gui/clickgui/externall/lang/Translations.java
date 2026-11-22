@@ -70,7 +70,7 @@ final class Translations {
         m.put("Скрывает ваш никнейм", "Hides your nickname");
         m.put("Создает фейк игрока [Бан на SP / HW]", "Spawns a fake player [Ban on SP / HW]");
         m.put("МОДУЛЬ ПИСАЛ АКАР МОЖЕТ РОБОТАТЬ ЧЕРЕЗ ОЧКО И ЧУДА АЛЛАХА", "Made by Akar; may only work by sheer luck");
-        m.put("Автоматические заходит на дуэли SpookyTime", "Automatically joins SpookyTime duels");
+        m.put("Автоматически заходит на особые дуэли", "Automatically joins custom duels");
         m.put("Свап предметов по клавише.", "Swaps items with a keybind.");
         m.put("Позволяет использавать придметы без замедления", "Lets you use items without slowdown");
         m.put("Автоматическая аура под кристалы", "Automatic crystal aura");
@@ -375,8 +375,8 @@ final class Translations {
         m.put("Ширина луча", "Beam width");
         m.put("Друзей", "Friends");
         m.put("Всех", "All");
-        m.put("ФанТайм", "FunTime");
-        m.put("Грим", "Grim");
+        m.put("Особый", "Custom");
+        m.put("Строгий", "Strict");
         m.put("Тики", "Ticks");
         m.put("Обычный", "Normal");
         m.put("Простой", "Simple");
@@ -479,7 +479,7 @@ final class Translations {
         m.put("Периодически", "Periodically");
         m.put("При убийстве", "In the event of a murder");
         m.put("Автоматически берет булаву в руку при падении", "Automatically equips mace when falling");
-        m.put("Свап предметов по клавише с умным определением руки, биндом вихря и обходом Grim.", "Keybind item swapping with smart off-hand detection, Vikhry bind, and Grim bypass.");
+        m.put("Свап предметов по клавише с умным определением руки, биндом вихря и обходом проверок.", "Keybind item swapping with smart off-hand detection, Vikhry bind, and server-check bypass.");
         m.put("Первый предмет", "First item");
         m.put("Второй предмет", "Second item");
         m.put("Руна", "Rune");
@@ -489,7 +489,7 @@ final class Translations {
         m.put("Щит", "Shield");
         m.put("Бинд вихря", "Vikhry bind");
         m.put("Игнорировать обычные тотемы", "Ignore regular totems");
-        m.put("Обход Grim", "Grim bypass");
+        m.put("Обход проверок", "Bypass");
         m.put("Уведомления о свапе", "Swap notifications");
         m.put("Анимации тройного", "Triple animations");
         m.put("Двойной", "Double");

@@ -25,7 +25,7 @@
       "ru/fluxvisuals/mixin/**"
     ],
     "controllableRandom": true,
-    "baseSeed": "fluxvisuals-1.0.23",
+    "baseSeed": "fluxvisuals-1.0.24",
     "missingCheck": false,
     "compressionLevel": 6
   },

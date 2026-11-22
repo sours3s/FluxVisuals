@@ -4,8 +4,8 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
 /** Заглушка раздела чата GUI FluxVisuals. */
-public final class IrcChatMessengerScreen extends Screen {
-    public IrcChatMessengerScreen() {
+public final class ChatMessengerScreen extends Screen {
+    public ChatMessengerScreen() {
         super(Text.literal("FluxVisuals Chat"));
     }
 }

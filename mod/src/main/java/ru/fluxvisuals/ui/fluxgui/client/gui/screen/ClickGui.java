@@ -1,6 +1,6 @@
 package ru.fluxvisuals.ui.fluxgui.client.gui.screen;
 
-import ru.fluxvisuals.ui.fluxgui.client.gui.IrcChatMessengerScreen;
+import ru.fluxvisuals.ui.fluxgui.client.gui.ChatMessengerScreen;
 import ru.fluxvisuals.ui.fluxgui.client.gui.font.icon.IconTtfBridge;
 import ru.fluxvisuals.ui.fluxgui.client.gui.hud.Watermark;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.IconRender;
@@ -753,7 +753,7 @@ public class ClickGui extends Screen {
         float listY = pageY + createH + 10.0F;
         float listH = 536.0F - listY - 10.0F;
         RoundedRenderer.drawRoundedRect(context, pageX, listY, pageW, listH, 12.0F, 1073741824);
-        List<String> configs = ConfigManager.INSTANCE.listConfigs();
+        List<String> configs = new ArrayList<>(ConfigManager.INSTANCE.listConfigs());
         configs.sort(String.CASE_INSENSITIVE_ORDER);
         Set<String> present = new HashSet<>(configs);
         CONFIG_ENTRY_ANIMS.keySet().removeIf(namex -> !present.contains(namex));
@@ -1136,7 +1136,7 @@ public class ClickGui extends Screen {
             float listH = 536.0F - listY - 10.0F;
             float listTop = listY + 40.0F;
             float listBottom = listY + listH - 12.0F;
-            List<String> configs = ConfigManager.INSTANCE.listConfigs();
+            List<String> configs = new ArrayList<>(ConfigManager.INSTANCE.listConfigs());
             configs.sort(String.CASE_INSENSITIVE_ORDER);
             float entryH = 58.0F;
             float entryGap = 8.0F;
@@ -1288,13 +1288,13 @@ public class ClickGui extends Screen {
     void renderCosmeticsContent(DrawContext context, float mouseX, float mouseY) {
         float areaX = 257.0F;
         float areaW = 987.0F - areaX - 10.0F;
-        String[] tabKeys = new String[]{"all", "wings", "hats", "back", "pets"};
+        String[] tabKeys = new String[]{"all", "wings", "hats", "weapons", "models"};
         String[] tabNames = new String[]{
             "All (" + CosmeticsManager.INSTANCE.getAllCosmetics().size() + ")",
             "Wings (" + CosmeticsManager.INSTANCE.getByCategory("wings").size() + ")",
             "Hats (" + CosmeticsManager.INSTANCE.getByCategory("hats").size() + ")",
-            "Backpacks (" + CosmeticsManager.INSTANCE.getByCategory("back").size() + ")",
-            "Pets (" + CosmeticsManager.INSTANCE.getByCategory("pets").size() + ")"
+            "Weapons (" + CosmeticsManager.INSTANCE.getByCategory("weapons").size() + ")",
+            "Models (" + CosmeticsManager.INSTANCE.getByCategory("models").size() + ")"
         };
         float tabY = 70.0F - scrollOffset;
         float tabH = 32.0F;
@@ -2578,7 +2578,7 @@ public class ClickGui extends Screen {
                 if (inside(mouseX, mouseY, 22.0F, rowY, 200.0F, 32.0F)) {
                     Category cat = SIDEBAR[index].category();
                     if (cat == Category.MESSENGER) {
-                        MinecraftClient.getInstance().setScreen(new IrcChatMessengerScreen());
+                        MinecraftClient.getInstance().setScreen(new ChatMessengerScreen());
                         return true;
                     }
 
@@ -2613,7 +2613,7 @@ public class ClickGui extends Screen {
             float cardGap = 10.0F;
             float cardW = (areaW - 3.0F * cardGap) / 4.0F;
             float cardH = 145.0F;
-            String[] tabKeys = new String[]{"all", "wings", "hats", "back", "pets"};
+            String[] tabKeys = new String[]{"all", "wings", "hats", "weapons", "models"};
             List<CosmeticItem> cosmetics = CosmeticsManager.INSTANCE.getByCategory(tabKeys[cosmeticsTab]);
 
             for (int indexx = 0; indexx < cosmetics.size(); indexx++) {
@@ -3310,7 +3310,7 @@ public class ClickGui extends Screen {
             return Math.max(0.0F, totalH - 516.0F);
         } else {
             if (selectedCategory == Category.COSMETICS && !isSearchMode()) {
-                String[] tabKeys = new String[]{"all", "wings", "hats", "back", "pets"};
+                String[] tabKeys = new String[]{"all", "wings", "hats", "weapons", "models"};
                 int count = CosmeticsManager.INSTANCE.getByCategory(tabKeys[cosmeticsTab]).size();
                 int rows = (count + 3) / 4;
                 float totalH = 112.0F + rows * 155.0F;

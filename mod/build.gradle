@@ -157,8 +157,8 @@ tasks.register('obfuscateJar', JavaExec) {
 
 		def json = groovy.json.JsonOutput
 		def configText = file('grunteon-config.json').text
-			.replace('__INPUT__', json.toJson(remapJar.archiveFile.get().asFile.absolutePath.replace('\\', '/')))
-			.replace('__OUTPUT__', json.toJson(outJar.get().asFile.absolutePath.replace('\\', '/')))
+			.replace('__INPUT__', remapJar.archiveFile.get().asFile.absolutePath.replace('\\', '/'))
+			.replace('__OUTPUT__', outJar.get().asFile.absolutePath.replace('\\', '/'))
 			.replace('__LIBS__', json.toJson(libs))
 
 		def config = configFile.get().asFile

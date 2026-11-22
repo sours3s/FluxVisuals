@@ -6,7 +6,7 @@ import ru.fluxvisuals.ui.gui.clickgui.util.model.Translation;
 public enum FlightMode implements DisplayNamed {
     VANILLA(Lang.FLIGHT_MODE_VANILLA),
     CREATIVE(Lang.FLIGHT_MODE_CREATIVE),
-    GRIM(Translation.clearText("Grim Blocks"));
+    STRICT(Translation.clearText("Strict Blocks"));
 
     final Translation displayName;
 

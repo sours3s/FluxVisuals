@@ -18,7 +18,7 @@ import ru.fluxvisuals.util.render.shader.ShaderFogPipeline;
 import java.awt.Color;
 
 /**
- * Заменяет обычное небо шейдерным туманом (перенесено из GodWeer).
+ * Заменяет обычное небо шейдерным туманом.
  * Рендер вызывается из WorldRendererMixin.renderSky.
  */
 @IModule(

@@ -160,8 +160,8 @@ public class Lang {
     public static final Translation CLICKPEARL_TYPE_PACKET = registerKey("player.clickpearl.type.packet");
     public static final Translation CLICKPEARL_KEY = registerKey("player.clickpearl.key");
     public static final Translation CLICKPEARL_KEY_DESC = registerKey("player.clickpearl.key.desc");
-    public static final Translation SCREENWALK_FUNTIME_BYPASS = registerKey("player.screenwalk.funtimeBypass");
-    public static final Translation SCREENWALK_FUNTIME_BYPASS_DESC = registerKey("player.screenwalk.funtimeBypass.desc");
+    public static final Translation SCREENWALK_CUSTOM_BYPASS = registerKey("player.screenwalk.customBypass");
+    public static final Translation SCREENWALK_CUSTOM_BYPASS_DESC = registerKey("player.screenwalk.customBypass.desc");
     public static final Translation NOFALL_MODE_SPOOF_GROUND = register(Translation.clearText("Spoof Ground"));
     public static final Translation NOFALL_MODE_NO_GROUND = register(Translation.clearText("No Ground"));
     public static final Translation NOFALL_MODE_PACKET = register(Translation.clearText("Packet"));
@@ -387,10 +387,10 @@ public class Lang {
     public static final Translation ATTACKAURA_NO_HIT_WHILE_EATING_OFFHAND = registerKey("combat.attackaura.noHitWhileEatingOffhand");
     public static final Translation ATTACKAURA_ROTATION_MODE = registerKey("combat.attackaura.rotationMode");
     public static final Translation ATTACKAURA_ROTATION_MODE_DESC = registerKey("combat.attackaura.rotationMode.desc");
-    public static final Translation ATTACKAURA_ROTATION_MODE_FUNTIME = registerKey("combat.attackaura.rotationMode.funtime");
-    public static final Translation ATTACKAURA_ROTATION_MODE_SPOOKYTIME = registerKey("combat.attackaura.rotationMode.spookytime");
-    public static final Translation ATTACKAURA_ROTATION_MODE_HOLYWORLD = registerKey("combat.attackaura.rotationMode.holyworld");
-    public static final Translation ATTACKAURA_ROTATION_MODE_GRIM = registerKey("combat.attackaura.rotationMode.grim");
+    public static final Translation ATTACKAURA_ROTATION_MODE_CUSTOM = registerKey("combat.attackaura.rotationMode.custom");
+    public static final Translation ATTACKAURA_ROTATION_MODE_CUSTOM_DUELS = registerKey("combat.attackaura.rotationMode.customDuels");
+    public static final Translation ATTACKAURA_ROTATION_MODE_CUSTOM_WORLD = registerKey("combat.attackaura.rotationMode.customWorld");
+    public static final Translation ATTACKAURA_ROTATION_MODE_STRICT = registerKey("combat.attackaura.rotationMode.strict");
     public static final Translation ATTACKAURA_MOVE_CORRECTION = registerKey("combat.attackaura.moveCorrection");
     public static final Translation ATTACKAURA_MOVE_CORRECTION_DESC = registerKey("combat.attackaura.moveCorrection.desc");
     public static final Translation ATTACKAURA_MOVE_CORRECTION_NONE = registerKey("combat.attackaura.moveCorrection.none");
@@ -416,7 +416,7 @@ public class Lang {
     public static final Translation ATTACKAURA_SORT_BY_DISTANCE = registerKey("combat.attackaura.sortType.distance");
     public static final Translation ATTACKAURA_SORT_BY_ALL = registerKey("combat.attackaura.sortType.all");
     public static final Translation AUTOWEB_PLACEKEY = registerKey("combat.autoweb.placeKey");
-    public static final Translation AUTOWEB_MODE_GRIM = registerKey("combat.autoweb.mode.grim");
+    public static final Translation AUTOWEB_MODE_STRICT = registerKey("combat.autoweb.mode.strict");
     public static final Translation AUTOWEB_MODE_UNIVERSAL = registerKey("combat.autoweb.mode.universal");
     public static final Translation AUTOWEB_PREDICT_TICKS = registerKey("combat.autoweb.predictTicks");
     public static final Translation AUTOWEB_PREDICT_TICKS_DESC = registerKey("combat.autoweb.predictTicks.desc");
@@ -770,8 +770,8 @@ public class Lang {
     public static final Translation COMBAT_AUTOSWAP_VALUE_FOOD = registerKey("combat.autoswap.value.food");
     public static final Translation COMBAT_AUTOSWAP_VALUE_GAPPLE = registerKey("combat.autoswap.value.gapple");
     public static final Translation COMBAT_AUTOSWAP_VALUE_FIREWORK = registerKey("combat.autoswap.value.firework");
-    public static final Translation COMBAT_AUTOSWAP_GRIM = registerKey("combat.autoswap.grim");
-    public static final Translation COMBAT_AUTOSWAP_GRIM_DESC = registerKey("combat.autoswap.grim.desc");
+    public static final Translation COMBAT_AUTOSWAP_STRICT = registerKey("combat.autoswap.strict");
+    public static final Translation COMBAT_AUTOSWAP_STRICT_DESC = registerKey("combat.autoswap.strict.desc");
     public static final Translation COMBAT_AUTOSWAP_SWAPKEY = registerKey("combat.autoswap.swapKey");
     public static final Translation COMBAT_AUTOSWAP_SWAPKEY_DESC = registerKey("combat.autoswap.swapKey.desc");
     public static final Translation COMBAT_FASTBOW_TICKS = registerKey("combat.fastbow.ticks");
@@ -781,8 +781,8 @@ public class Lang {
     public static final Translation COMBAT_AUTOEXPLOSION_EXPLOSIONDELAY = registerKey("combat.autoexplosion.explosionDelay");
     public static final Translation COMBAT_AUTOTOTEM_HEALTH = registerKey("combat.autototem.health");
     public static final Translation COMBAT_AUTOTOTEM_HEALTH_DESC = registerKey("combat.autototem.health.desc");
-    public static final Translation COMBAT_AUTOTOTEM_GRIM = registerKey("combat.autototem.grim");
-    public static final Translation COMBAT_AUTOTOTEM_GRIM_DESC = registerKey("combat.autototem.grim.desc");
+    public static final Translation COMBAT_AUTOTOTEM_STRICT = registerKey("combat.autototem.strict");
+    public static final Translation COMBAT_AUTOTOTEM_STRICT_DESC = registerKey("combat.autototem.strict.desc");
     public static final Translation COMBAT_AUTOTOTEM_COUNTER = registerKey("combat.autototem.counter");
     public static final Translation COMBAT_AUTOTOTEM_COUNT_ENCHANTED = registerKey("combat.autototem.counter.countEnchanted");
     public static final Translation COMBAT_AUTOTOTEM_OPTIONS = registerKey("combat.autototem.options");
@@ -952,7 +952,7 @@ public class Lang {
     public static final Translation SWAP_METHOD_DESC = registerKey("swap.method.desc");
     public static final Translation SWAP_METHOD_AUTO = registerKey("swap.method.auto");
     public static final Translation SWAP_METHOD_VANILLA = registerKey("swap.method.vanilla");
-    public static final Translation SWAP_METHOD_GRIM = registerKey("swap.method.grim");
+    public static final Translation SWAP_METHOD_STRICT = registerKey("swap.method.strict");
     public static final Translation SWAP_METHOD_DELAYED = registerKey("swap.method.delayed");
     public static final Translation SWAP_METHOD_SEQUENTIAL = registerKey("swap.method.sequential");
     public static final Map<Language, StringLookup> languageLookups = (Map) Arrays.stream(Language.values()).collect(Collectors.toMap(Function.identity(), language313 -> {

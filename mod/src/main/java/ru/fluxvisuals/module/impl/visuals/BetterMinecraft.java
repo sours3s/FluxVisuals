@@ -20,7 +20,7 @@ import ru.fluxvisuals.util.render.animation.util.Animation;
 import ru.fluxvisuals.util.render.animation.util.Easings;
 
 /**
- * Анимации интерфейса: инвентарь, таб, чат и хотбар (перенесено из GodWeer).
+ * Анимации интерфейса: инвентарь, таб, чат и хотбар.
  * Анимации применяются в миксинах HandleScreen/InventoryScreen/Tab/ChatHud/InGameHud.
  */
 @IModule(

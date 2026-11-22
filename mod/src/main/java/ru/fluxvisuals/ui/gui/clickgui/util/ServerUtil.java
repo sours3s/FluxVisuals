@@ -65,7 +65,7 @@ public final class ServerUtil {
         Scoreboard scoreboard = Mc.INSTANCE.getWorld().getScoreboard();
         ScoreboardObjective objectiveForSlot = scoreboard.getObjectiveForSlot(ScoreboardDisplaySlot.SIDEBAR);
         switch (server) {
-            case "FunTime":
+            case "Custom":
                 if (objectiveForSlot == null) {
                     return -1;
                 }
@@ -74,7 +74,7 @@ public final class ServerUtil {
                     return Integer.parseInt(strArrSplit[1]);
                 }
                 return -1;
-            case "HolyWorld":
+            case "Custom Anarchy":
                 Pattern patternCompile = Pattern.compile("^(.*?)#(\\d+)(?:\\s*\\(1\\.20\\))?");
                 for (ScoreboardEntry scoreboardEntry : scoreboard.getScoreboardEntries(objectiveForSlot)) {
                     String string = Team.decorateName(scoreboard.getScoreHolderTeam(scoreboardEntry.comp_2127()), scoreboardEntry.name()).getString();
@@ -98,19 +98,19 @@ public final class ServerUtil {
         String lowerCase = Mc.INSTANCE.getServerInfo().address.toLowerCase();
         String strRemoveSymbols = StringUtil.removeSymbols(Mc.INSTANCE.getNetworkHandler().getBrand().toLowerCase());
         if (strRemoveSymbols.contains("botfilter")) {
-            return "FunTime";
+            return "Custom";
         }
-        if (lowerCase.contains("funtime") || lowerCase.contains("skytime") || lowerCase.contains("space-times") || lowerCase.contains("funsky")) {
-            return "CopyTime";
+        if (lowerCase.contains("customtime") || lowerCase.contains("customtime2") || lowerCase.contains("custom-space") || lowerCase.contains("customsky")) {
+            return "Custom Server";
         }
-        if (strRemoveSymbols.contains("holywоrld") || strRemoveSymbols.contains("vk.com/idwok")) {
-            return "HolyWorld";
+        if (strRemoveSymbols.contains("customworld") || strRemoveSymbols.contains("customanarchy")) {
+            return "Custom Anarchy";
         }
         if (lowerCase.contains("reallyworld") || strRemoveSymbols.contains("reallyworld")) {
             return "ReallyWorld";
         }
-        if (lowerCase.contains("spookytime") || strRemoveSymbols.contains("spookytime")) {
-            return "SpookyTime";
+        if (lowerCase.contains("customduels") || strRemoveSymbols.contains("customduels")) {
+            return "Custom Duels";
         }
         if (lowerCase.contains("aresmine") || strRemoveSymbols.contains("Folia (Velocity)")) {
             return "AresMine";
@@ -125,8 +125,8 @@ public final class ServerUtil {
         return server.toLowerCase().contains(str);
     }
 
-    public static boolean isConnectedToAllFuntimeServers() {
-        return server.equalsIgnoreCase("funtime") || server.equalsIgnoreCase("copytime");
+    public static boolean isConnectedToAllCustomServers() {
+        return server.equalsIgnoreCase("custom") || server.equalsIgnoreCase("custom server");
     }
 
     public static String getServerIp() {

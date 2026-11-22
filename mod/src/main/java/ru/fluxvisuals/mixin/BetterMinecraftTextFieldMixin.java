@@ -26,7 +26,7 @@ import java.util.Map;
 
 /**
  * Анимация букв в поле ввода (чат): каждая новая буква «выпрыгивает»
- * (easeOutBack) при наборе. Перенесено из GodWeer.
+ * (easeOutBack) при наборе.
  */
 @Environment(EnvType.CLIENT)
 @Mixin(TextFieldWidget.class)

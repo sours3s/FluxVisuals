@@ -1,5 +1,6 @@
 package ru.fluxvisuals.module.impl.visuals;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Generated;
@@ -22,13 +23,20 @@ import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
 import ru.fluxvisuals.module.api.setting.impl.MultiBooleanSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 import ru.fluxvisuals.module.impl.visuals.HUD.ArrayListHUD;
+import ru.fluxvisuals.module.impl.visuals.HUD.ArmorHud;
+import ru.fluxvisuals.module.impl.visuals.HUD.CooldownsHud;
+import ru.fluxvisuals.module.impl.visuals.HUD.CustomHotbarHud;
 import ru.fluxvisuals.module.impl.visuals.HUD.HotBarHUD;
+import ru.fluxvisuals.module.impl.visuals.HUD.HotkeysHud;
 import ru.fluxvisuals.module.impl.visuals.HUD.InformationHUD;
+import ru.fluxvisuals.module.impl.visuals.HUD.InventoryHud;
 import ru.fluxvisuals.module.impl.visuals.HUD.KeyBindHUD;
+import ru.fluxvisuals.module.impl.visuals.HUD.MediaPlayerHud;
 import ru.fluxvisuals.module.impl.visuals.HUD.PotionsHUD;
 import ru.fluxvisuals.module.impl.visuals.HUD.TargetHUD;
 import ru.fluxvisuals.module.impl.visuals.HUD.WaterMark;
 import ru.fluxvisuals.ui.draggable.DraggableManager;
+import ru.fluxvisuals.ui.fluxgui.util.render.FluxGlassPipeline;
 import ru.fluxvisuals.util.color.ColorUtil;
 import ru.fluxvisuals.util.render.animation.util.Animation;
 import ru.fluxvisuals.util.render.animation.util.Easings;
@@ -45,6 +53,8 @@ import ru.fluxvisuals.util.render.text.FontRegistry;
 public class Hud extends Module {
    public static Animation animC = new Animation();
    public static Animation editHintAnim = new Animation();
+   /** DrawContext текущего кадра HUD; нужен liquid-glass панелям, у которых нет ctx в сигнатуре. */
+   private static DrawContext currentDrawContext;
    public static MultiBooleanSetting element = new MultiBooleanSetting(
       "Interface Elements",
       new BooleanSetting("Watermark", true),
@@ -53,8 +63,14 @@ public class Hud extends Module {
       new BooleanSetting("TargetHUD", true),
       new BooleanSetting("Notifications", true),
       new BooleanSetting("Keybind List", true),
+      new BooleanSetting("Hotkeys", false),
       new BooleanSetting("Potion List", true),
-      new BooleanSetting("Hotbar Binds", true)
+      new BooleanSetting("Hotbar Binds", true),
+      new BooleanSetting("Armor HUD", true),
+      new BooleanSetting("Inventory HUD", true),
+      new BooleanSetting("Media Player", true),
+      new BooleanSetting("Cooldowns", true),
+      new BooleanSetting("Custom Hotbar", true)
    );
 
    // Статические методы для проверки элементов HUD (используются в миксинах, чтобы избежать проблем с байткодом)
@@ -72,6 +88,16 @@ public class Hud extends Module {
       if (element == null) return false;
       for (BooleanSetting setting : element.settings) {
          if ("Hotbar Binds".equals(setting.name)) {
+            return setting.get();
+         }
+      }
+      return false;
+   }
+
+   public static boolean isCustomHotbarActive() {
+      if (element == null) return false;
+      for (BooleanSetting setting : element.settings) {
+         if ("Custom Hotbar".equals(setting.name)) {
             return setting.get();
          }
       }
@@ -180,6 +206,8 @@ public class Hud extends Module {
 
    @EventInit
    public void onRender(EventScreen e) {
+      currentDrawContext = e.drawContext();
+      try {
       if (mc.player != null && mc.world != null) {
          Renderer2D r2 = e.renderer();
          if (r2 != null) {
@@ -194,6 +222,26 @@ public class Hud extends Module {
 
             if (element.get("Watermark")) {
                WaterMark.waterMark(r2);
+            }
+
+            if (element.get("Custom Hotbar") && CustomHotbarHud.isActive()) {
+               CustomHotbarHud.render(r2, e.drawContext());
+            }
+
+            if (element.get("Armor HUD") && ArmorHud.hasContent()) {
+               ArmorHud.render(r2, e.drawContext());
+            }
+
+            if (element.get("Inventory HUD") && InventoryHud.hasContent()) {
+               InventoryHud.render(r2, e.drawContext());
+            }
+
+            if (element.get("Media Player") && MediaPlayerHud.hasContent()) {
+               MediaPlayerHud.render(r2, e.drawContext());
+            }
+
+            if (element.get("Cooldowns") && CooldownsHud.hasContent()) {
+               CooldownsHud.render(r2, e.drawContext());
             }
 
             if (element.get("Information")) {
@@ -230,6 +278,16 @@ public class Hud extends Module {
                }
             }
 
+            // Компактный список хоткеев — альтернатива Keybind List, по умолчанию выключен,
+            // чтобы два похожих элемента не накладывались друг на друга.
+            if (element.get("Hotkeys")) {
+               if (HotkeysHud.hasContent()) {
+                  HotkeysHud.render(r2);
+               } else if (chatOpen) {
+                  renderEmptyPlaceholder(r2, "hotkeysHud", "Hotkeys", 20.0F, 200.0F);
+               }
+            }
+
             if (element.get("Hotbar Binds")) {
                if (mc.player != null && mc.world != null) {
                   HotBarHUD.renderHotbar(e.drawContext(), mc.getRenderTickCounter());
@@ -238,6 +296,9 @@ public class Hud extends Module {
 
             renderEditHints(r2, e.viewportWidth(), e.viewportHeight());
          }
+      }
+      } finally {
+         currentDrawContext = null;
       }
    }
 
@@ -487,6 +548,10 @@ public class Hud extends Module {
    }
 
    public static void drawClientRect(Renderer2D r2, float x, float y, float w, float h, float radius, float alpha, float thickness) {
+      if (currentDrawContext != null && blur.get("HUD")) {
+         drawClientRect(currentDrawContext, r2, x, y, w, h, radius, alpha, thickness);
+         return;
+      }
       r2.shadow(x, y, w, h, radius, 8.6F, 0.5F, ColorUtil.getColor(0, alpha * 0.15F));
       if (blur.get("HUD")) {
          r2.prepareBlur(23.0F);
@@ -497,6 +562,35 @@ public class Hud extends Module {
          r2.rectOutline(x - 1.0F, y - 1.0F, w + 2.0F, h + 2.0F, radius, ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), alpha * 0.1F), thickness);
       }
       r2.rect(x, y, w, h, radius, ColorUtil.replAlpha(Renderer2D.ColorUtil.getBackGroundColor(1, 1), alpha * 0.7F));
+   }
+
+   /**
+    * Liquid-glass вариант панели HUD. Использует уже существующий FluxGlassPipeline,
+    * поэтому стекло выглядит так же, как в ClickGUI. Вызывается только из HUD-элементов,
+    * у которых есть DrawContext и которые рисуются внутри одного кадра с captureHudFrame().
+    */
+   public static void drawClientRect(DrawContext context, Renderer2D r2, float x, float y, float w, float h, float radius, float alpha, float thickness) {
+      if (context == null || !blur.get("HUD")) {
+         drawClientRect(r2, x, y, w, h, radius, alpha, thickness);
+         return;
+      }
+      Color tint = new Color(Renderer2D.ColorUtil.getBackGroundColor(1, 1) & 0xFFFFFF);
+      FluxGlassPipeline.drawLiquidAt(context, x, y, w, h, radius, 34.0F, 4.0F, 0.42F, Math.max(0.0F, Math.min(1.0F, alpha)), tint);
+      if (thickness > 0.0F) {
+         r2.rectOutline(x - 1.0F, y - 1.0F, w + 2.0F, h + 2.0F, radius, ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), alpha * 0.35F), thickness);
+      }
+   }
+
+   public static void drawClientRectLight(DrawContext context, Renderer2D r2, float x, float y, float w, float h, float radius, float alpha, float thickness) {
+      if (context == null || !blur.get("HUD")) {
+         drawClientRectLight(r2, x, y, w, h, radius, alpha, thickness);
+         return;
+      }
+      Color tint = new Color(Renderer2D.ColorUtil.getBackGroundColor(1, 1) & 0xFFFFFF);
+      FluxGlassPipeline.drawLiquidAt(context, x, y, w, h, radius, 24.0F, 2.5F, 0.32F, Math.max(0.0F, Math.min(1.0F, alpha)), tint);
+      if (thickness > 0.0F) {
+         r2.rectOutline(x - 1.0F, y - 1.0F, w + 2.0F, h + 2.0F, radius, ColorUtil.replAlpha(Renderer2D.ColorUtil.getOutLineColor(1, 1), alpha * 0.3F), thickness);
+      }
    }
 
    /**

@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.OptionalInt;
 
 /**
- * Рендер шейдерного неба поверх цветового буфера. Перенесено из GodWeer.
+ * Рендер шейдерного неба поверх цветового буфера.
  * Рисует полный экранный треугольник через кастомный RenderPipeline
  * (см. {@link ClientPipelines}) с uniform-буфером ShaderFogData.
  */
