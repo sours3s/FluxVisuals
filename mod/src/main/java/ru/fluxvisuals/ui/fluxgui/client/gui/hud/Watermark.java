@@ -1,5 +1,6 @@
 package ru.fluxvisuals.ui.fluxgui.client.gui.hud;
 
+import ru.fluxvisuals.ui.fluxgui.client.gui.render.BrandLogo;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.IconRender;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.RoundedRenderer;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.TextRender;
@@ -142,7 +143,7 @@ public final class Watermark implements HudElement {
         float iconX = centerX - size / 2.0F;
         float iconY = centerY - size / 2.0F;
         drawCompactGlow(context, iconX, iconY, size, color);
-        IconRender.draw(context, "logo", iconX, iconY, size, color);
+        BrandLogo.draw(context, iconX, iconY, size);
         return true;
     }
 
