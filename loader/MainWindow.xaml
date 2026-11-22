@@ -14,5 +14,10 @@
     </WindowChrome.WindowChrome>
     <Grid>
         <wv2:WebView2 x:Name="WebView" />
+        <!-- Непрозрачная для мыши полоса поверх WebView: только шапка слева от кнопок.
+             Даёт нормальное перетаскивание окна и двойной клик на разворачивание. -->
+        <Border x:Name="DragStrip" Height="48" VerticalAlignment="Top" HorizontalAlignment="Stretch"
+                Margin="0,0,186,0" Background="Transparent" Cursor="SizeAll" Panel.ZIndex="5"
+                PreviewMouseLeftButtonDown="DragStrip_PreviewMouseLeftButtonDown" />
     </Grid>
 </Window>

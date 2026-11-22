@@ -4,7 +4,13 @@
   const $$ = (sel) => [...document.querySelectorAll(sel)];
 
   const send = (obj) => chrome.webview.postMessage(obj);
-  const fmt = (n) => (n / 1024 / 1024).toFixed(1) + ' МБ';
+  const fmt = (n) => {
+    n = Number(n) || 0;
+    if (n >= 1024 * 1024 * 1024) return (n / 1024 / 1024 / 1024).toFixed(1) + ' ГБ';
+    if (n >= 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + ' МБ';
+    if (n >= 1024) return (n / 1024).toFixed(0) + ' КБ';
+    return n + ' Б';
+  };
 
   let state = {
     config: null,
@@ -13,16 +19,31 @@
     hasAccess: false,
     accessExpiresAt: null,
     mods: [],
+    modpacks: [],
+    modpackIds: new Set(),
     fileFilter: '',
     shop: {
       source: 'modrinth', type: 'mod', category: '', loader: 'fabric', sort: 'downloads',
       items: [], offset: 0, total: 0, seq: 0, busy: false, catsLoaded: false,
-      versions: {},   // кэш списка версий по id проекта
+      versions: {},           // кэш списка версий по id проекта
       versionsLoading: new Set(),
     },
+    downloads: new Map(),     // id -> { id, title, file, done, total, percent, status }
   };
   let launching = false;
   let authenticated = false;
+
+  // ---------- Оформление: акцент из настроек ----------
+  function applyAccent(cfg) {
+    const hex = (v, def) => '#' + (((v ?? def) & 0xffffff) >>> 0).toString(16).padStart(6, '0');
+    const root = document.documentElement.style;
+    root.setProperty('--accent', hex(cfg.accent, 0x7c5cff));
+    root.setProperty('--accent3', hex(cfg.accentSecond, 0xec4899));
+    const c1 = hex(cfg.accent, 0x7c5cff).slice(1).match(/../g).map(x => parseInt(x, 16));
+    const c3 = hex(cfg.accentSecond, 0xec4899).slice(1).match(/../g).map(x => parseInt(x, 16));
+    root.setProperty('--accent-rgb', c1.join(', '));
+    root.setProperty('--accent3-rgb', c3.join(', '));
+  }
 
   // ---------- Авторизация ----------
   function showLogin() {
@@ -77,9 +98,42 @@
   $('#btnMin').addEventListener('click', () => send({ cmd: 'minimize' }));
   $('#btnMax').addEventListener('click', () => send({ cmd: 'toggleMaximize' }));
   $('#btnClose').addEventListener('click', () => send({ cmd: 'close' }));
-  document.querySelector('.tb-drag').addEventListener('mousedown', (e) => {
+  $('.tb-drag').addEventListener('mousedown', (e) => {
     if (e.button === 0 && e.target === e.currentTarget) send({ cmd: 'drag' });
   });
+
+  // ---------- Монитор загрузок ----------
+  $('#btnDownloads').addEventListener('click', () => $('#downloadPanel').classList.toggle('show'));
+  $('#dpClose').addEventListener('click', () => $('#downloadPanel').classList.remove('show'));
+
+  function renderDownloads() {
+    const list = $('#downloadList');
+    const badge = $('#dlBadge');
+    const btn = $('#btnDownloads');
+    const all = [...state.downloads.values()];
+    const active = all.filter((d) => d.status === 'loading');
+    const failed = all.filter((d) => d.status === 'error');
+
+    badge.textContent = String(active.length || failed.length || '');
+    badge.classList.toggle('show', active.length > 0 || failed.length > 0);
+    btn.classList.toggle('busy', active.length > 0);
+
+    if (!all.length) {
+      list.innerHTML = '<div class="dp-empty">Загрузок пока нет.<br>Установите что-нибудь из мастерской.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    all.slice(-12).forEach((d) => {
+      const row = document.createElement('div');
+      row.className = 'dp-item' + (d.status === 'done' ? ' done' : d.status === 'error' ? ' error' : '');
+      const pct = d.percent != null ? Math.round(d.percent) : 0;
+      row.innerHTML = `
+        <div class="dp-item-top"><span>${esc(d.title)}</span><span>${d.status === 'error' ? 'ошибка' : d.status === 'done' ? 'готово' : pct + '%'}</span></div>
+        <div class="dp-file">${esc(d.file || '')}${d.total > 0 ? ' · ' + fmt(d.done) + ' / ' + fmt(d.total) : ''}</div>
+        <div class="dp-bar"><div class="dp-fill" style="width:${d.status === 'error' ? 100 : pct}%"></div></div>`;
+      list.appendChild(row);
+    });
+  }
 
   // ---------- Приём событий от C# ----------
   chrome.webview.addEventListener('message', (e) => {
@@ -95,6 +149,7 @@
         state.role = msg.config?.role || 'user';
         state.hasAccess = !!msg.config?.hasAccess;
         state.accessExpiresAt = msg.config?.accessExpiresAt || null;
+        applyAccent(msg.config || {});
         if (msg.config?.authServerUrl) $('#loginUrl').value = msg.config.authServerUrl;
         renderHome(msg.config);
         renderSettings(msg.config);
@@ -107,6 +162,11 @@
           state.role = msg.role || state.config?.role || 'user';
           state.hasAccess = !!msg.hasAccess;
           state.accessExpiresAt = msg.accessExpiresAt || null;
+          if (state.config) {
+            state.config.username = msg.username || state.config.username;
+            state.config.role = state.role;
+            state.config.hasAccess = state.hasAccess;
+          }
           setAuthState(true);
           renderSettings(state.config);
           renderHome(state.config);
@@ -124,7 +184,13 @@
         state.role = msg.role || 'user';
         state.hasAccess = !!msg.hasAccess;
         state.accessExpiresAt = msg.accessExpiresAt || null;
-        if (state.config) state.config.isAdmin = state.isAdmin;
+        if (state.config) {
+          state.config.isAdmin = state.isAdmin;
+          state.config.role = state.role;
+          state.config.hasAccess = state.hasAccess;
+          state.config.username = msg.username || state.config.username;
+          state.config.uid = msg.uid ?? state.config.uid;
+        }
         setAuthState(true);
         renderSettings(state.config);
         renderHome(state.config);
@@ -139,6 +205,7 @@
       }
       case 'authLogout': {
         authenticated = false;
+        state.hasAccess = false;
         setAuthState(false);
         showLogin();
         break;
@@ -148,12 +215,15 @@
         state.mods = msg.files || msg.mods || [];
         if (msg.installed) state.shop.installed = new Set(msg.installed);
         renderFiles(state.mods);
-        // Обновляем карточки магазина, чтобы кнопка «Установлено» появилась сразу после установки
+        if (state.shop.items && state.shop.items.length) renderShop(state.shop.items);
+        break;
+      case 'modpacks':
+        state.modpacks = msg.modpacks || [];
+        state.modpackIds = new Set((msg.installedIds || state.modpacks.map((p) => p.id)).map(String));
+        renderFiles(state.mods);
         if (state.shop.items && state.shop.items.length) renderShop(state.shop.items);
         break;
       case 'folderPicked':
-        // Обязательно синхронизируем state.config — иначе сохранение настроек/запуск
-        // перезапишут выбранный путь старым (баг «выбрал диск D, а качает на C»).
         if (msg.key === 'gameDir') {
           if (state.config) state.config.gameDir = msg.path;
           $('#setGameDirPath').textContent = msg.path || '—';
@@ -163,7 +233,7 @@
         }
         break;
       case 'searchResult':
-        if (msg.seq !== state.shop.seq) return; // устаревший ответ (пользователь уже переключился)
+        if (msg.seq !== state.shop.seq) return;
         state.shop.busy = false;
         state.shop.source = msg.source;
         const items = msg.items || [];
@@ -173,7 +243,7 @@
         renderShop(state.shop.items);
         break;
       case 'installResult':
-        toast(msg.ok ? `Установлено: ${msg.file}` : `Ошибка: ${msg.message}`);
+        toast(msg.ok ? `Установлено: ${msg.file}` : `Ошибка: ${msg.message}`, !msg.ok);
         break;
       case 'catalogMeta':
         if (msg.source === state.shop.source) renderCategories(msg.categories || []);
@@ -181,6 +251,31 @@
       case 'versions':
         renderVersions(msg.id, msg.versions || []);
         break;
+      case 'downloadProgress': {
+        const d = state.downloads.get(msg.id) || {
+          id: msg.id, title: msg.title || 'Загрузка', file: '', done: 0, total: 0, percent: 0, status: 'loading',
+        };
+        d.title = msg.title || d.title;
+        d.file = msg.file || d.file;
+        d.done = msg.done || 0;
+        d.total = msg.total || 0;
+        d.percent = msg.percent || 0;
+        d.status = 'loading';
+        state.downloads.set(msg.id, d);
+        renderDownloads();
+        break;
+      }
+      case 'downloadDone': {
+        const d = state.downloads.get(msg.id);
+        if (d) {
+          d.status = msg.ok ? 'done' : 'error';
+          if (!msg.ok) d.file = msg.message || d.file;
+          if (msg.ok) d.percent = 100;
+          state.downloads.set(msg.id, d);
+          renderDownloads();
+        }
+        break;
+      }
       case 'progress':
         showProgress(msg.step, msg.percent, msg.message);
         break;
@@ -190,7 +285,6 @@
           $('#btnLaunch').disabled = false;
           toast('Minecraft запущен!');
           setTimeout(hideProgress, 400);
-          // Игра пошла — закрываем лоадер, чтобы остался только процесс Minecraft.
           setTimeout(() => send({ cmd: 'close' }), 700);
         } else if (msg.state === 'error') {
           launching = false;
@@ -210,24 +304,25 @@
 
   // ---------- Главная ----------
   function renderHome(cfg) {
-    // «Игрок» на главной = Minecraft-ник (с ним заходишь на сервера)
+    if (!cfg) return;
     $('#homeUser').textContent = cfg.mcNickname || cfg.username || 'Player';
-    $('#homeUid').textContent = cfg.uid ? 'UID ' + cfg.uid : '—';
-    $('#homeVersion').textContent = cfg.version;
-    $('#homeRam').textContent = cfg.ramMb + ' МБ';
-    $('#sfUserName').textContent = cfg.username;
-    // avatar uses FluxVisuals logo image
-    $('#ramLabel').textContent = Math.round(cfg.ramMb / 1024) + ' ГБ';
-    $('#ramFill').style.width = Math.min(100, (cfg.ramMb / 16384) * 100) + '%';
+    $('#homeUid').textContent = cfg.username || '—';
+    $('#homeVersion').textContent = cfg.version || '1.21.11';
+    $('#homeRam').textContent = (cfg.ramMb || 4096) + ' МБ';
+    $('#sfUserName').textContent = cfg.username || 'Player';
+    const roleName = state.role === 'admin' ? 'Администратор'
+      : state.role === 'client' ? 'FluxVisuals' : 'Бесплатный доступ';
+    $('#sfUserRole').textContent = roleName;
+    $('#ramLabel').textContent = Math.round((cfg.ramMb || 4096) / 1024) + ' ГБ';
+    $('#ramFill').style.width = Math.min(100, ((cfg.ramMb || 4096) / 16384) * 100) + '%';
 
-    // Статус доступа
     const acc = $('#homeAccess');
     if (state.hasAccess) {
-      acc.textContent = 'Активен ✓';
-      acc.style.color = '#4ade80';
+      acc.textContent = 'Бесплатный';
+      acc.style.color = 'var(--green)';
     } else {
-      acc.textContent = state.role === 'user' ? 'Нет (купи)' : 'Истёк';
-      acc.style.color = '#f85149';
+      acc.textContent = authenticated ? 'Нужен вход' : 'Войдите в аккаунт';
+      acc.style.color = 'var(--yellow)';
     }
   }
 
@@ -240,51 +335,92 @@
     send({ cmd: 'launch', config: state.config });
   });
 
-  // ---------- Мои файлы (моды + шейдеры + ресурспаки) ----------
-  const FILE_TYPE_NAMES = { mod: 'Мод', shader: 'Шейдер', resourcepack: 'Ресурспак' };
+  // ---------- Мои файлы ----------
+  const FILE_TYPE_NAMES = { mod: 'Мод', shader: 'Шейдер', resourcepack: 'Ресурспак', modpack: 'Модпак' };
+  const SITE_ICON = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" stroke="currentColor" stroke-width="1.5"/></svg>';
+  const DELETE_ICON = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  const FILE_ICONS = {
+    mod: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l2.2 2.2h3.3a1 1 0 011 1v3.3L21 12l-2.5 2.5v3.3a1 1 0 01-1 1h-3.3L12 21l-2.2-2.2H6.5a1 1 0 01-1-1v-3.3L3 12l2.5-2.5V6.2a1 1 0 011-1h3.3z" stroke="currentColor" stroke-width="1.6"/></svg>',
+    shader: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z" fill="currentColor"/></svg>',
+    resourcepack: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2.8l8 4.6v9.2l-8 4.6-8-4.6V7.4z" stroke="currentColor" stroke-width="1.5"/><path d="M4 7.4l8 4.6 8-4.6M12 12v9.2" stroke="currentColor" stroke-width="1.5"/></svg>',
+    modpack: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M3 9h18M8 4v5M8 14h8M8 17h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  };
+
+  function fileSiteUrl(m) {
+    if (m.projectUrl) return m.projectUrl;
+    const name = (m.title || m.name || '').trim();
+    if (!name) return 'https://modrinth.com/mods';
+    return 'https://modrinth.com/search?query=' + encodeURIComponent(name);
+  }
+
   function renderFiles(files) {
     const grid = $('#modsGrid');
-    if (!files || !files.length) {
-      grid.innerHTML = '<div class="shop-empty">Файлов пока нет — добавьте или установите из магазина.</div>';
-      return;
-    }
     const filter = state.fileFilter || '';
-    const list = filter ? files.filter((f) => f.type === filter) : files;
-    if (!list.length) {
-      grid.innerHTML = '<div class="shop-empty">В этой категории пусто.</div>';
+    const list = filter === 'modpack'
+      ? state.modpacks
+      : (filter ? (files || []).filter((f) => f.type === filter) : (files || []));
+
+    if (!list || !list.length) {
+      grid.innerHTML = `<div class="shop-empty">${filter === 'modpack'
+        ? 'Модпаков пока нет — установите их в мастерской.'
+        : filter ? 'В этой категории пусто.' : 'Файлов пока нет — добавьте или установите из мастерской.'}</div>`;
       return;
     }
+
     grid.innerHTML = '';
     list.forEach((m) => {
       const card = document.createElement('div');
-      card.className = 'mod-card' + (m.enabled ? '' : ' mod-off');
-      const typeName = FILE_TYPE_NAMES[m.type] || 'Файл';
-      const letter = esc((m.name || '?').charAt(0).toUpperCase());
+      card.className = 'mod-card glass' + (m.enabled === false ? ' mod-off' : '');
+      const type = m.type || filter || 'mod';
+      const typeName = FILE_TYPE_NAMES[type] || 'Файл';
+      const letter = esc((m.title || m.name || '?').charAt(0).toUpperCase());
+      const icon = m.iconUrl || '';
+      const url = fileSiteUrl(m);
+      const isPack = filter === 'modpack';
+      const desc = m.description || (isPack
+        ? `${typeName} · ${m.fileCount || 0} файлов · ${fmtDl(m.downloads || 0)} скачиваний`
+        : '');
+
       card.innerHTML = `
-        <div class="mod-icon">${m.iconUrl
-          ? `<img src="${esc(m.iconUrl)}" alt="" loading="lazy" onload="this.nextElementSibling.style.display='none'" onerror="this.style.display='none'">`
-          : ''}<span>${letter}</span></div>
+        <div class="mod-icon type-${esc(type)}">${icon
+          ? `<img src="${esc(icon)}" alt="" loading="lazy" onerror="this.style.display='none'">${FILE_ICONS[type] || ''}`
+          : (FILE_ICONS[type] || `<span>${letter}</span>`)}</div>
         <div class="mod-info">
-          <div class="mod-name">${esc(m.name)}</div>
-          <div class="mod-size">${typeName} · ${fmt(m.size)}</div>
+          <div class="mod-name">${esc(m.title || m.name)}</div>
+          <div class="mod-size">${typeName}${isPack
+            ? ` · ${esc(m.versionNumber || '')} · ${fmtDl(m.downloads || 0)} скач.`
+            : ` · ${fmt(m.size)}`}</div>
+          ${desc ? `<div class="mod-desc">${esc(desc)}</div>` : ''}
         </div>
         <div class="mod-actions">
-          <label class="switch"><input type="checkbox" ${m.enabled ? 'checked' : ''}><span class="slider"></span></label>
-          <button class="del-btn" title="Удалить"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+          <button class="shop-info-btn file-site" title="Открыть страницу проекта">${SITE_ICON}</button>
+          ${isPack
+            ? `<button class="del-btn" title="Удалить модпак">${DELETE_ICON}</button>`
+            : `<label class="switch"><input type="checkbox" ${m.enabled ? 'checked' : ''}><span class="slider"></span></label>
+               <button class="del-btn" title="Удалить">${DELETE_ICON}</button>`}
         </div>`;
-      card.querySelector('.switch input').addEventListener('change', (e) => {
-        send({ cmd: 'toggleMod', file: m.path, enabled: e.target.checked });
+
+      const site = card.querySelector('.file-site');
+      if (site) site.addEventListener('click', () => send({ cmd: 'openUrl', url }));
+      const del = card.querySelector('.del-btn');
+      if (del) del.addEventListener('click', () => {
+        const name = m.title || m.name;
+        if (isPack) {
+          if (confirm('Удалить модпак «' + name + '» и его файлы?')) send({ cmd: 'removeModpack', id: m.id });
+        } else if (confirm('Удалить ' + typeName.toLowerCase() + ' ' + name + '?')) {
+          send({ cmd: 'removeMod', file: m.path });
+        }
       });
-      card.querySelector('.del-btn').addEventListener('click', () => {
-        if (confirm('Удалить ' + typeName.toLowerCase() + ' ' + m.name + '?')) send({ cmd: 'removeMod', file: m.path });
+      const sw = card.querySelector('.switch input');
+      if (sw) sw.addEventListener('change', (e) => {
+        send({ cmd: 'toggleMod', file: m.path, enabled: e.target.checked });
       });
       grid.appendChild(card);
     });
   }
 
-  // Фильтр по типу
   function bindFileCats() {
-    const cats = document.querySelectorAll('#fileCats .cat-chip');
+    const cats = $$('#fileCats .cat-chip');
     cats.forEach((chip) => {
       chip.addEventListener('click', () => {
         cats.forEach((c) => c.classList.remove('active'));
@@ -299,7 +435,9 @@
   $('#btnAddMod').addEventListener('click', () => send({ cmd: 'addMod' }));
   $('#btnOpenMods').addEventListener('click', () => {
     const type = state.fileFilter || '';
-    const key = type === 'shader' ? 'shaderpacks' : type === 'resourcepack' ? 'resourcepacks' : type === 'mod' ? 'mods' : 'gameDir';
+    const key = type === 'shader' ? 'shaderpacks'
+      : type === 'resourcepack' ? 'resourcepacks'
+      : type === 'mod' ? 'mods' : 'gameDir';
     send({ cmd: 'openPath', key });
   });
 
@@ -328,7 +466,6 @@
     });
   });
 
-  // фильтры: загрузчик и сортировка
   $('#shopLoader').addEventListener('change', () => {
     state.shop.loader = $('#shopLoader').value;
     state.shop.offset = 0;
@@ -340,7 +477,6 @@
     search();
   });
 
-  // категории — кликабельные чипсы
   $('#shopCats').addEventListener('click', (e) => {
     const chip = e.target.closest('.cat-chip');
     if (!chip) return;
@@ -362,7 +498,6 @@
     searchTimer = setTimeout(search, 350);
   });
 
-  // пустой запрос → весь каталог выбранного типа
   function search() {
     state.shop.seq++;
     state.shop.busy = true;
@@ -378,13 +513,11 @@
     });
   }
 
-  // загрузка категорий для текущего источника и типа (один раз на смену)
   function loadCategories() {
     state.shop.catsLoaded = true;
     send({ cmd: 'catalogMeta', source: state.shop.source, type: state.shop.type });
   }
 
-  // бесконечная прокрутка: докрутили до низа → следующая страница
   function loadMore() {
     if (state.shop.busy) return;
     if (state.shop.items.length >= state.shop.total) return;
@@ -397,15 +530,20 @@
     });
   }
 
-  document.querySelector('.content').addEventListener('scroll', () => {
-    const el = document.querySelector('.content');
+  $('.content').addEventListener('scroll', () => {
+    const el = $('.content');
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 500) loadMore();
   });
 
   function normKey(s) {
-    return (s || '').toLowerCase().replace(/\.(jar|zip)$/i, '').replace(/[^\w]+/g, '');
+    return (s || '').toLowerCase().replace(/\.(jar|zip|mrpack)$/i, '').replace(/[^\w]+/g, '');
   }
   function isInstalled(item) {
+    if (state.shop.type === 'modpack') {
+      const id = String(item.id || '');
+      if (!id) return false;
+      return state.modpackIds.has(id);
+    }
     if (!state.shop.installed) return false;
     const name = normKey(item.title);
     if (!name) return false;
@@ -423,16 +561,19 @@
       grid.innerHTML = '<div class="shop-empty">Ничего не найдено</div>';
       return;
     }
+    const isPack = state.shop.type === 'modpack';
     items.forEach((item) => {
       const card = document.createElement('div');
-      card.className = 'shop-card';
+      card.className = 'shop-card glass';
       card.dataset.id = item.id;
       const dl = fmtDl(item.downloads || 0);
+      const src = state.shop.source;
       card.innerHTML = `
         <div class="shop-top">
-          <div class="shop-logo">${item.iconUrl ? `<img src="${esc(item.iconUrl)}" alt="">` : ''}</div>
+          <div class="shop-logo">${item.iconUrl ? `<img src="${esc(item.iconUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}</div>
           <div class="shop-title">${esc(item.title)}</div>
-          ${item.projectUrl ? `<button class="shop-info-btn" title="Открыть страницу проекта"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v5M12 8v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>` : ''}
+          <span class="src-badge ${src === 'curseforge' ? 'cf' : 'mr'}">${src === 'curseforge' ? 'CF' : 'MR'}</span>
+          ${item.projectUrl ? `<button class="shop-info-btn" title="Открыть страницу проекта">${SITE_ICON}</button>` : ''}
         </div>
         <div class="shop-desc">${esc(item.description)}</div>
         <div class="shop-meta">
@@ -440,30 +581,20 @@
           <span class="downloads">⬇ ${dl}</span>
         </div>
         <div class="shop-actions">
-          ${state.shop.type === 'mod' ? `
           <select class="shop-version-select" data-id="${esc(item.id)}">
             <option value="">Версия…</option>
             <option value="latest" selected>Последний релиз</option>
-          </select>` : ''}
+          </select>
         </div>
         <button class="shop-install${isInstalled(item) ? ' installed' : ''}" data-id="${esc(item.id)}">${isInstalled(item) ? 'Установлено' : 'Установить'}</button>`;
 
-      // Info — открыть страницу проекта в браузере
       const infoBtn = card.querySelector('.shop-info-btn');
-      if (infoBtn) infoBtn.addEventListener('click', () => {
-        send({ cmd: 'openUrl', url: item.projectUrl });
-      });
+      if (infoBtn) infoBtn.addEventListener('click', () => send({ cmd: 'openUrl', url: item.projectUrl }));
 
-      // выбор версии → грузим список версий проекта (только для модов; у шейдеров/РП селектора нет)
       const sel = card.querySelector('.shop-version-select');
       if (sel) {
         sel.addEventListener('change', () => {
-          if (sel.value && sel.value !== 'latest') {
-            const v = (state.shop.versions[item.id] || []).find(x => x.versionId === sel.value);
-            if (v) item.selectedVersion = v;
-          } else {
-            item.selectedVersion = null;
-          }
+          item.selectedVersion = selectedVersion(item, sel.value);
         });
         sel.addEventListener('focus', () => loadVersions(item.id));
       }
@@ -471,20 +602,15 @@
       card.querySelector('.shop-install').addEventListener('click', (e) => {
         if (isInstalled(item)) return;
         const btn = e.currentTarget;
-        const sel = card.querySelector('.shop-version-select');
-        if (sel && sel.value && sel.value !== 'latest') {
-          const v = (state.shop.versions[item.id] || []).find(x => x.versionId === sel.value);
-          if (v) item.selectedVersion = v;
-        } else {
-          item.selectedVersion = null;
-        }
-        btn.disabled = true; btn.textContent = 'Установка…';
-        send({ cmd: 'install', source: state.shop.source, type: state.shop.type, item });
+        item.selectedVersion = selectedVersion(item, sel ? sel.value : 'latest');
+        btn.disabled = true;
+        btn.textContent = 'Установка…';
+        if (isPack) send({ cmd: 'installModpack', source: src, item });
+        else send({ cmd: 'install', source: src, type: state.shop.type, item });
       });
       grid.appendChild(card);
     });
 
-    // футер: сколько загружено / всё показано
     const foot = document.createElement('div');
     foot.className = 'shop-empty';
     foot.textContent = state.shop.items.length >= state.shop.total
@@ -493,11 +619,15 @@
     grid.appendChild(foot);
   }
 
-  // загрузка списка версий проекта (мод/шейдер/РП) для выпадающего списка
+  function selectedVersion(item, value) {
+    if (!value || value === 'latest') return null;
+    return (state.shop.versions[item.id] || []).find((v) => v.versionId === value) || null;
+  }
+
   function loadVersions(projectId) {
     if (!projectId) return;
-    if (state.shop.versions[projectId]) return;          // уже загружено
-    if (state.shop.versionsLoading.has(projectId)) return; // уже грузится
+    if (state.shop.versions[projectId]) return;
+    if (state.shop.versionsLoading.has(projectId)) return;
     state.shop.versionsLoading.add(projectId);
     send({ cmd: 'versions', source: state.shop.source, type: state.shop.type, id: projectId });
   }
@@ -507,7 +637,6 @@
     state.shop.versionsLoading.delete(itemId);
     const sel = document.querySelector(`.shop-version-select[data-id="${CSS.escape(itemId)}"]`);
     if (!sel) return;
-    // сохранить текущий выбор
     const prev = sel.value;
     sel.innerHTML = '<option value="latest">Последний релиз</option>';
     (versions || []).forEach((v) => {
@@ -516,16 +645,17 @@
       opt.textContent = v.versionNumber || v.fileName || v.versionId;
       sel.appendChild(opt);
     });
-    sel.value = prev === 'latest' || !prev ? 'latest' : (prev && [...sel.options].some(o => o.value === prev) ? prev : 'latest');
+    sel.value = prev === 'latest' || !prev ? 'latest'
+      : ([...sel.options].some((o) => o.value === prev) ? prev : 'latest');
   }
 
   function fmtDl(n) {
+    n = Number(n) || 0;
     if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace('.0', '') + ' млн';
     if (n >= 1_000) return (n / 1_000).toFixed(1).replace('.0', '') + ' тыс';
     return String(n);
   }
 
-  // категории в виде чипсов
   function renderCategories(cats) {
     const box = $('#shopCats');
     box.innerHTML = '';
@@ -540,44 +670,24 @@
 
   // ---------- Настройки ----------
   function renderSettings(cfg) {
-    // Никнейм = Minecraft-ник (с ним заходишь на сервера), отдельно от ника аккаунта.
+    if (!cfg) return;
     $('#setUsername').value = cfg.mcNickname || cfg.username || 'Player';
-    // Клиент (watermark) = ник аккаунта с сайта; не редактируется.
     const clientVal = $('#setClientNameVal');
     if (clientVal) clientVal.textContent = cfg.username || '—';
     $('#setVersion').textContent = cfg.version ?? '1.21.11';
-    $('#setAccent').value = '#' + ((cfg.accent ?? 0xA855F7) & 0xFFFFFF).toString(16).padStart(6, '0');
+    $('#setAccent').value = '#' + ((cfg.accent ?? 0x7c5cff) & 0xffffff).toString(16).padStart(6, '0');
     const ram = cfg.ramMb ?? 4096;
     $('#setRam').value = ram;
     $('#setRamVal').textContent = ram + ' МБ';
     $('#setGameDirPath').textContent = cfg.gameDir ?? '';
     $('#setJavaPath').textContent = cfg.javaPath || 'Автоопределение';
-
-    const box = $('#moduleToggles');
-    box.innerHTML = '';
-    const modules = Object.keys(cfg.modules || {});
-    if (!modules.length) {
-      box.innerHTML = '<div class="set-hint">Модули появятся после первого запуска</div>';
-      return;
-    }
-    modules.forEach((name) => {
-      const div = document.createElement('div');
-      div.className = 'mt-item';
-      div.innerHTML = `<span>${esc(name)}</span>
-        <label class="switch"><input type="checkbox" ${cfg.modules[name] ? 'checked' : ''}><span class="slider"></span></label>`;
-      div.querySelector('input').addEventListener('change', (e) => {
-        state.config.modules[name] = e.target.checked;
-        send({ cmd: 'saveConfig', config: state.config });
-      });
-      box.appendChild(div);
-    });
   }
 
   function collectConfig() {
     const cfg = Object.assign({}, state.config || {});
     cfg.mcNickname = $('#setUsername').value || 'Player';
     cfg.isAdmin = state.isAdmin;
-    cfg.accent = parseInt($('#setAccent').value.replace('#', ''), 16) | 0xFF000000;
+    cfg.accent = (parseInt($('#setAccent').value.replace('#', ''), 16) | 0xff000000) >>> 0;
     cfg.ramMb = parseInt($('#setRam').value) || 4096;
     cfg.version = state.config?.version || '1.21.11';
     cfg.modules = cfg.modules || {};
@@ -593,6 +703,7 @@
 
   function saveSettings() {
     state.config = collectConfig();
+    applyAccent(state.config);
     renderHome(state.config);
     send({ cmd: 'saveConfig', config: state.config });
   }
@@ -602,7 +713,7 @@
   $('#btnJava').addEventListener('click', () => send({ cmd: 'pickJava' }));
   $('#btnOpenJava').addEventListener('click', () => send({ cmd: 'openPath', key: 'java' }));
 
-  // ---------- Прогресс ----------
+  // ---------- Прогресс запуска ----------
   function showProgress(step, percent, message) {
     $('#overlay').classList.add('show');
     $('#ovFill').style.width = Math.max(0, Math.min(100, percent)) + '%';
@@ -621,7 +732,7 @@
     }
     toastBox.textContent = text;
     toastBox.className = isError ? 'show error' : 'show';
-    setTimeout(() => (toastBox.className = ''), 3200);
+    setTimeout(() => (toastBox.className = ''), 3400);
   }
 
   // ---------- Хелперы ----------
@@ -631,9 +742,8 @@
   }
 
   // ---------- Старт ----------
+  renderDownloads();
   send({ cmd: 'getState' });
   send({ cmd: 'checkAuth' });
-
-  // предзагрузка магазина (популярные моды)
   setTimeout(() => { search(); }, 600);
 })();

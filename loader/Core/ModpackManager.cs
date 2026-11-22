@@ -14,6 +14,7 @@ public class InstalledModpack
     [JsonPropertyName("title")] public string Title { get; set; } = "";
     [JsonPropertyName("iconUrl")] public string IconUrl { get; set; } = "";
     [JsonPropertyName("projectUrl")] public string ProjectUrl { get; set; } = "";
+    [JsonPropertyName("description")] public string Description { get; set; } = "";
     [JsonPropertyName("versionId")] public string VersionId { get; set; } = "";
     [JsonPropertyName("versionNumber")] public string VersionNumber { get; set; } = "";
     [JsonPropertyName("downloads")] public int Downloads { get; set; }
@@ -170,6 +171,7 @@ public static class ModpackManager
                 Title = item.Title,
                 IconUrl = item.IconUrl,
                 ProjectUrl = item.ProjectUrl,
+                Description = item.Description,
                 VersionId = versionId,
                 VersionNumber = versionNumber,
                 Downloads = item.Downloads,

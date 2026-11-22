@@ -1,4 +1,6 @@
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
@@ -182,7 +184,36 @@ public partial class MainWindow : Window
 
     // ---- окно ----
 
-    public void Drag() => DragMove();
+    // DragMove() можно вызывать только во время нажатия ЛКМ в WPF, а WebView2
+    // перехватывает мышь — отсюда «можно вызвать только DragMove» и окно не двигалось.
+    // Поэтому тащим окно через Win32 HTCAPTION: это работает поверх WebView2.
+    [DllImport("user32.dll")] private static extern bool ReleaseCapture();
+    [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern IntPtr SendMessage(
+        IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+    private const uint WM_NCLBUTTONDOWN = 0x00A1;
+    private const int HTCAPTION = 2;
+
+    public void Drag()
+    {
+        try
+        {
+            if (WindowState == WindowState.Maximized) WindowState = WindowState.Normal;
+            IntPtr hwnd = new WindowInteropHelper(this).Handle;
+            ReleaseCapture();
+            SendMessage(hwnd, WM_NCLBUTTONDOWN, (IntPtr)HTCAPTION, IntPtr.Zero);
+        }
+        catch
+        {
+            try { DragMove(); } catch { /* если и этот путь недоступен — просто игнорируем */ }
+        }
+    }
+
+    private void DragStrip_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2) ToggleMaximize();
+        else Drag();
+        e.Handled = true;
+    }
 
     public void Minimize() => WindowState = WindowState.Minimized;
 

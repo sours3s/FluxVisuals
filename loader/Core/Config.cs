@@ -28,6 +28,10 @@ public class AppConfig
     [JsonPropertyName("modVersion")] public string ModVersion { get; set; } = "";
     /// <summary>Иконки установленных файлов: fileName -> URL иконки (для «Моих файлов»).</summary>
     [JsonPropertyName("modIcons")] public Dictionary<string, string> ModIcons { get; set; } = new();
+    /// <summary>Ссылки на страницы проектов: fileName -> projectUrl (кнопка сайта в «Моих файлах»).</summary>
+    [JsonPropertyName("modUrls")] public Dictionary<string, string> ModUrls { get; set; } = new();
+    /// <summary>Описания установленных файлов: fileName -> description (в «Моих файлах»).</summary>
+    [JsonPropertyName("modDescriptions")] public Dictionary<string, string> ModDescriptions { get; set; } = new();
     [JsonPropertyName("authServerUrl")] public string AuthServerUrl { get; set; } = Defaults.AuthServerUrl;
     [JsonPropertyName("authToken")] public string AuthToken { get; set; } = "";
     [JsonPropertyName("updateCheckUrl")] public string UpdateCheckUrl { get; set; } = UpdateService.DefaultUpdateCheckUrl;

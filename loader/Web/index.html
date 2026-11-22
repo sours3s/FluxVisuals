@@ -7,219 +7,231 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="bg">
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
-  <div class="blob blob-3"></div>
-  <div class="grid-overlay"></div>
+<div class="backdrop" aria-hidden="true">
+  <div class="backdrop-orb backdrop-orb-one"></div>
+  <div class="backdrop-orb backdrop-orb-two"></div>
+  <div class="backdrop-veil"></div>
 </div>
 
-<!-- ===== Title bar ===== -->
 <header class="titlebar">
-  <div class="tb-brand">
-    <div class="tb-logo"><img src="img/logo.png" alt="FluxVisuals"></div>
-    <span>FLUXVISUALS</span>
+  <div class="brand">
+    <span class="brand-logo"><img src="img/logo.png" alt=""></span>
+    <span class="brand-name">FluxVisuals</span>
   </div>
   <div class="tb-drag"></div>
-  <div class="tb-controls">
-    <button class="tb-btn" id="btnMin" title="Свернуть"><svg viewBox="0 0 12 12"><path d="M1 6h10" stroke="currentColor" stroke-width="1.4"/></svg></button>
-    <button class="tb-btn" id="btnMax" title="Развернуть"><svg viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></button>
-    <button class="tb-btn tb-close" id="btnClose" title="Закрыть"><svg viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.4"/></svg></button>
+  <button class="downloads-button" id="btnDownloads" title="Загрузки">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5v11m0 0 4-4m-4 4-4-4M4 17.5v2.5h16v-2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span class="download-badge" id="dlBadge">0</span>
+  </button>
+  <div class="window-controls">
+    <button class="window-button" id="btnMin" title="Свернуть"><svg viewBox="0 0 12 12"><path d="M1.5 6h9" stroke="currentColor" stroke-width="1.4"/></svg></button>
+    <button class="window-button" id="btnMax" title="Развернуть"><svg viewBox="0 0 12 12"><rect x="2.3" y="2.3" width="7.4" height="7.4" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></button>
+    <button class="window-button window-button-close" id="btnClose" title="Закрыть"><svg viewBox="0 0 12 12"><path d="m2.4 2.4 7.2 7.2m0-7.2-7.2 7.2" stroke="currentColor" stroke-width="1.4"/></svg></button>
   </div>
 </header>
 
-<!-- ===== Layout ===== -->
-<div class="layout">
-  <nav class="sidebar">
-    <div class="nav-item active" data-page="home">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      <span>Главная</span>
+<div class="download-panel glass" id="downloadPanel">
+  <div class="download-panel-head">
+    <div class="download-panel-title"><span class="status-dot"></span>Загрузки</div>
+    <button class="plain-button" id="dpClose" title="Скрыть">×</button>
+  </div>
+  <div class="download-list" id="downloadList"></div>
+</div>
+
+<div class="app-shell">
+  <aside class="sidebar glass">
+    <div class="nav-caption">Навигация</div>
+    <nav class="nav">
+      <div class="nav-item active" data-page="home">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 10.6 12 4l8 6.6V19a1 1 0 0 1-1 1h-4.6v-6H9.6v6H5a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <span>Главная</span>
+      </div>
+      <div class="nav-item" data-page="mods">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.4 14 5.5h3a1 1 0 0 1 1 1v3l2.1 2-2.1 2v3a1 1 0 0 1-1 1h-3l-2 2.1-2-2.1H7a1 1 0 0 1-1-1v-3L3.9 11.5 6 9.5v-3a1 1 0 0 1 1-1h3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        <span>Мои файлы</span>
+      </div>
+      <div class="nav-item" data-page="shop">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 8h16l-1.2 12H5.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8.5 9V6.8a3.5 3.5 0 0 1 7 0V9" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>Мастерская</span>
+      </div>
+      <div class="nav-item" data-page="settings">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>Настройки</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="memory-widget glass-inset">
+        <div class="memory-top">
+          <span>Память для Minecraft</span>
+          <strong id="ramLabel">4 ГБ</strong>
+        </div>
+        <div class="memory-track"><div class="memory-fill" id="ramFill"></div></div>
+      </div>
+      <div class="profile-card">
+        <span class="profile-avatar"><img src="img/logo.png" alt=""></span>
+        <span class="profile-text">
+          <strong id="sfUserName">Игрок</strong>
+          <small id="sfUserRole">FluxVisuals</small>
+        </span>
+      </div>
     </div>
-    <div class="nav-item" data-page="mods">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l2 2h4a1 1 0 011 1v4l2 2-2 2v4a1 1 0 01-1 1h-4l-2 2-2-2H6a1 1 0 01-1-1v-4L3 12l2-2V6a1 1 0 011-1h4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      <span>Мои файлы</span>
-    </div>
-    <div class="nav-item" data-page="shop">
-      <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <span>Мастерская</span>
-    </div>
-    <div class="nav-item" data-page="settings">
-      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <span>Настройки</span>
-    </div>
-    <div class="sidebar-foot">
-      <div class="sf-ram"><div class="sf-ram-bar"><div class="sf-ram-fill" id="ramFill"></div></div><span id="ramLabel">4 ГБ</span></div>
-      <div class="sf-user"><div class="avatar" id="avatarUser"><img src="img/logo.png" alt="User"></div><span id="sfUserName">Player</span></div>
-    </div>
-  </nav>
+  </aside>
 
   <main class="content">
-
-    <!-- ===== HOME ===== -->
     <section class="page active" id="page-home">
-      <div class="hero">
-        <h1 class="hero-title">FLUX<span class="grad">VISUALS</span></h1>
-        <p class="hero-sub">Современный визуальный клиент для Minecraft 1.21.11.<br>Чистая отрисовка без вмешательства в игру — никаких банов.</p>
+      <div class="home-heading">
+        <div class="eyebrow">FluxVisuals · Minecraft 1.21.11</div>
+        <h1>Добро пожаловать,<br><span id="homeUser">Игрок</span></h1>
+        <p>Всё готово к запуску. Выберите, сколько памяти выделить игре, и нажмите «Играть».</p>
       </div>
 
-      <div class="launch-card">
-        <div class="launch-left">
-          <div class="lc-line"><span class="lc-label">Игрок</span><span class="lc-value" id="homeUser">Player</span></div>
-          <div class="lc-line"><span class="lc-label">UID</span><span class="lc-value" id="homeUid">—</span></div>
-          <div class="lc-line"><span class="lc-label">Версия</span><span class="lc-value" id="homeVersion">1.21.11</span></div>
-          <div class="lc-line"><span class="lc-label">Память</span><span class="lc-value" id="homeRam">4096 МБ</span></div>
-          <div class="lc-line"><span class="lc-label">Доступ</span><span class="lc-value" id="homeAccess">—</span></div>
+      <div class="launch-card glass">
+        <div class="launch-card-shine"></div>
+        <div class="launch-fields">
+          <div class="field"><span>Аккаунт</span><strong id="homeUid">—</strong></div>
+          <div class="field"><span>Версия Minecraft</span><strong id="homeVersion">1.21.11</strong></div>
+          <div class="field"><span>Выделено памяти</span><strong id="homeRam">4096 МБ</strong></div>
+          <div class="field"><span>Доступ</span><strong id="homeAccess">Бесплатный</strong></div>
         </div>
-        <button class="launch-btn" id="btnLaunch">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3.5l15 8.5-15 8.5z"/></svg>
-          <span>ИГРАТЬ</span>
+        <button class="play-button" id="btnLaunch">
+          <span class="play-symbol"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5 20 12 7 19.5z"/></svg></span>
+          <span class="play-label"><strong>Играть</strong><small>Запустить Minecraft</small></span>
         </button>
       </div>
 
-      <div class="info-row">
-        <div class="info-card"><div class="ic-title">Скриншоты</div><div class="ic-text">Клавиша PrintScreen в папке скриншотов игры</div></div>
-        <div class="info-card"><div class="ic-title">Меню модулей</div><div class="ic-text">Открывается по правому Shift прямо в игре</div></div>
-        <div class="info-card"><div class="ic-title">Сохранение</div><div class="ic-text">Конфигурация автоматически сохраняется</div></div>
+      <div class="tips-grid">
+        <div class="tip-card glass">
+          <span class="tip-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 9h5M6.5 12.5h8M6.5 16h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+          <span><strong>Меню модулей</strong><small>Открывается правым Shift в игре</small></span>
+        </div>
+        <div class="tip-card glass">
+          <span class="tip-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8h16l-1.2 12H5.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8.5 9V6.8a3.5 3.5 0 0 1 7 0V9" stroke="currentColor" stroke-width="1.5"/></svg></span>
+          <span><strong>Мастерская</strong><small>Модпаки из Modrinth и CurseForge</small></span>
+        </div>
+        <div class="tip-card glass">
+          <span class="tip-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M20 7v5h-5M4 17v-5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.2 9A7 7 0 0 1 18.7 7.8M17.8 15A7 7 0 0 1 5.3 16.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+          <span><strong>Обновления</strong><small>Лаунчер и клиент обновляются сами</small></span>
+        </div>
       </div>
     </section>
 
-    <!-- ===== МОИ ФАЙЛЫ ===== -->
     <section class="page" id="page-mods">
-      <div class="page-head">
-        <div><h2 class="page-title">Мои файлы</h2><p class="page-sub">Моды, шейдеры и ресурспаки</p></div>
-        <div class="page-head-btns">
-          <button class="ghost-btn" id="btnOpenMods"><svg viewBox="0 0 24 24" fill="none"><path d="M3 5h6l2 3h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Открыть папку</span></button>
-          <button class="ghost-btn" id="btnAddMod"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Добавить файл</span></button>
+      <div class="page-heading">
+        <div class="eyebrow">Библиотека</div>
+        <div class="page-title-row">
+          <div>
+            <h2>Мои файлы</h2>
+            <p>Моды, шейдеры, ресурспаки и модпаки, установленные в игру.</p>
+          </div>
+          <div class="actions">
+            <button class="button button-glass" id="btnOpenMods">Открыть папку</button>
+            <button class="button button-accent" id="btnAddMod">Добавить файл</button>
+          </div>
         </div>
       </div>
-      <div class="shop-cats" id="fileCats">
-        <button class="cat-chip active" data-type="">Все</button>
-        <button class="cat-chip" data-type="mod">Моды</button>
-        <button class="cat-chip" data-type="shader">Шейдеры</button>
-        <button class="cat-chip" data-type="resourcepack">Ресурспаки</button>
+      <div class="chips" id="fileCats">
+        <button class="chip cat-chip active" data-type="">Все</button>
+        <button class="chip cat-chip" data-type="mod">Моды</button>
+        <button class="chip cat-chip" data-type="shader">Шейдеры</button>
+        <button class="chip cat-chip" data-type="resourcepack">Ресурспаки</button>
+        <button class="chip cat-chip" data-type="modpack">Модпаки</button>
       </div>
       <div class="mods-grid" id="modsGrid"></div>
     </section>
 
-    <!-- ===== WORKSHOP ===== -->
     <section class="page" id="page-shop">
-      <div class="page-head">
-        <div><h2 class="page-title">Мастерская</h2><p class="page-sub">Modrinth и CurseForge</p></div>
+      <div class="page-heading">
+        <div class="eyebrow">Каталог</div>
+        <div class="page-title-row">
+          <div>
+            <h2>Мастерская</h2>
+            <p>Устанавливайте модпаки, моды, шейдеры и ресурспаки прямо в игру.</p>
+          </div>
+        </div>
       </div>
-      <div class="shop-bar">
-        <div class="shop-tabs">
-          <button class="shop-tab active" data-src="modrinth">MODRINTH</button>
-          <button class="shop-tab" data-src="curseforge">CURSEFORGE</button>
+      <div class="shop-toolbar glass">
+        <div class="source-tabs">
+          <button class="source-tab shop-tab active" data-src="modrinth"><span class="source-dot modrinth"></span>Modrinth</button>
+          <button class="source-tab shop-tab" data-src="curseforge"><span class="source-dot curseforge"></span>CurseForge</button>
         </div>
-        <div class="shop-search">
-          <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          <input type="text" id="shopQuery" placeholder="Поиск модов, шейдеров, ресурспаков...">
-        </div>
-        <div class="shop-types">
-          <button class="type-btn active" data-type="mod">Моды</button>
-          <button class="type-btn" data-type="resourcepack">Ресурспаки</button>
-          <button class="type-btn" data-type="shader">Шейдеры</button>
-        </div>
+        <label class="search-field">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.6" stroke="currentColor" stroke-width="1.6"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <input id="shopQuery" type="text" placeholder="Поиск по каталогу" autocomplete="off">
+        </label>
+      </div>
+      <div class="type-tabs">
+        <button class="type-tab type-btn active" data-type="mod">Моды</button>
+        <button class="type-tab type-btn" data-type="resourcepack">Ресурспаки</button>
+        <button class="type-tab type-btn" data-type="shader">Шейдеры</button>
+        <button class="type-tab type-btn" data-type="modpack">Модпаки</button>
       </div>
       <div class="shop-filters">
         <div class="shop-cats" id="shopCats"></div>
-        <div class="shop-filter-right">
-          <select id="shopLoader" class="shop-select">
-            <option value="">Любой загрузчик</option>
-            <option value="fabric" selected>Fabric</option>
-            <option value="forge">Forge</option>
-            <option value="neoforge">NeoForge</option>
-            <option value="quilt">Quilt</option>
-          </select>
-          <select id="shopSort" class="shop-select">
-            <option value="">По умолчанию</option>
-            <option value="downloads">По скачиваниям</option>
-            <option value="updated">Недавно обновлённые</option>
-            <option value="newest">Новые</option>
-          </select>
+        <div class="filter-selects">
+          <select id="shopLoader" class="select"><option value="">Любой загрузчик</option><option value="fabric" selected>Fabric</option><option value="forge">Forge</option><option value="neoforge">NeoForge</option><option value="quilt">Quilt</option></select>
+          <select id="shopSort" class="select"><option value="">Сначала популярные</option><option value="downloads">По скачиваниям</option><option value="updated">Недавно обновлённые</option><option value="newest">Новые</option></select>
         </div>
       </div>
       <div class="shop-grid" id="shopGrid"></div>
     </section>
 
-    <!-- ===== SETTINGS ===== -->
     <section class="page" id="page-settings">
-      <div class="page-head"><div><h2 class="page-title">Настройки</h2><p class="page-sub">Профиль и параметры клиента</p></div></div>
-
+      <div class="page-heading">
+        <div class="eyebrow">Профиль</div>
+        <div class="page-title-row">
+          <div>
+            <h2>Настройки</h2>
+            <p>Основные параметры лаунчера и игры.</p>
+          </div>
+        </div>
+      </div>
       <div class="settings-grid">
-        <div class="set-card">
-          <h3>Профиль</h3>
-          <label class="set-row"><span>Никнейм (Minecraft)</span><input id="setUsername" type="text" placeholder="Player"></label>
-          <label class="set-row" id="setClientRow"><span>Клиент (watermark)</span><span class="set-ramval" id="setClientNameVal">—</span></label>
-          <label class="set-row"><span>Версия игры</span><span class="set-ramval" id="setVersion">1.21.11</span></label>
-          <label class="set-row"><span>Акцентный цвет</span><input id="setAccent" type="color" value="#A855F7"></label>
+        <div class="settings-card glass">
+          <h3>Аккаунт</h3>
+          <label class="setting-row"><span>Имя игрока</span><input id="setUsername" type="text" placeholder="Player"></label>
+          <div class="setting-row"><span>Аккаунт</span><strong id="setClientNameVal">—</strong></div>
+          <div class="setting-row"><span>Версия Minecraft</span><strong id="setVersion">1.21.11</strong></div>
+          <label class="setting-row"><span>Цвет интерфейса</span><input id="setAccent" type="color" value="#7C5CFF"></label>
         </div>
-        <div class="set-card">
-          <h3>Память</h3>
-          <label class="set-row"><span>Оперативная память</span><span class="set-ramval" id="setRamVal">4096 МБ</span></label>
+        <div class="settings-card glass">
+          <h3>Производительность</h3>
+          <div class="setting-row"><span>Оперативная память</span><strong id="setRamVal">4096 МБ</strong></div>
           <input type="range" id="setRam" min="2048" max="16384" step="512" value="4096">
-          <div class="set-hint">Рекомендуется 4–8 ГБ</div>
+          <p class="hint">Рекомендуется 4–8 ГБ. Слишком много памяти тоже может мешать.</p>
         </div>
-        <div class="set-card">
-          <h3>Пути</h3>
-          <label class="set-row"><span>Папка игры</span>
-            <span class="set-btn-group">
-              <button class="mini-btn" id="btnGameDir">Изменить</button>
-              <button class="mini-btn" id="btnOpenGameDir">Открыть</button>
-            </span>
-          </label>
-          <div class="set-path" id="setGameDirPath">D:\FluxVisuals\game</div>
-          <label class="set-row"><span>Java</span>
-            <span class="set-btn-group">
-              <button class="mini-btn" id="btnJava">Изменить</button>
-              <button class="mini-btn" id="btnOpenJava">Открыть</button>
-            </span>
-          </label>
-          <div class="set-path" id="setJavaPath">Автоопределение</div>
-          <div class="set-hint">Не найдена — скачается автоматически</div>
-        </div>
-        <div class="set-card">
-          <h3>Модули клиента</h3>
-          <div class="module-toggles" id="moduleToggles"></div>
-          <div class="set-hint">Модули вкл/выкл прямо из лаунчера</div>
+        <div class="settings-card glass settings-card-wide">
+          <h3>Папки и Java</h3>
+          <div class="path-row"><span>Папка игры</span><span class="path-value" id="setGameDirPath">—</span><span class="path-actions"><button class="button button-glass small" id="btnGameDir">Изменить</button><button class="button button-glass small" id="btnOpenGameDir">Открыть</button></span></div>
+          <div class="path-row"><span>Java</span><span class="path-value" id="setJavaPath">Автоопределение</span><span class="path-actions"><button class="button button-glass small" id="btnJava">Выбрать</button><button class="button button-glass small" id="btnOpenJava">Открыть</button></span></div>
+          <p class="hint">Если подходящая Java не найдена, лаунчер скачает её автоматически.</p>
         </div>
       </div>
     </section>
   </main>
 </div>
 
-<!-- ===== Login modal ===== -->
 <div class="login-overlay" id="loginOverlay">
-  <div class="login-card">
-    <div class="login-logo"><img src="img/logo.png" alt="FluxVisuals"></div>
-    <div class="login-title">FLUX<span class="grad">VISUALS</span></div>
-    <div class="login-sub">Вход в аккаунт</div>
-    <div class="login-field">
-      <label>Логин</label>
-      <input type="text" id="loginUser" autocomplete="off" spellcheck="false" placeholder="Ваш логин">
-    </div>
-    <div class="login-field">
-      <label>Пароль</label>
-      <input type="password" id="loginPass" placeholder="••••••••">
-    </div>
-    <div class="login-field">
-      <label>Сервер</label>
-      <input type="text" id="loginUrl" spellcheck="false" placeholder="http://сервер:5001">
-    </div>
+  <div class="login-card glass">
+    <span class="login-logo"><img src="img/logo.png" alt=""></span>
+    <div class="login-title">FluxVisuals</div>
+    <p>Войдите в аккаунт, чтобы запустить клиент</p>
+    <label class="login-field"><span>Логин</span><input id="loginUser" type="text" autocomplete="off" spellcheck="false" placeholder="Ваш логин"></label>
+    <label class="login-field"><span>Пароль</span><input id="loginPass" type="password" placeholder="••••••••"></label>
+    <label class="login-field"><span>Сервер</span><input id="loginUrl" type="text" spellcheck="false" placeholder="http://сервер:5001"></label>
     <div class="login-error" id="loginError"></div>
-    <button class="login-btn" id="btnLogin">ВОЙТИ</button>
-    <div class="login-hint">Вход привязывается к вашему компьютеру (HWID)</div>
+    <button class="button button-accent login-submit" id="btnLogin">Войти</button>
+    <div class="login-hint">Доступ бесплатный — нужен только аккаунт.</div>
   </div>
 </div>
 
-<!-- ===== Progress overlay ===== -->
-<div class="overlay" id="overlay">
-  <div class="overlay-card">
-    <div class="ov-logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.5 5 5.5.8-4 3.9.9 5.5L12 14.8 7.1 17.2l.9-5.5-4-3.9L9.5 7z"/></svg></div>
-    <div class="ov-title" id="ovTitle">Подготовка…</div>
-    <div class="ov-message" id="ovMessage">Загрузка метаданных</div>
-    <div class="ov-bar"><div class="ov-fill" id="ovFill"></div></div>
-    <div class="ov-percent" id="ovPercent">0%</div>
+<div class="progress-overlay" id="overlay">
+  <div class="progress-card glass">
+    <div class="progress-symbol">✦</div>
+    <div class="progress-title" id="ovTitle">Подготовка…</div>
+    <div class="progress-message" id="ovMessage">Загрузка метаданных</div>
+    <div class="progress-track"><div class="progress-fill" id="ovFill"></div></div>
+    <div class="progress-percent" id="ovPercent">0%</div>
   </div>
 </div>
 

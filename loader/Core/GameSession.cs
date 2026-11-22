@@ -50,7 +50,7 @@ public class GameSession
             java = await JavaResolver.DownloadJavaAsync(gameDir, ct);
         }
 
-        // ---- Auth check + проверка роли (доступ оплачен?) ----
+        // ---- Auth check + проверка доступа ----
         _progress("auth", 4, "Проверка авторизации...");
         var auth = await AuthService.CheckAuthAsync(_cfg);
         if (!auth.Authenticated)
@@ -59,14 +59,14 @@ public class GameSession
         }
         if (!auth.HasAccess)
         {
-            throw new Exception(auth.Role == "user"
-                ? "Доступ не оплачен. Купи клиент на сайте, чтобы играть."
-                : "Срок доступа истёк. Продли подписку на сайте.");
+            throw new Exception("Нет доступа. Войдите в аккаунт FluxVisuals и проверьте авторизацию.");
         }
 
         // ---- Метаданные ----
         _progress("metadata", 5, "Получаю метаданные версии...");
-        string versionJsonPath = await VersionResolver.ResolveVersionJsonAsync(_cfg.Version, Path.Combine(gameDir, "versions"), ct);
+        string? versionJsonPath = await VersionResolver.ResolveVersionJsonAsync(_cfg.Version, Path.Combine(gameDir, "versions"), ct);
+        if (string.IsNullOrWhiteSpace(versionJsonPath) || !File.Exists(versionJsonPath))
+            throw new Exception("Не удалось получить метаданные версии Minecraft.");
         using var doc = JsonDocument.Parse(await File.ReadAllTextAsync(versionJsonPath, ct));
         var root = doc.RootElement;
 

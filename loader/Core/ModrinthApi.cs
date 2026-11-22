@@ -167,12 +167,12 @@ public static class ModrinthApi
                 if (f.TryGetProperty("primary", out var p) && p.ValueKind == JsonValueKind.True) { file = f; break; }
             result.Add(new VersionInfo
             {
-                VersionId = v.GetProperty("id").GetString(),
-                VersionNumber = v.TryGetProperty("version_number", out var vn) ? vn.GetString() : "",
+                VersionId = v.GetProperty("id").GetString() ?? "",
+                VersionNumber = v.TryGetProperty("version_number", out var vn) ? vn.GetString() ?? "" : "",
                 GameVersion = gameVersion,
                 Date = v.TryGetProperty("date_published", out var dp) ? dp.GetString() ?? "" : "",
-                FileUrl = file.GetProperty("url").GetString(),
-                FileName = file.GetProperty("filename").GetString(),
+                FileUrl = file.GetProperty("url").GetString() ?? "",
+                FileName = file.GetProperty("filename").GetString() ?? "",
                 FileSize = file.TryGetProperty("size", out var s) ? s.GetInt64() : 0,
                 ReleaseType = v.TryGetProperty("version_type", out var vt) ? vt.GetString() ?? "release" : "release",
             });

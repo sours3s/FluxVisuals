@@ -28,6 +28,16 @@ public static class CurseForgeApi
         _ => "mod",
     };
 
+    /// <summary>Категории без classId определяем по названию — у CurseForge такие есть.</summary>
+    private static string TypeByName(string name)
+    {
+        if (name.Contains("modpack", StringComparison.OrdinalIgnoreCase)) return "modpack";
+        if (name.Contains("resource pack", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("texture", StringComparison.OrdinalIgnoreCase)) return "resourcepack";
+        if (name.Contains("shader", StringComparison.OrdinalIgnoreCase)) return "shader";
+        return "mod";
+    }
+
     private static int? LoaderId(string loader) => loader switch
     {
         "fabric" => 4,
@@ -96,13 +106,23 @@ public static class CurseForgeApi
                 using var doc = JsonDocument.Parse(json);
                 foreach (var c in doc.RootElement.GetProperty("data").EnumerateArray())
                 {
-                    int classId = c.GetProperty("classId").GetInt32();
-                    string type = TypeOf(classId);
-                    if (type == "mod" && classId != 6) continue; // для модов берём только корневые (без addons)
+                    // У части категорий CurseForge classId равен null (например, "Modpacks").
+                    // Раньше GetProperty("classId").GetInt32() падал с "key was not present".
+                    int classId = 0;
+                    if (c.TryGetProperty("classId", out var cid)
+                        && cid.ValueKind == JsonValueKind.Number
+                        && cid.TryGetInt32(out classId))
+                    {
+                        // classId есть — определяем тип по нему
+                    }
+                    string name = c.TryGetProperty("name", out var nm) ? nm.GetString() ?? "" : "";
+                    string type = classId > 0 ? TypeOf(classId) : TypeByName(name);
+                    if (classId <= 0 && type == "mod") continue; // только корневые моды
+                    if (type == "mod" && classId != 6) continue; // без addons
                     list.Add(new CategoryInfo
                     {
                         Id = c.GetProperty("id").GetInt32().ToString(),
-                        Name = c.GetProperty("name").GetString() ?? "",
+                        Name = name,
                         Type = type,
                     });
                 }

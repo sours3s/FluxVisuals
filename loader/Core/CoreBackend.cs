@@ -96,7 +96,7 @@ public class CoreBackend
             foreach (string d in Directory.EnumerateDirectories(dir))
                 installed.Add(Path.GetFileName(d).ToLowerInvariant());
         }
-        Post(new { ev = "files", files = ModManager.ListFiles(_cfg.GameDir, _cfg.ModIcons), installed });
+        Post(new { ev = "files", files = ModManager.ListFiles(_cfg.GameDir, _cfg.ModIcons, _cfg.ModUrls, _cfg.ModDescriptions), installed });
         var packs = ModpackManager.List();
         Post(new { ev = "modpacks", modpacks = packs, installedIds = packs.Select(p => p.Id).ToList() });
     }
@@ -131,6 +131,10 @@ public class CoreBackend
         incoming.AccessExpiresAt = _cfg.AccessExpiresAt;
         incoming.Username = _cfg.Username;
         incoming.Uid = _cfg.Uid;
+        incoming.McNickname = _cfg.McNickname;
+        incoming.ModIcons = _cfg.ModIcons;
+        incoming.ModUrls = _cfg.ModUrls;
+        incoming.ModDescriptions = _cfg.ModDescriptions;
     }
 
     // ---------- запуск ----------
@@ -304,6 +308,16 @@ public class CoreBackend
                     ?? throw new Exception("Не удалось найти версию для установки"),
             };
         }
+        // API с разрешённой версией возвращает только файл — сохраняем иконку,
+        // описание и ссылку проекта из карточки каталога, иначе в «Моих файлах»
+        // карточки остаются без иконок и кнопки сайта.
+        if (string.IsNullOrEmpty(resolved.IconUrl)) resolved.IconUrl = item.IconUrl;
+        if (string.IsNullOrEmpty(resolved.ProjectUrl)) resolved.ProjectUrl = item.ProjectUrl;
+        if (string.IsNullOrEmpty(resolved.Description)) resolved.Description = item.Description;
+        if (string.IsNullOrEmpty(resolved.Author)) resolved.Author = item.Author;
+        if (resolved.Downloads == 0) resolved.Downloads = item.Downloads;
+        if (string.IsNullOrEmpty(resolved.Title)) resolved.Title = item.Title;
+
         if (string.IsNullOrEmpty(resolved.FileUrl))
         {
             Post(new { ev = "installResult", ok = false, message = "Не удалось найти версию для установки" });
@@ -329,9 +343,12 @@ public class CoreBackend
 
                 Post(new { ev = "downloadDone", id = downloadId, ok = true });
                 Post(new { ev = "installResult", ok = true, file = fileName });
-                if (!string.IsNullOrEmpty(resolved.IconUrl))
+                if (!string.IsNullOrEmpty(resolved.IconUrl) || !string.IsNullOrEmpty(resolved.ProjectUrl)
+                    || !string.IsNullOrEmpty(resolved.Description))
                 {
-                    _cfg.ModIcons[fileName] = resolved.IconUrl;
+                    if (!string.IsNullOrEmpty(resolved.IconUrl)) _cfg.ModIcons[fileName] = resolved.IconUrl;
+                    if (!string.IsNullOrEmpty(resolved.ProjectUrl)) _cfg.ModUrls[fileName] = resolved.ProjectUrl;
+                    if (!string.IsNullOrEmpty(resolved.Description)) _cfg.ModDescriptions[fileName] = resolved.Description;
                     _cfg.Save();
                 }
                 SendMods();

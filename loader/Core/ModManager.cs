@@ -12,6 +12,8 @@ public class ModEntry
     [JsonPropertyName("size")] public long Size { get; set; }
     [JsonPropertyName("type")] public string Type { get; set; } = "mod"; // mod | shader | resourcepack
     [JsonPropertyName("iconUrl")] public string IconUrl { get; set; } = "";
+    [JsonPropertyName("projectUrl")] public string ProjectUrl { get; set; } = "";
+    [JsonPropertyName("description")] public string Description { get; set; } = "";
 }
 
 /// <summary>
@@ -20,16 +22,19 @@ public class ModEntry
 /// </summary>
 public static class ModManager
 {
-    public static List<ModEntry> ListFiles(string gameDir, IReadOnlyDictionary<string, string>? icons = null)
+    public static List<ModEntry> ListFiles(string gameDir, IReadOnlyDictionary<string, string>? icons = null,
+        IReadOnlyDictionary<string, string>? urls = null, IReadOnlyDictionary<string, string>? descriptions = null)
     {
         var result = new List<ModEntry>();
-        AddFolder(result, Path.Combine(gameDir, "mods"), "mod", icons);
-        AddFolder(result, Path.Combine(gameDir, "shaderpacks"), "shader", icons);
-        AddFolder(result, Path.Combine(gameDir, "resourcepacks"), "resourcepack", icons);
+        AddFolder(result, Path.Combine(gameDir, "mods"), "mod", icons, urls, descriptions);
+        AddFolder(result, Path.Combine(gameDir, "shaderpacks"), "shader", icons, urls, descriptions);
+        AddFolder(result, Path.Combine(gameDir, "resourcepacks"), "resourcepack", icons, urls, descriptions);
         return result;
     }
 
-    private static void AddFolder(List<ModEntry> result, string dir, string type, IReadOnlyDictionary<string, string>? icons)
+    private static void AddFolder(List<ModEntry> result, string dir, string type,
+        IReadOnlyDictionary<string, string>? icons, IReadOnlyDictionary<string, string>? urls,
+        IReadOnlyDictionary<string, string>? descriptions)
     {
         if (!Directory.Exists(dir)) return;
 
@@ -52,8 +57,12 @@ public static class ModManager
             // Скрываем сам FluxVisuals из списка модов
             if (type == "mod" && display.Contains("fluxvisuals", StringComparison.OrdinalIgnoreCase)) continue;
 
-            string icon = "";
+            string? icon = null;
+            string? url = null;
+            string? description = null;
             icons?.TryGetValue(fileName, out icon);
+            urls?.TryGetValue(fileName, out url);
+            descriptions?.TryGetValue(fileName, out description);
             result.Add(new ModEntry
             {
                 Name = DisplayName(display, type),
@@ -63,6 +72,8 @@ public static class ModManager
                 Size = new FileInfo(file).Length,
                 Type = type,
                 IconUrl = icon ?? "",
+                ProjectUrl = url ?? "",
+                Description = description ?? "",
             });
         }
 
@@ -75,8 +86,12 @@ public static class ModManager
                 bool enabled = !dirName.EndsWith(".disabled");
                 string display = enabled ? dirName : dirName[..^9];
                 if (display.StartsWith('.')) continue; // служебные папки
-                string dicon = "";
+                string? dicon = null;
+                string? durl = null;
+                string? ddesc = null;
                 icons?.TryGetValue(display, out dicon);
+                urls?.TryGetValue(display, out durl);
+                descriptions?.TryGetValue(display, out ddesc);
                 result.Add(new ModEntry
                 {
                     Name = display,
@@ -86,6 +101,8 @@ public static class ModManager
                     Size = 0,
                     Type = type,
                     IconUrl = dicon ?? "",
+                    ProjectUrl = durl ?? "",
+                    Description = ddesc ?? "",
                 });
             }
         }
