@@ -6,13 +6,14 @@ namespace FluxVisualsBots;
 /// <summary>Публикация новостей через slash-команду. Команду может использовать только owner.</summary>
 public sealed class NewsCommands : InteractionModuleBase<SocketInteractionContext>
 {
-    private const int MaxFileBytes = 8_000_000;
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(60) };
 
+    private readonly NewsPublisher _publisher;
     private readonly ulong _ownerId;
 
-    public NewsCommands()
+    public NewsCommands(NewsPublisher publisher)
     {
+        _publisher = publisher;
         ulong.TryParse(Environment.GetEnvironmentVariable("DISCORD_OWNER_ID"), out _ownerId);
     }
 
@@ -34,32 +35,17 @@ public sealed class NewsCommands : InteractionModuleBase<SocketInteractionContex
             return;
         }
 
-        var guild = Context.Guild;
-        if (guild == null)
+        if (Context.Guild == null)
         {
             await Respond("Команда работает только на сервере.");
             return;
         }
 
-        var target = guild.GetTextChannel(channel.Id);
-        if (target == null)
-        {
-            await Respond("Канал не найден или бот не может писать в него.");
-            return;
-        }
-
-        message = (message ?? "").Trim();
-        if (message.Length > 1900)
-        {
-            await Respond("Текст слишком длинный — максимум 1900 символов.");
-            return;
-        }
-
-        var files = new List<FileAttachment>();
+        var files = new List<NewsFile>();
         foreach (var attachment in new[] { file1, file2, file3, file4 })
         {
             if (attachment == null) continue;
-            if (attachment.Size > MaxFileBytes)
+            if (attachment.Size > NewsPublisher.MaxFileBytes)
             {
                 await Respond("Файл слишком большой — максимум 8 МБ на вложение.");
                 return;
@@ -68,12 +54,7 @@ public sealed class NewsCommands : InteractionModuleBase<SocketInteractionContex
             try
             {
                 byte[] bytes = await Http.GetByteArrayAsync(attachment.Url);
-                if (bytes.Length > MaxFileBytes)
-                {
-                    await Respond("Файл слишком большой — максимум 8 МБ на вложение.");
-                    return;
-                }
-                files.Add(new FileAttachment(new MemoryStream(bytes), attachment.Filename));
+                files.Add(new NewsFile(attachment.Filename, bytes));
             }
             catch (Exception)
             {
@@ -82,29 +63,16 @@ public sealed class NewsCommands : InteractionModuleBase<SocketInteractionContex
             }
         }
 
-        if (message.Length == 0 && files.Count == 0)
+        string? error = _publisher.Validate(message, files);
+        if (error != null)
         {
-            await Respond("Нужно указать текст или прикрепить файл.");
+            await Respond(error);
             return;
         }
 
-        try
-        {
-            if (files.Count > 0)
-                await target.SendFilesAsync(files, message, allowedMentions: AllowedMentions.None);
-            else
-                await target.SendMessageAsync(message, allowedMentions: AllowedMentions.None);
-
-            await Respond($"Опубликовано в {target.Mention}.");
-        }
-        catch (Exception ex)
-        {
-            await Respond("Не удалось опубликовать сообщение: " + ex.Message);
-        }
+        PublishResult result = await _publisher.PublishAsync(channel.Id, message, files);
+        await Respond(result.Ok ? $"Опубликовано в <#{channel.Id}>." : result.Error!);
     }
 
-    private async Task Respond(string text)
-    {
-        await ModifyOriginalResponseAsync(m => m.Content = text);
-    }
+    private async Task Respond(string text) => await ModifyOriginalResponseAsync(m => m.Content = text);
 }

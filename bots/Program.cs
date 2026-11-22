@@ -12,6 +12,9 @@ if (mode is not ("news" or "support"))
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Веб-панель принимает до 4 файлов по 8 МБ.
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 40_000_000);
+
 // Новостному боту не нужно читать сообщения — не запрашиваем привилегированный интент.
 // Support-бот читает вопросы в тикетах, поэтому ему нужны GuildMessages + MessageContent.
 GatewayIntents intents = GatewayIntents.Guilds;
@@ -28,6 +31,7 @@ builder.Services.AddSingleton<DiscordSocketClient>();
 builder.Services.AddSingleton(provider =>
     new InteractionService(provider.GetRequiredService<DiscordSocketClient>()));
 builder.Services.AddSingleton<CatalClient>();
+builder.Services.AddSingleton<NewsPublisher>();
 builder.Services.AddSingleton<BotWorker>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<BotWorker>());
 
@@ -43,5 +47,8 @@ app.MapGet("/bot-status", (DiscordSocketClient client) => Results.Json(new
     userId = client.CurrentUser?.Id.ToString(),
     guilds = client.Guilds.Count
 }));
+
+if (mode == "news")
+    app.MapNewsAdmin(mode);
 
 app.Run();
