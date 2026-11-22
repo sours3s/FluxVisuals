@@ -1,0 +1,7 @@
+name = "fluxvisuals"
+main = "worker.js"
+compatibility_date = "2026-11-22"
+
+# Адрес Render-сервера. Менять не нужно, если сервис называется fluxvisuals-server.
+[vars]
+ORIGIN = "fluxvisuals-server.onrender.com"
