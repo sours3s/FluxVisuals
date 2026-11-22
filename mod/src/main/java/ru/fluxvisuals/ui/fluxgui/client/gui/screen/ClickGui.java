@@ -8,6 +8,9 @@ import ru.fluxvisuals.ui.fluxgui.client.gui.render.IconRender;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.RoundedRenderer;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.ShadowRender;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.TextRender;
+import ru.fluxvisuals.client.FluxVisualsClient;
+import ru.fluxvisuals.config.friend.Friend;
+import ru.fluxvisuals.config.friend.FriendManager;
 import ru.fluxvisuals.ui.fluxgui.command.CommandManager;
 import ru.fluxvisuals.ui.fluxgui.config.ConfigManager;
 import ru.fluxvisuals.ui.fluxgui.cosmetics.BedrockModel;
@@ -51,6 +54,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -69,6 +73,7 @@ import net.minecraft.client.input.CharInput;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.util.InputUtil.Type;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
@@ -249,6 +254,11 @@ public class ClickGui extends Screen {
     public static boolean configInputFocus = false;
     public static float configsScroll = 0.0F;
     static float configsTargetScroll = 0.0F;
+    static int friendsTab = 0;
+    static String friendsSearch = "";
+    static boolean friendsSearchFocus = false;
+    static float friendsScroll = 0.0F;
+    static float friendsTargetScroll = 0.0F;
     static final Map<String, Float> CONFIG_ENTRY_ANIMS = new HashMap<>();
     static final Map<String, Float> CONFIG_HOVER_ANIMS = new HashMap<>();
     static int cosmeticsTab = 0;
@@ -503,6 +513,12 @@ public class ClickGui extends Screen {
             context.enableScissor(257, 72, 977, 526);
             this.renderConfigsPage(context, designMouseX, designMouseY);
             context.disableScissor();
+        } else if (selectedCategory == Category.FRIENDS && !isSearchMode()) {
+            this.renderCategoryCard(context);
+            this.renderFriendsCounterCard(context);
+            context.enableScissor(257, 72, 977, 526);
+            this.renderFriendsPage(context, designMouseX, designMouseY);
+            context.disableScissor();
         } else if (selectedCategory == Category.MARKS && !isSearchMode()) {
             this.renderCategoryCard(context);
             this.renderMarkerCounterCard(context);
@@ -658,6 +674,173 @@ public class ClickGui extends Screen {
         TextRender.draw(context, name, 67.93F, 496.595F, 9.0F, -1);
         TextRender.draw(context, role, 67.93F + TextRender.width(name + " ", 9.0F), 496.595F, 9.0F, accentAt(67.93F, 496.595F));
         TextRender.draw(context, expiry, 67.93F, 511.944F, 12.206F, -2130706433);
+    }
+
+    void renderFriendsCounterCard(DrawContext context) {
+        int online = friendsOnlinePlayers().size();
+        int friends = FriendManager.getFriends().size();
+        RoundedRenderer.drawRoundedRect(context, 704.0F, 10.0F, 273.0F, 52.0F, 12.0F, 1073741824);
+        IconRender.draw(context, "person", 716.0F, 28.0F, IconRender.getDesignSize("person"), accentAt(716.0F, 28.0F));
+        TextRender.draw(context, online + " / " + friends, 743.84F, 33.765F, 14.241F, -1);
+        TextRender.draw(context, "Игроков онлайн / друзей", 743.84F, 49.076F, 12.206F, -2130706433);
+    }
+
+    static List<String> friendsOnlinePlayers() {
+        List<String> names = new ArrayList<>();
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player == null || client.getNetworkHandler() == null) {
+            return names;
+        }
+        Collection<PlayerListEntry> entries = client.getNetworkHandler().getPlayerList();
+        if (entries == null) {
+            return names;
+        }
+        String self = client.player.getName().getString();
+        for (PlayerListEntry entry : entries) {
+            if (entry.getProfile() == null || entry.getProfile().name() == null) {
+                continue;
+            }
+            String name = entry.getProfile().name();
+            if (!name.equalsIgnoreCase(self)) {
+                names.add(name);
+            }
+        }
+        return names;
+    }
+
+    static List<String> friendsVisibleNames() {
+        String query = friendsSearch.trim().toLowerCase(Locale.ROOT);
+        List<String> result = new ArrayList<>();
+        if (friendsTab == 0) {
+            for (Friend friend : FriendManager.getFriends()) {
+                String name = friend.getName();
+                if (query.isEmpty() || name.toLowerCase(Locale.ROOT).contains(query)) {
+                    result.add(name);
+                }
+            }
+            return result;
+        }
+
+        List<String> online = friendsOnlinePlayers();
+        for (String name : online) {
+            if (query.isEmpty() || name.toLowerCase(Locale.ROOT).contains(query)) {
+                result.add(name);
+            }
+        }
+        if (!query.isEmpty() && online.stream().noneMatch(name -> name.equalsIgnoreCase(friendsSearch.trim()))) {
+            result.add(0, friendsSearch.trim());
+        }
+        return result;
+    }
+
+    static float friendsRowY(int index) {
+        return 174.0F + index * 42.0F - friendsScroll;
+    }
+
+    void renderFriendsPage(DrawContext context, float mouseX, float mouseY) {
+        friendsScroll = this.approach(friendsScroll, friendsTargetScroll, 10.0F);
+        float x = 267.0F;
+        float w = 700.0F;
+        float tabW = (w - 8.0F) / 2.0F;
+        float tabY = 84.0F;
+        float tabH = 32.0F;
+        for (int index = 0; index < 2; index++) {
+            float tabX = x + index * (tabW + 8.0F);
+            boolean selected = friendsTab == index;
+            boolean hovered = inside(mouseX, mouseY, tabX, tabY, tabW, tabH);
+            int bg = selected ? lerpColor(603979776, accentAt(tabX, tabY), 0.42F) : (hovered ? 855638015 : 603979776);
+            RoundedRenderer.drawRoundedRect(context, tabX, tabY, tabW, tabH, 8.0F, bg);
+            String label = index == 0 ? "Друзья" : "Сервер";
+            TextRender.draw(context, label, tabX + (tabW - TextRender.width(label, 12.65F)) / 2.0F, tabY + 20.0F, 12.65F, selected ? -1 : -2130706433);
+        }
+
+        float inputY = 126.0F;
+        float inputH = 34.0F;
+        boolean inputHovered = inside(mouseX, mouseY, x, inputY, w, inputH);
+        RoundedRenderer.drawRoundedRect(context, x, inputY, w, inputH, 8.0F, friendsSearchFocus || inputHovered ? 855638015 : 603979776);
+        String shownInput = trimTextFromStart(friendsSearch, 12.65F, w - 24.0F);
+        if (shownInput.isEmpty() && !friendsSearchFocus) {
+            TextRender.draw(context, "Поиск игрока на сервере", x + 11.0F, inputY + 21.0F, 12.65F, -2130706433);
+        } else {
+            TextRender.draw(context, shownInput, x + 11.0F, inputY + 21.0F, 12.65F, -1);
+            if (friendsSearchFocus && System.currentTimeMillis() % 1000L < 540L) {
+                float cursorX = x + 11.0F + TextRender.width(shownInput, 12.65F) + 1.0F;
+                RoundedRenderer.drawRoundedRect(context, cursorX, inputY + 8.0F, 1.2F, 18.0F, 0.6F, -1);
+            }
+        }
+
+        List<String> names = friendsVisibleNames();
+        float listTop = 174.0F;
+        float viewport = 526.0F - listTop;
+        float totalHeight = Math.max(0.0F, names.size() * 42.0F - 6.0F);
+        friendsTargetScroll = MathHelper.clamp(friendsTargetScroll, 0.0F, Math.max(0.0F, totalHeight - viewport));
+        List<String> online = friendsOnlinePlayers();
+        for (int index = 0; index < names.size(); index++) {
+            float rowY = friendsRowY(index);
+            if (rowY + 36.0F < 72.0F || rowY > 526.0F) {
+                continue;
+            }
+            String name = names.get(index);
+            boolean friend = FriendManager.isFriend(name);
+            RoundedRenderer.drawRoundedRect(context, x, rowY, w, 36.0F, 8.0F, 603979776);
+            if (online.stream().anyMatch(value -> value.equalsIgnoreCase(name))) {
+                RoundedRenderer.drawRoundedRect(context, x + 11.0F, rowY + 15.5F, 5.0F, 5.0F, 2.5F, -11870592);
+            }
+            TextRender.draw(context, trimText(name, 12.65F, w - 180.0F), x + 24.0F, rowY + 21.0F, 12.65F, -1);
+            String action = friend ? "Удалить" : "Добавить";
+            float buttonW = 92.0F;
+            float buttonX = x + w - buttonW - 12.0F;
+            float buttonY = rowY + 5.0F;
+            boolean hovered = inside(mouseX, mouseY, buttonX, buttonY, buttonW, 26.0F);
+            int buttonColor = friend
+                  ? (hovered ? 1442795098 : 587202559)
+                  : lerpColor(603979776, accentAt(buttonX, buttonY), hovered ? 0.65F : 0.38F);
+            RoundedRenderer.drawRoundedRect(context, buttonX, buttonY, buttonW, 26.0F, 6.0F, buttonColor);
+            TextRender.draw(context, action, buttonX + (buttonW - TextRender.width(action, 12.65F)) / 2.0F, buttonY + 16.0F, 12.65F, friend && hovered ? -38026 : -1);
+        }
+    }
+
+    boolean handleFriendsPageClick(float mouseX, float mouseY, int button) {
+        float x = 267.0F;
+        float w = 700.0F;
+        float tabW = (w - 8.0F) / 2.0F;
+        for (int index = 0; index < 2; index++) {
+            float tabX = x + index * (tabW + 8.0F);
+            if (inside(mouseX, mouseY, tabX, 84.0F, tabW, 32.0F)) {
+                friendsTab = index;
+                friendsSearch = "";
+                friendsSearchFocus = false;
+                friendsScroll = 0.0F;
+                friendsTargetScroll = 0.0F;
+                return true;
+            }
+        }
+
+        if (inside(mouseX, mouseY, x, 126.0F, w, 34.0F)) {
+            friendsSearchFocus = true;
+            return true;
+        }
+        friendsSearchFocus = false;
+
+        List<String> names = friendsVisibleNames();
+        float buttonW = 92.0F;
+        float buttonX = x + w - buttonW - 12.0F;
+        for (int index = 0; index < names.size(); index++) {
+            float rowY = friendsRowY(index);
+            if (inside(mouseX, mouseY, buttonX, rowY + 5.0F, buttonW, 26.0F)) {
+                String name = names.get(index);
+                if (FluxVisualsClient.get == null || FluxVisualsClient.get.friendManager == null) {
+                    return true;
+                }
+                if (FriendManager.isFriend(name)) {
+                    FluxVisualsClient.get.friendManager.remove(name);
+                } else {
+                    FluxVisualsClient.get.friendManager.add(name);
+                }
+                return true;
+            }
+        }
+        return true;
     }
 
     void renderCategoryCard(DrawContext context) {
@@ -2575,6 +2758,7 @@ public class ClickGui extends Screen {
                     searchQuery = "";
                     this.markerInputFocus = 0;
                     configInputFocus = false;
+                    friendsSearchFocus = false;
                     targetScroll = 0.0F;
                     scrollOffset = 0.0F;
                     return true;
@@ -2756,6 +2940,10 @@ public class ClickGui extends Screen {
 
             if (selectedCategory == Category.MARKS && !isSearchMode()) {
                 return this.handleMarkersPageClick(mouseX, mouseY, click.button());
+            }
+
+            if (selectedCategory == Category.FRIENDS && !isSearchMode()) {
+                return this.handleFriendsPageClick(mouseX, mouseY, click.button());
             }
 
             List<Module> modules = this.getFilteredModules();
@@ -3045,6 +3233,14 @@ public class ClickGui extends Screen {
             settingsTargetScroll = MathHelper.clamp(settingsTargetScroll - (float)verticalAmount * 34.0F, 0.0F, maxSettingsScroll);
             return true;
         }
+        if (selectedCategory == Category.FRIENDS && !isSearchMode()) {
+            if (inside(designMouseX, designMouseY, 267.0F, 174.0F, 700.0F, 352.0F)) {
+                List<String> names = friendsVisibleNames();
+                float maxScroll = Math.max(0.0F, names.size() * 42.0F - 6.0F - 352.0F);
+                friendsTargetScroll = MathHelper.clamp(friendsTargetScroll - (float)verticalAmount * 34.0F, 0.0F, maxScroll);
+            }
+            return true;
+        }
         if (selectedCategory == Category.CONFIGS && !isSearchMode()) {
             float pageW = 720.0F;
             float listY = 162.0F;
@@ -3130,6 +3326,16 @@ public class ClickGui extends Screen {
             }
         }
 
+        if (friendsSearchFocus) {
+            String text = input.asString();
+            if (!text.isEmpty() && friendsSearch.length() < 64) {
+                friendsSearch = friendsSearch + text;
+                friendsScroll = 0.0F;
+                friendsTargetScroll = 0.0F;
+                return true;
+            }
+        }
+
         if (activeTextSetting != null) {
             String text = input.asString();
             if (!text.isEmpty() && activeTextSetting.getValue().length() < 256) {
@@ -3169,6 +3375,31 @@ public class ClickGui extends Screen {
                 this.createOrImportConfig();
                 return true;
             }
+        }
+
+        if (friendsSearchFocus) {
+            int key = input.comp_4795();
+            if (key == 259) {
+                if (!friendsSearch.isEmpty()) {
+                    friendsSearch = friendsSearch.substring(0, friendsSearch.length() - 1);
+                }
+                return true;
+            }
+            if (key == 257 || key == 335) {
+                String name = friendsSearch.trim();
+                if (friendsTab == 1 && !name.isEmpty() && FluxVisualsClient.get != null
+                      && FluxVisualsClient.get.friendManager != null && !FriendManager.isFriend(name)) {
+                    FluxVisualsClient.get.friendManager.add(name);
+                    friendsSearch = "";
+                }
+                friendsSearchFocus = false;
+                return true;
+            }
+            if (key == 256) {
+                friendsSearchFocus = false;
+                return true;
+            }
+            return true;
         }
 
         if (activeTextSetting != null) {
