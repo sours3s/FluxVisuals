@@ -1,53 +1,39 @@
-# Бесплатный адрес FluxVisuals с полным названием
+# Адрес сайта FluxVisuals — `fluxvisuals.eu.org`
 
-Задача: короткий адрес вида `fluxvisuals.<зона>`, бесплатно, чтобы его было легко запомнить и набрать.
+Выбранный вариант: полное название `fluxvisuals` + бесплатная зона `eu.org`. Итого 18 символов, настоящий домен без названия хостинга.
 
-## Что реально получилось проверить
+**Полная пошаговая инструкция: [eu.org.md](eu.org.md).** Там есть регистрация в EU.org, nameserver'ы Cloudflare, заявка на домен, Worker и проверка.
 
-- Зоны `.ct` не существует — такой адрес нельзя зарегистрировать.
-- Прежние «бесплатные» двухбуквенные зоны Freenom больше не бесплатны для этого имени. Живой ответ их API 22.11.2026: `fluxvisuals.tk` → `status: AVAILABLE, type: PAID, 8.22 EUR`. То же для `.cf` и `.gq`.
-- `fluxvisuals.is-a.dev` — забронирован командой is-a.dev, недоступен.
-- Свободны прямо сейчас: `fluxvisuals.vercel.app`, `fluxvisuals.netlify.app`.
+Кратко:
 
-Итого: **настоящий двухбуквенный домен бесплатно уже не получить**. Самый короткий бесплатный адрес с полным названием — `fluxvisuals.eu.org` (18 символов). Самый быстрый в реализации — `fluxvisuals.vercel.app` (22 символа).
+1. Cloudflare → Add a site `fluxvisuals.eu.org` → Free → получить два NS.
+2. <https://nic.eu.org/arf/> → зарегистрироваться → Request a new domain → `fluxvisuals.eu.org` + эти NS → ждать письма об одобрении.
+3. Cloudflare → DNS: CNAME `@` → `fluxvisuals-server.onrender.com`, **Proxied**.
+4. `npx wrangler deploy` из этой папки — Worker с маршрутом `fluxvisuals.eu.org/*`.
 
-## Вариант 1 — `fluxvisuals.vercel.app` (рекомендую, работает сразу)
+`worker.js` проксирует:
 
-Бесплатный план Hobby, HTTPS автоматический, адрес содержит полное название. Проверено: имя свободно.
+- `/`, `/api/*`, `/css/*`, `/js/*` → `fluxvisuals-server.onrender.com` (сайт, кабинет, Catal, API);
+- `/news`, `/api/news/*`, `/bot-status` → `fluxvisuals-news-bot.onrender.com` (панель новостей).
 
-1. Vercel → **Add New… → Project** → импортируйте `sours3s/FluxVisuals`.
-2. Назовите проект ровно `fluxvisuals` — от этого зависит адрес.
-3. **Root Directory** → `site-proxy`.
-4. Framework Preset → **Other**, Build Command и Output Directory — пустыми.
-5. **Deploy** → `https://fluxvisuals.vercel.app`.
-
-`vercel.json` уже настроен и проксирует:
-
-- `/`, `/api/*` и остальное → `fluxvisuals-server.onrender.com` (сайт и API);
-- `/news`, `/api/news/*`, `/bot-status` → `fluxvisuals-news-bot.onrender.com`.
-
-Проверка:
+Проверка после деплоя:
 
 ```text
-https://fluxvisuals.vercel.app/                 → сайт FluxVisuals
-https://fluxvisuals.vercel.app/api/mod/version  → JSON с версией мода
-https://fluxvisuals.vercel.app/news             → панель новостей
+https://fluxvisuals.eu.org/                 → сайт FluxVisuals
+https://fluxvisuals.eu.org/api/mod/version  → JSON с версией
+https://fluxvisuals.eu.org/news             → панель новостей
 ```
 
-## Вариант 2 — `fluxvisuals.eu.org` (короче, но нужно ожидание)
+## Если нужен адрес прямо сейчас
 
-EU.org выдаёт настоящие бесплатные домены с 1996 года. Адрес `fluxvisuals.eu.org` короче версии с Vercel и не содержит названия хостинга.
+Пока EU.org рассматривает заявку, можно задеплоить тот же прокси на `fluxvisuals.vercel.app`: Vercel → импорт репозитория, Root Directory = `site-proxy`, Framework = Other, название проекта ровно `fluxvisuals`. В `vercel.json` уже прописаны те же маршруты. Имя свободно.
 
-1. Зарегистрируйтесь на <http://www.eu.org/> и подайте заявку на `fluxvisuals.eu.org`.
-2. После одобрения в Render → сервис `fluxvisuals` → **Settings → Custom Domains → Add Custom Domain** → `fluxvisuals.eu.org`.
-3. В DNS домена добавьте `CNAME` → `fluxvisuals-server.onrender.com`, удалите `AAAA`, если есть.
-4. Нажмите **Verify**. Render сам выпустит SSL.
+## Почему не двухбуквенная зона
 
-Минус: заявка одобряется вручную и может занять несколько дней. Прокси Vercel в этом случае не нужен.
+Зоны `.ct` не существует. Живая проверка API Freenom от 22.11.2026: `fluxvisuals.tk`, `.cf`, `.gq` отдаются как `PAID` по €8.22/год. `fluxvisuals.is-a.dev` забронирован. Поэтому бесплатный короткий домен с полным названием — только `eu.org`.
 
 ## Важно
 
-- Лоадер продолжает обращаться к `fluxvisuals-server.onrender.com` напрямую. Менять exe и API не нужно.
-- Render Free засыпает через ~15 минут, поэтому первый заход может быть медленным. Держите UptimeRobot на `/ping` сервера и ботов.
-- Кэш прокси в `vercel.json` отключён, чтобы кабинет и API не отдавали устаревшие данные.
-- Запасной вариант — Cloudflare Workers из этой же папки (`worker.js`, `wrangler.toml`), но адрес там длиннее.
+- Лоадер ходит на `fluxvisuals-server.onrender.com` напрямую — exe и API менять не нужно.
+- Render Free засыпает через ~15 минут; UptimeRobot держите на исходных `onrender.com`-адресах.
+- EU.org одобряет заявки вручную, это может занять несколько дней.

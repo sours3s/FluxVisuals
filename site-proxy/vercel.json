@@ -1,0 +1,32 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/news",
+      "destination": "https://fluxvisuals-news-bot.onrender.com/news"
+    },
+    {
+      "source": "/api/news/:path*",
+      "destination": "https://fluxvisuals-news-bot.onrender.com/api/news/:path*"
+    },
+    {
+      "source": "/bot-status",
+      "destination": "https://fluxvisuals-news-bot.onrender.com/bot-status"
+    },
+    {
+      "source": "/:path*",
+      "destination": "https://fluxvisuals-server.onrender.com/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    }
+  ]
+}

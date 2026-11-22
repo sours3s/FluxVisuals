@@ -2,6 +2,11 @@ name = "fluxvisuals"
 main = "worker.js"
 compatibility_date = "2026-11-22"
 
+# После одобрения fluxvisuals.eu.org Worker будет обслуживать весь адрес.
+# Пока домен не одобрен — эту строку можно закомментировать и пользоваться workers.dev.
+route = { pattern = "fluxvisuals.eu.org/*", zone_name = "fluxvisuals.eu.org" }
+
 # Адрес Render-сервера. Менять не нужно, если сервис называется fluxvisuals-server.
 [vars]
 ORIGIN = "fluxvisuals-server.onrender.com"
+NEWS_ORIGIN = "fluxvisuals-news-bot.onrender.com"
