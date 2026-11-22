@@ -67,6 +67,9 @@ public final class FiguraBridge {
       }
       try {
          LOGGER.info("Loading avatar: {}", entry.id());
+         // Figura не прячет модель от владельца в первом лице сама: без этого
+         // камера оказывается внутри головы аватара. Скрипт ставим до загрузки.
+         CosmeticFirstPerson.installHide(entry.folder());
          loadLocalAvatar.invoke(null, entry.folder());
          appliedId = entry.id();
          LOGGER.info("Avatar loaded: {}", entry.id());

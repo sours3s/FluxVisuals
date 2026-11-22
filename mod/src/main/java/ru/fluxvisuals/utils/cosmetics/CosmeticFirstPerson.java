@@ -28,19 +28,44 @@ final class CosmeticFirstPerson {
    }
 
    static void installHide(Path folder) {
-      if (folder != null) {
-         try {
-            if (!Files.isRegularFile(folder.resolve("avatar.json"))) {
-               return;
-            }
-            Path script = folder.resolve(MAIN_SCRIPT);
-            String existing = Files.exists(script) ? Files.readString(script, StandardCharsets.UTF_8) : "";
-            String body = stripBlock(existing);
-            Files.writeString(script, body + hideBlock(), StandardCharsets.UTF_8);
-         } catch (Exception var4) {
-            LOGGER.warn("Could not add the first-person hide to {}", folder, var4);
+      if (folder == null) {
+         return;
+      }
+      Path avatarFile = folder.resolve("avatar.json");
+      if (!Files.isRegularFile(avatarFile)) {
+         return;
+      }
+      Path script = folder.resolve(MAIN_SCRIPT);
+      try {
+         JsonObject avatar = readAvatar(avatarFile);
+         if (avatar == null) {
+            return;
+         }
+         JsonArray scripts = registerScript(avatar, MAIN_SCRIPT);
+         String existing = Files.exists(script) ? Files.readString(script, StandardCharsets.UTF_8) : "";
+         Files.writeString(script, stripBlock(existing) + hideBlock(), StandardCharsets.UTF_8);
+         Files.writeString(avatarFile, avatar.toString(), StandardCharsets.UTF_8);
+      } catch (Exception e) {
+         LOGGER.warn("Could not add first-person hide to {}", folder, e);
+      }
+   }
+
+   /** Figura не выполняет script.lua, если он не перечислен в avatar.json. */
+   private static JsonArray registerScript(JsonObject avatar, String script) {
+      JsonArray scripts;
+      if (avatar.has(AUTO_SCRIPTS) && avatar.get(AUTO_SCRIPTS).isJsonArray()) {
+         scripts = avatar.getAsJsonArray(AUTO_SCRIPTS);
+      } else {
+         scripts = new JsonArray();
+         avatar.add(AUTO_SCRIPTS, scripts);
+      }
+      for (JsonElement element : scripts) {
+         if (element.isJsonPrimitive() && script.equals(element.getAsString())) {
+            return scripts;
          }
       }
+      scripts.add(script);
+      return scripts;
    }
 
    private static String stripBlock(String script) {
