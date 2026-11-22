@@ -23,6 +23,12 @@ public final class HudItemFilter {
         capturing = false;
     }
 
+    public static void clearFrame() {
+        HUD_ITEMS.clear();
+        HUD_ITEM_OPACITY.clear();
+        activeOpacity = 1.0F;
+    }
+
     public static void capture(ItemGuiElementRenderState state) {
         if (capturing) {
             HUD_ITEMS.add(state);
@@ -48,6 +54,6 @@ public final class HudItemFilter {
         }
 
         int alpha = Math.max(0, Math.min(255, Math.round(activeOpacity * 255.0F)));
-        return alpha << 24 | original & 0x00FFFFFF;
+        return alpha << 24 | alpha << 16 | alpha << 8 | alpha;
     }
 }

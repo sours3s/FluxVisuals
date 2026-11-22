@@ -29,7 +29,10 @@ public class InGameHudMixin {
         Module hudModule = FluxVisualsClient.get != null && FluxVisualsClient.get.manager != null
               ? FluxVisualsClient.get.manager.getModule(Hud.class)
               : null;
-        if (FluxVisualsClient.isModInitialized() && hudModule != null && hudModule.enable && Hud.blur.get("HUD")) {
+        boolean liquidGlass = FluxVisualsClient.get != null
+              && ru.fluxvisuals.ui.fluxgui.module.render.Hud.isLiquidGlassStyle();
+        if (FluxVisualsClient.isModInitialized() && hudModule != null && hudModule.enable
+              && (liquidGlass || Hud.blur.get("HUD"))) {
             FluxGlassPipeline.captureHudFrame();
         }
     }

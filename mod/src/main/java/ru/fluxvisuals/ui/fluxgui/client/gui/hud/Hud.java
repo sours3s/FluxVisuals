@@ -92,15 +92,12 @@ public final class Hud {
 
     public void render(DrawContext context) {
         FrameEspGlow.update();
+        HudItemFilter.clearFrame();
         ru.fluxvisuals.ui.fluxgui.module.render.Animations.INSTANCE.updateAnimations();
         this.updateLayout(context);
         context.getMatrices().pushMatrix();
         context.getMatrices().translate(this.originX, this.originY);
         context.getMatrices().scale(this.scale, this.scale);
-        if (ru.fluxvisuals.ui.fluxgui.module.render.Hud.blur.getValue() || ru.fluxvisuals.ui.fluxgui.module.render.Hud.isLiquidGlassStyle()) {
-            MirageGlassPipeline.captureFrame();
-        }
-
         for (HudElement element : ELEMENTS) {
             if (element != Notifications.INSTANCE) {
                 this.renderElement(context, element, this.editing);
@@ -115,9 +112,6 @@ public final class Hud {
 
     public void renderNotifications(DrawContext context) {
         this.updateLayout(context);
-        if (ru.fluxvisuals.ui.fluxgui.module.render.Hud.blur.getValue() || ru.fluxvisuals.ui.fluxgui.module.render.Hud.isLiquidGlassStyle()) {
-            MirageGlassPipeline.captureFrame();
-        }
 
         context.getMatrices().pushMatrix();
         context.getMatrices().translate(this.originX, this.originY);
