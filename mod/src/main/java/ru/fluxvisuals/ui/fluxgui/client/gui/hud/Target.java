@@ -9,7 +9,6 @@ import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.MathHelper;
@@ -42,7 +41,6 @@ public final class Target implements HudElement {
     private static final float HEALTH_BASELINE = 31.083F;
     private static final float MIN_BAR_HEIGHT = 0.5F;
     private static final EquipmentSlot[] ARMOR_SLOTS = new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
-    private static LivingEntity currentTarget;
     private static int lastResolveAge = Integer.MIN_VALUE;
     private static LivingEntity lastResolvedTarget;
 
@@ -77,12 +75,16 @@ public final class Target implements HudElement {
 
     @Override
     public boolean hasContent() {
-        return resolveTarget() != null;
+        return subject() != null;
     }
 
     @Override
     public void render(DrawContext context, Hud hud) {
         LivingEntity subject = subject();
+        if (subject == null) {
+            return;
+        }
+
         String health = healthText(subject);
         float separatorX = separatorX(subject);
         float barX = barX(subject);
@@ -148,14 +150,12 @@ public final class Target implements HudElement {
     }
 
     private static LivingEntity subject() {
-        LivingEntity target = resolveTarget();
-        return target != null ? target : MinecraftClient.getInstance().player;
+        return resolveTarget();
     }
 
     private static LivingEntity resolveTarget() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || client.world == null) {
-            currentTarget = null;
             lastResolvedTarget = null;
             lastResolveAge = Integer.MIN_VALUE;
             return null;
@@ -164,14 +164,15 @@ public final class Target implements HudElement {
         // При открытом чате TargetHUD показывается только на себя —
         // это позволяет видеть/перетаскивать элемент, не целясь в другого игрока.
         if (client.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen) {
-            currentTarget = client.player;
             lastResolvedTarget = client.player;
             lastResolveAge = client.player.age;
             return client.player;
         }
 
         if (lastResolveAge == client.player.age) {
-            return lastResolvedTarget;
+            return isValidTarget(lastResolvedTarget)
+                  && client.player.distanceTo(lastResolvedTarget) <= 4.0F
+                  ? lastResolvedTarget : null;
         }
 
         lastResolveAge = client.player.age;
@@ -183,15 +184,11 @@ public final class Target implements HudElement {
         }
 
         if (isValidTarget(pointed) && client.player.distanceTo(pointed) <= 4.0F) {
-            currentTarget = pointed;
             lastResolvedTarget = pointed;
             return pointed;
         }
 
         // Панель должна исчезать сразу, как только прицел сошёл с цели.
-        // Раньше здесь оставался запомненный/ближайший игрок — из-за этого
-        // TargetHUD отображался, даже когда никто не наведен.
-        currentTarget = null;
         lastResolvedTarget = null;
         return null;
     }
