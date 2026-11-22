@@ -17,9 +17,11 @@ public sealed class BotWorker : BackgroundService
         @"^\s*(?:Привет[!,.]?\s*)?(?:Я\s*[—–-]\s*)?Catal\s*[—–-]\s*ИИ[\s-]?саппорт\s+FluxVisuals\.?\s*",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex CallVerb = new(
-        @"(?iu)\b(позови(те)?|вызови(те)?|зови(те)?|пригласи(те)?|нужен|нужна|подключи(те)?|call|ping|tag|mention)\b");
+        @"\b(позови(те)?|вызови(те)?|зови(те)?|пригласи(те)?|нужен|нужна|подключи(те)?|call|ping|tag|mention)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex SupportTarget = new(
-        @"(?iu)\b(саппорт\w*|поддерж\w*|жив\w*\s+человек\w*|человек\w*|support|staff|админ\w*|модератор\w*)\b");
+        @"\b(саппорт\w*|поддерж\w*|жив\w*\s+человек\w*|человек\w*|support|staff|админ\w*|модератор\w*)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _interactions;
@@ -154,6 +156,18 @@ public sealed class BotWorker : BackgroundService
     }
 
     private async Task OnMessageAsync(SocketMessage message)
+    {
+        try
+        {
+            await HandleMessageAsync(message);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Ошибка обработки сообщения {MessageId}", message.Id);
+        }
+    }
+
+    private async Task HandleMessageAsync(SocketMessage message)
     {
         if (message.Author.IsBot || message.Author.IsWebhook) return;
 
