@@ -36,6 +36,7 @@ public sealed class BotWorker : BackgroundService
     private readonly ConcurrentDictionary<ulong, List<CatalTurn>> _history = new();
     private readonly ConcurrentDictionary<ulong, byte> _greeted = new();
     private readonly ConcurrentDictionary<ulong, byte> _channelGreeted = new();
+    private readonly ConcurrentDictionary<ulong, byte> _pendingGreetings = new();
     private readonly object _historyGate = new();
     private int _commandsRegistered;
 
@@ -163,18 +164,20 @@ public sealed class BotWorker : BackgroundService
         if (!supported) return;
         if (_client.CurrentUser == null) return;
 
-        bool channelHadGreeting = _channelGreeted.ContainsKey(message.Channel.Id);
-        if (_channelGreeted.TryAdd(message.Channel.Id, 0))
+        bool pending = _pendingGreetings.ContainsKey(message.Channel.Id);
+        if (pending && message.Author.IsBot && message.Author.Id != _client.CurrentUser.Id)
         {
-            try
+            // Это сообщение Ticket Tool — отвечаем сразу после него.
+            if (_pendingGreetings.TryRemove(message.Channel.Id, out _))
             {
-                await message.Channel.SendMessageAsync(Greeting, allowedMentions: AllowedMentions.None);
-            }
-            catch (Exception ex)
-            {
-                _log.LogWarning(ex, "Не удалось отправить приветствие в канал {ChannelId}", message.Channel.Id);
+                await Task.Delay(400);
+                await SendGreetingAsync(message.Channel, message.Channel.Id);
             }
         }
+
+        bool channelHadGreeting = _channelGreeted.ContainsKey(message.Channel.Id) || pending;
+        if (!pending && _channelGreeted.TryAdd(message.Channel.Id, 0))
+            await SendGreetingAsync(message.Channel, message.Channel.Id);
 
         string text = message.Content.Replace(_client.CurrentUser.Mention, "").Trim();
 
@@ -211,7 +214,19 @@ public sealed class BotWorker : BackgroundService
         }
         catch { }
 
-        CatalResult result = await _catal.AskAsync(question, history, image, message.Author.Id);
+        _log.LogInformation("Запрос к Catal от {UserId}, символов={Length}, скриншот={HasImage}",
+            message.Author.Id, question.Length, image != null);
+        CatalResult result;
+        try
+        {
+            result = await _catal.AskAsync(question, history, image, message.Author.Id);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Неожиданная ошибка при запросе к Catal");
+            result = CatalResult.Fail("Catal недоступен. Попробуйте позже.");
+        }
+        _log.LogInformation("Ответ Catal: ok={Ok}, символов={Length}", result.Ok, result.Text.Length);
 
         bool first = _greeted.TryAdd(message.Author.Id, 0) && !channelHadGreeting;
         string answer = IntroPrefix.Replace(result.Text, "").Trim();
@@ -232,6 +247,7 @@ public sealed class BotWorker : BackgroundService
             }
         }
 
+        _log.LogInformation("Отправка ответа в канал {ChannelId}", message.Channel.Id);
         await ReplyChunksAsync(message, SplitAnswer(answer));
     }
 
@@ -254,28 +270,36 @@ public sealed class BotWorker : BackgroundService
     private async Task OnChannelCreatedAsync(SocketChannel channel)
     {
         if (channel is not ITextChannel text || !IsSupportChannel(text)) return;
-        if (!_channelGreeted.TryAdd(channel.Id, 0)) return;
+        if (!_pendingGreetings.TryAdd(channel.Id, 0)) return;
 
-        // Ticket Tool ещё может настраивать права канала — повторяем несколько раз.
+        // Ticket Tool пишет «Welcome» сразу после создания канала. Ждём его сообщение,
+        // а если оно не пришло — отправляем приветствие сами через 12 секунд.
+        _log.LogInformation("Новый тикет {ChannelId}, ждём сообщение Ticket Tool", channel.Id);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(12));
+            if (_pendingGreetings.TryRemove(channel.Id, out _))
+                await SendGreetingAsync(text, channel.Id);
+        });
+    }
+
+    private async Task SendGreetingAsync(IMessageChannel channel, ulong channelId)
+    {
         for (int attempt = 0; attempt < 3; attempt++)
         {
             try
             {
-                await text.SendMessageAsync(Greeting, allowedMentions: AllowedMentions.None);
-                _log.LogInformation("Приветствие отправлено в новый тикет {ChannelId}", channel.Id);
+                await channel.SendMessageAsync(Greeting, allowedMentions: AllowedMentions.None);
+                _channelGreeted.TryAdd(channelId, 0);
+                _log.LogInformation("Приветствие отправлено в тикет {ChannelId}", channelId);
                 return;
             }
             catch (Exception ex)
             {
                 if (attempt == 2)
-                {
-                    _log.LogWarning(ex, "Не удалось поприветствовать тикет {ChannelId}, попробуем при первом сообщении", channel.Id);
-                    _channelGreeted.TryRemove(channel.Id, out _);
-                }
+                    _log.LogWarning(ex, "Не удалось поприветствовать тикет {ChannelId}", channelId);
                 else
-                {
                     await Task.Delay(1500);
-                }
             }
         }
     }
