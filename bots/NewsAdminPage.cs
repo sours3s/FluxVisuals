@@ -153,7 +153,7 @@ select option{background:#151722;color:var(--text)}
 
       <div class="field">
         <label>Вложения</label>
-        <div class="drop" id="drop"><b>Перетащите файлы сюда</b>или нажмите, чтобы выбрать скриншоты и файлы</div>
+        <div class="drop" id="drop"><b>Перетащите файлы сюда или вставьте по Ctrl+V</b>нажмите, чтобы выбрать скриншоты и файлы из проводника</div>
         <input id="fileInput" type="file" multiple hidden>
         <div class="files" id="files"></div>
       </div>
@@ -174,6 +174,7 @@ select option{background:#151722;color:var(--text)}
         </div>
         <div class="notes">
           <div><b>●</b><span><b>@everyone</b> и <b>@here</b> пингуют участников. Упоминания ролей и пользователей из текста отключены.</span></div>
+          <div><b>●</b><span>Скриншот можно вставить по <b>Ctrl+V</b> — он появится во вложениях сразу.</span></div>
           <div><b>●</b><span>Можно отправить только текст, только файлы или всё вместе.</span></div>
           <div><b>●</b><span>После отправки поле и вложения очищаются.</span></div>
         </div>
@@ -260,14 +261,23 @@ function update(){
   $('#publish').disabled=!(ch&&(text.trim()||files.length));
 }
 
-function addFiles(list){
+function stamp(){const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())}
+function addFiles(list, pasted){
+  let added=0;
   for(const f of list){
     if(files.length>=4){toast('Максимум 4 файла.',true);break}
     if(f.size>8000000){toast('«'+f.name+'» больше 8 МБ.',true);continue}
-    files.push({file:f,url:URL.createObjectURL(f)});
+    // Буфер обмена отдаёт файлы с безликими именами вроде image.png — даём имя со временем.
+    const isImage=/^image\//.test(f.type||'');
+    const name=isImage&&/^(image|screenshot|clipboard|paste)/i.test(f.name)
+      ?'screenshot-'+stamp()+'.'+((f.type||'image/png').split('/')[1]||'png')
+      :f.name;
+    files.push({file:isImage?new File([f],name,{type:f.type}):f,url:URL.createObjectURL(f)});
+    added++;
   }
   $('#fileInput').value='';
   renderFiles();update();
+  if(pasted&&added)toast('Вставлено во вложения: '+added);
 }
 function renderFiles(){
   $('#files').innerHTML=files.map((x,i)=>
@@ -304,6 +314,15 @@ document.querySelectorAll('[data-insert]').forEach(b=>b.addEventListener('click'
   m.selectionStart=m.selectionEnd=pos+txt.length;m.focus();update();
 }));
 $('#fileInput').addEventListener('change',e=>addFiles(e.target.files));
+document.addEventListener('paste',e=>{
+  const blobs=[...(e.clipboardData&&e.clipboardData.items||[])]
+    .filter(i=>i.kind==='file')
+    .map(i=>i.getAsFile())
+    .filter(Boolean);
+  if(!blobs.length)return; // текстовый Ctrl+V оставляем текстовому полю
+  e.preventDefault();
+  addFiles(blobs,true);
+});
 $('#drop').addEventListener('click',()=>$('#fileInput').click());
 ['dragenter','dragover'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.add('hover')}));
 ['dragleave','drop'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.remove('hover')}));
