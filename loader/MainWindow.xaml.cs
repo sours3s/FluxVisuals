@@ -145,9 +145,11 @@ public partial class MainWindow : Window
         ExtractResource("Web.app.js", Path.Combine(webDir, "js", "app.js"));
         ExtractResource("Web.style.css", Path.Combine(webDir, "css", "style.css"));
 
-        // Лого из Embedded Resources
+        // Лого и аватар Catal из Embedded Resources
         string logoDst = Path.Combine(webDir, "img", "logo.png");
         ExtractResource("Resources.logo.png", logoDst);
+        string catalDst = Path.Combine(webDir, "img", "catal.png");
+        ExtractResource("Web.img.catal.png", catalDst);
 
         FluxVisualsLoader.Core.LauncherLog.Info($"Web files extracted to: {webDir}");
         FluxVisualsLoader.Core.LauncherLog.Info($"Files: {string.Join(", ", Directory.GetFiles(webDir, "*", SearchOption.AllDirectories))}");
