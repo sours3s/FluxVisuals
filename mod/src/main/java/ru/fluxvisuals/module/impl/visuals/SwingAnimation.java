@@ -68,6 +68,12 @@ public class SwingAnimation extends Module {
          return;
       }
 
+      // Не сохраняем статичную позу руки, когда игрок просто смотрит на сущность.
+      // Пользовательская анимация применяется только во время реального взмаха.
+      if (event.getSwingProgress() <= 0.0F) {
+         return;
+      }
+
       MatrixStack matrix = event.getMatrices();
       float swingProgress = event.getSwingProgress();
       float equipProgress = event.getEquipProgress();
