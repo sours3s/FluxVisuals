@@ -2,7 +2,7 @@
   "providers": [
     {
       "type": "bitmap",
-      "file": "auravisuals:textures/logoaura_globals.png",
+      "file": "fluxvisuals:textures/logoaura_globals.png",
       "ascent": 8,
       "height": 12,
       "chars": [
