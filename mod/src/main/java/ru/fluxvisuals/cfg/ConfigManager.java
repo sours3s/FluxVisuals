@@ -12,8 +12,13 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import org.apache.commons.io.FilenameUtils;
 import ru.fluxvisuals.client.FluxVisualsClient;
+import ru.fluxvisuals.crosshair.CrosshairSettings;
 import ru.fluxvisuals.module.api.Module;
+import ru.fluxvisuals.ui.clickgui.FluxKeybindManager;
 import ru.fluxvisuals.ui.draggable.DraggableManager;
+import ru.fluxvisuals.ui.fluxgui.client.gui.hud.HudEditor;
+import ru.fluxvisuals.ui.fluxgui.client.gui.hud.HudElementStyleManager;
+import ru.fluxvisuals.ui.fluxgui.theme.ThemeManager;
 
 @Environment(EnvType.CLIENT)
 public final class ConfigManager extends Manager<Config> {
@@ -207,8 +212,41 @@ public final class ConfigManager extends Manager<Config> {
       this.getContents().clear();
       // Перезагружаем default
       this.setContents(loadConfigs());
-      // Сбрасываем драggable позиции
+      // Сбрасываем позиции и стили HUD редактора
+      HudEditor.loadLayout(new JsonObject());
+      HudElementStyleManager.load(new JsonObject());
       DraggableManager.getInstance().resetAll();
+
+      // Друзья, оформление, темы, бинды ClickGUI и прицел
+      if (FluxVisualsClient.get != null) {
+         if (FluxVisualsClient.get.friendManager != null) {
+            FluxVisualsClient.get.friendManager.clearFriend();
+         }
+         if (FluxVisualsClient.get.guiManager != null) {
+            FluxVisualsClient.get.guiManager.resetToDefaults();
+         }
+      }
+      ThemeManager.INSTANCE.reset();
+      FluxKeybindManager.get().reset();
+      CrosshairSettings.reset();
+
+      // Остальные пользовательские данные ClickGUI (кроме учётных записей)
+      File root = FluxVisualsClient.get != null ? FluxVisualsClient.get.root : null;
+      if (root != null) {
+         File legacyConfig = new File(root, "config");
+         String[] legacyFiles = {
+            "local-config.json", "menu-state.json", "lastConfigID.json",
+            "session-nickname.json", "auto-auth.json", "friends.json",
+            "macros.json", "ways.json"
+         };
+         for (String name : legacyFiles) {
+            File file = new File(legacyConfig, name);
+            if (file.exists()) {
+               file.delete();
+            }
+         }
+      }
+
       setLastUsedConfig("default");
       // Сохраняем default
       this.saveConfig("default");

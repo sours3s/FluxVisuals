@@ -47,7 +47,14 @@ public final class FluxKeybindManager {
         }
     }
 
-    public int binding(String id) {
+    public void reset() {
+      load();
+      bindings.clear();
+      keyWasDown.clear();
+      save();
+   }
+
+   public int binding(String id) {
         load();
         return bindings.getOrDefault(id, GLFW.GLFW_KEY_UNKNOWN);
     }

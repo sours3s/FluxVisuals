@@ -39,6 +39,16 @@ public class GuiManager {
       }
    }
 
+   public void resetToDefaults() {
+      this.currentTheme = Theme.THEME1;
+      this.currentCategory = Category.Visuals;
+      StyleConfig.watermarkLogo = true;
+      StyleConfig.watermarkGlow = true;
+      StyleConfig.watermarkName = true;
+      StyleConfig.clickGuiLogo = true;
+      this.saveSettings();
+   }
+
    public void setGuiTheme(Theme theme) {
       this.currentTheme = theme;
       this.saveSettings();

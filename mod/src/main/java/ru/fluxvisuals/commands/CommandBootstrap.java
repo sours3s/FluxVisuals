@@ -17,6 +17,7 @@ public final class CommandBootstrap {
          CommandManager manager = CommandManager.getInstance();
          manager.register(ConfigCommand.getInstance());
          manager.register(FriendCommand.getInstance());
+         manager.register(ResetCommand.getInstance());
       }
    }
 }

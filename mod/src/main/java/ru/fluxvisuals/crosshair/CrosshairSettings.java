@@ -44,6 +44,19 @@ public final class CrosshairSettings {
       return INSTANCE;
    }
 
+   public static void reset() {
+      CrosshairSettings current = getInstance();
+      current.style = "Cross";
+      current.enabled = false;
+      current.size = 6.0F;
+      current.thickness = 1.5F;
+      current.gap = 3.0F;
+      current.colorR = 255;
+      current.colorG = 255;
+      current.colorB = 255;
+      current.save();
+   }
+
    /** Копия с дефолтами для превью карточки стиля. */
    public static CrosshairSettings createPreview(String style) {
       CrosshairSettings s = new CrosshairSettings();

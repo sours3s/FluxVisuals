@@ -44,7 +44,22 @@ public class ThemeManager {
         this.loadPersistedSelectedTheme();
     }
 
-    public void loadPersistedSelectedTheme() {
+    /** Полный сброс пользовательских тем к состоянию «как после установки». */
+   public void reset() {
+      File[] files = this.themeDir.listFiles((dir, name) -> name.endsWith(".json"));
+      if (files != null) {
+         for (File file : files) {
+            file.delete();
+         }
+      }
+      this.init();
+      Theme fallback = this.getDefaultTheme();
+      if (fallback != null) {
+         this.setTheme(fallback);
+      }
+   }
+
+   public void loadPersistedSelectedTheme() {
         File f = new File(this.themeDir, "selected_theme.json");
         if (f.isFile()) {
             try {
