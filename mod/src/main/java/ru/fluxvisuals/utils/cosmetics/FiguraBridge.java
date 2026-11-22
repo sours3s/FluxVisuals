@@ -67,6 +67,9 @@ public final class FiguraBridge {
       }
       try {
          LOGGER.info("Loading avatar: {}", entry.id());
+         // Клик по другой карточке не вызывает clear(), поэтому убираем наш
+         // hide-скрипт и старый блок из предыдущего аватара вручную.
+         repairPrevious();
          // Figura не прячет модель от владельца в первом лице сама: без этого
          // камера оказывается внутри головы аватара. Скрипт ставим до загрузки.
          CosmeticFirstPerson.installHide(entry.folder());
@@ -77,6 +80,16 @@ public final class FiguraBridge {
       } catch (Exception e) {
          LOGGER.error("Failed to apply cosmetic {}", entry.id(), e);
          return false;
+      }
+   }
+
+   private static void repairPrevious() {
+      if (appliedId.isEmpty()) {
+         return;
+      }
+      CosmeticEntry previous = CosmeticsRepository.byId(appliedId);
+      if (previous != null) {
+         CosmeticFirstPerson.repair(previous.folder());
       }
    }
 
@@ -93,6 +106,7 @@ public final class FiguraBridge {
       }
       try {
          clearAvatars.invoke(null, uuid);
+         repairPrevious();
          appliedId = "";
          LOGGER.info("Cleared cosmetic");
          return true;

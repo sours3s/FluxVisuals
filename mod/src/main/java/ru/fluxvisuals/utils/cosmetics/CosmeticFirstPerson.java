@@ -23,6 +23,8 @@ final class CosmeticFirstPerson {
    private static final String BLOCK_START = "-- >>> fluxvisuals first person";
    private static final String BLOCK_END = "-- <<< fluxvisuals first person";
    private static final String MAIN_SCRIPT = "script.lua";
+   /** Отдельный файл: не трогаем чужой script.lua и его физику/анимации. */
+   private static final String HIDE_SCRIPT = "fluxvisuals_first_person.lua";
 
    private CosmeticFirstPerson() {
    }
@@ -35,22 +37,40 @@ final class CosmeticFirstPerson {
       if (!Files.isRegularFile(avatarFile)) {
          return;
       }
-      Path script = folder.resolve(MAIN_SCRIPT);
       try {
          JsonObject avatar = readAvatar(avatarFile);
          if (avatar == null) {
             return;
          }
-         JsonArray scripts = registerScript(avatar, MAIN_SCRIPT);
-         String existing = Files.exists(script) ? Files.readString(script, StandardCharsets.UTF_8) : "";
-         Files.writeString(script, stripBlock(existing) + hideBlock(), StandardCharsets.UTF_8);
+         // Старые версии FluxVisuals дописывали блок в чужой script.lua.
+         // Убираем его, но сам скрипт и его запись в autoScripts оставляем как было.
+         cleanupLegacyInjection(folder);
+         registerScript(avatar, HIDE_SCRIPT);
+         Files.writeString(folder.resolve(HIDE_SCRIPT), hideBlock(), StandardCharsets.UTF_8);
          Files.writeString(avatarFile, avatar.toString(), StandardCharsets.UTF_8);
       } catch (Exception e) {
          LOGGER.warn("Could not add first-person hide to {}", folder, e);
       }
    }
 
-   /** Figura не выполняет script.lua, если он не перечислен в avatar.json. */
+   private static void cleanupLegacyInjection(Path folder) throws Exception {
+      Path legacy = folder.resolve(MAIN_SCRIPT);
+      if (!Files.isRegularFile(legacy)) {
+         return;
+      }
+      String original = Files.readString(legacy, StandardCharsets.UTF_8);
+      String cleaned = stripBlock(original);
+      if (!cleaned.equals(original)) {
+         Files.writeString(legacy, cleaned, StandardCharsets.UTF_8);
+      }
+   }
+
+   /**
+   * Figura выполняет все найденные Lua-файлы, только если autoScripts отсутствует.
+   * Как только список появляется, запускаются только перечисленные скрипты.
+   * Поэтому добавляем только наш лёгкий hide-скрипт: тяжёлые чужие physics/анимации
+   * вместе с аватаром больше не стартуют и не роняют FPS.
+   */
    private static JsonArray registerScript(JsonObject avatar, String script) {
       JsonArray scripts;
       if (avatar.has(AUTO_SCRIPTS) && avatar.get(AUTO_SCRIPTS).isJsonArray()) {
@@ -105,6 +125,7 @@ final class CosmeticFirstPerson {
             if (!Files.isRegularFile(avatarFile)) {
                return;
             }
+            cleanupLegacyInjection(folder);
             for (String name : OWN_SCRIPTS) {
                Files.deleteIfExists(folder.resolve(name + ".lua"));
             }

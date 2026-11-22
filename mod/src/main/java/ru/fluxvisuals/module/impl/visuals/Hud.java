@@ -114,10 +114,11 @@ public class Hud extends Module {
    public final SliderSetting durabilityThreshold = new SliderSetting("Durability %", 15.0F, 5.0F, 60.0F, 5.0F, true);
    public static MultiBooleanSetting blur = new MultiBooleanSetting(
       "Blur",
-      // Размытие HUD отключено по умолчанию: оно ломало отрисовку текста/иконок
-      // и предметов в GUI. Liquid-glass остаётся только в ClickGUI.
+      // Liquid-glass/root FBO пока отключён и для GUI и для HUD: вложенный RenderPass
+      // перехватывал вывод и ломал текст, иконки и предметы. ProGuard-слои и шейдеры
+      // оставлены на месте, чтобы вернуть эффект после отдельной проверки.
       new BooleanSetting("HUD", false),
-      new BooleanSetting("GUI", true)
+      new BooleanSetting("GUI", false)
    );
    private final List<Hud.Notification> notifications = new ArrayList<>();
    private final List<Hud.NotifItem> pendingNotificationItems = new ArrayList<>();
