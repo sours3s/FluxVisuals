@@ -4,6 +4,7 @@ import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import ru.fluxvisuals.client.FluxVisualsClient;
+import ru.fluxvisuals.utils.cosmetics.FiguraBridge;
 
 @Environment(EnvType.CLIENT)
 public final class ResetCommand implements Command {
@@ -34,7 +35,7 @@ public final class ResetCommand implements Command {
 
     @Override
     public String description() {
-        return "Полный сброс клиента: модули, настройки, позиции HUD, друзья и темы";
+        return "Полный сброс клиента: модули, настройки, позиции HUD, друзья, темы и косметика";
     }
 
     @Override
@@ -42,7 +43,8 @@ public final class ResetCommand implements Command {
         if (FluxVisualsClient.get == null || FluxVisualsClient.get.configManager == null) {
             throw new CommandException("Клиент ещё не инициализирован");
         }
+        FiguraBridge.clear();
         FluxVisualsClient.get.configManager.resetAll();
-        context.sendSuccess("FluxVisuals: все настройки и позиции сброшены");
+        context.sendSuccess("FluxVisuals: все настройки, позиции и косметика сброшены");
     }
 }
