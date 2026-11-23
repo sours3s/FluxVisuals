@@ -1,394 +1,290 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FluxVisuals Admin Panel</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
-        .sidebar { width: 260px; background: #161b22; border-right: 1px solid #30363d; height: 100vh; position: fixed; left: 0; top: 0; padding: 20px; display: flex; flex-direction: column; }
-        .logo { font-size: 1.5rem; font-weight: 700; color: #a855f7; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
-        .nav { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-        .nav a { color: #8b949e; text-decoration: none; padding: 12px 16px; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
-        .nav a:hover, .nav a.active { background: #21262d; color: #e6edf3; }
-        .main { margin-left: 260px; padding: 30px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .header h1 { font-size: 1.75rem; font-weight: 600; }
-        .user-info { display: flex; align-items: center; gap: 15px; color: #8b949e; }
-        .btn { padding: 10px 20px; border-radius: 6px; border: none; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-        .btn-primary { background: #a855f7; color: white; }
-        .btn-primary:hover { background: #9333ea; }
-        .btn-danger { background: #da3633; color: white; }
-        .btn-danger:hover { background: #f85149; }
-        .btn-secondary { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
-        .btn-secondary:hover { background: #30363d; }
-        .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-        .card h2 { font-size: 1.25rem; margin-bottom: 20px; color: #e6edf3; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
-        .stat { background: #21262d; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
-        .stat-label { color: #8b949e; font-size: 0.875rem; margin-bottom: 8px; }
-        .stat-value { font-size: 2rem; font-weight: 700; color: #a855f7; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #30363d; }
-        th { color: #8b949e; font-weight: 500; font-size: 0.875rem; text-transform: uppercase; }
-        tr:hover td { background: #21262d; }
-        .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-        .badge-active { background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb44; }
-        .badge-inactive { background: #da363322; color: #f85149; border: 1px solid #da363344; }
-        .badge-admin { background: #a855f722; color: #d8b4fe; border: 1px solid #a855f744; }
-        .badge-hwid { background: #d2a10622; color: #e3b341; border: 1px solid #d2a10644; }
-        .actions { display: flex; gap: 8px; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
-        .modal.show { display: flex; }
-        .modal-content { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; width: 100%; max-width: 400px; }
-        .modal h3 { margin-bottom: 20px; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 6px; color: #8b949e; font-size: 0.875rem; }
-        .form-group input, .form-group select { width: 100%; padding: 10px 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #a855f7; }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
-        .empty { text-align: center; color: #8b949e; padding: 40px; }
-        .tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
-        .tab { padding: 10px 16px; background: none; border: none; color: #8b949e; cursor: pointer; border-radius: 6px; font-weight: 500; }
-        .tab.active, .tab:hover { color: #e6edf3; background: #21262d; }
-        .log-entry { font-family: monospace; font-size: 0.8rem; color: #8b949e; padding: 8px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; margin-bottom: 8px; }
-        .log-entry.success { border-color: #1f6feb44; color: #58a6ff; }
-        .log-entry.fail { border-color: #da363344; color: #f85149; }
-        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px; border-radius: 8px; background: #161b22; border: 1px solid #30363d; z-index: 200; display: none; align-items: center; gap: 10px; }
-        .toast.show { display: flex; }
-        .toast.success { border-color: #1f6feb; }
-        .toast.error { border-color: #da3633; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FluxVisuals — клиент для Minecraft 1.21.11</title>
+<meta name="description" content="FluxVisuals для Minecraft 1.21.11 на Fabric: ESP, Smooth Camera, Dynamic Lights, Block Outline и другие модули. Всё включается в ClickGUI.">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css?v=3">
 </head>
 <body>
-    <aside class="sidebar">
-        <div class="logo">🔮 FluxVisuals Admin</div>
-        <nav class="nav">
-            <a href="#" class="active" data-tab="dashboard"><span>📊</span> Dashboard</a>
-            <a href="#" data-tab="users"><span>👥</span> Users</a>
-            <a href="#" data-tab="logs"><span>📋</span> Auth Logs</a>
-            <a href="#" data-tab="settings"><span>⚙️</span> Settings</a>
-        </nav>
-    </aside>
+<div class="site-glow"></div>
+<div class="grid-overlay"></div>
 
-    <main class="main">
-        <header class="header">
-            <h1 id="pageTitle">Dashboard</h1>
-            <div class="user-info">
-                <span id="currentUser">Loading...</span>
-                <button class="btn btn-secondary" onclick="logout()">Logout</button>
-            </div>
-        </header>
+<header class="site-nav">
+  <div class="nav-inner">
+    <a class="brand" href="/"><span class="brand-mark">F</span><span class="brand-text">FLUX<span>VISUALS</span></span></a>
+    <nav class="nav-links" id="navLinks">
+      <a class="nav-link hide-sm" href="#features">Возможности</a>
+      <a class="nav-link hide-sm" href="#access">Доступ</a>
+      <a class="nav-link hide-sm" href="#how">Как начать</a>
+      <a class="nav-link hide-sm" href="#support">Поддержка</a>
+    </nav>
+    <div class="nav-actions" id="navActions"></div>
+  </div>
+</header>
 
-        <div id="tab-dashboard" class="tab-content">
-            <div class="stats-grid" id="statsGrid">
-                <div class="stat"><div class="stat-label">Total Users</div><div class="stat-value" id="statTotal">-</div></div>
-                <div class="stat"><div class="stat-label">Active Users</div><div class="stat-value" id="statActive">-</div></div>
-                <div class="stat"><div class="stat-label">Admins</div><div class="stat-value" id="statAdmin">-</div></div>
-                <div class="stat"><div class="stat-label">HWID Locked</div><div class="stat-value" id="statHwid">-</div></div>
-                <div class="stat"><div class="stat-label">Logins (7d)</div><div class="stat-value" id="statLogins">-</div></div>
-            </div>
+<main>
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow">Minecraft 1.21.11 · Fabric</div>
+        <h1>Красивая картинка.<br><span class="accent">Ровный FPS.</span></h1>
+        <p class="hero-lead">Оверлеи, подсветка блоков, камера и свет. Модули включаются по отдельности в ClickGUI и настраиваются там же.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" href="/register.html">Скачать клиент</a>
+          <a class="btn btn-ghost btn-lg" href="#how">Как начать</a>
         </div>
+        <div class="hero-note">Один аккаунт на сайт и лоадер. Мод подтянется при первом запуске.</div>
+      </div>
 
-        <div id="tab-users" class="tab-content" style="display:none;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2>User Management</h2>
-                <button class="btn btn-primary" onclick="openUserModal()">+ Add User</button>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="mock">
+          <div class="mock-bar">
+            <span class="dots"><i></i><i></i><i></i></span>
+            <span class="mock-title">FluxVisuals · ClickGUI</span>
+            <span class="mock-ver">clickgui</span>
+          </div>
+          <div class="mock-body">
+            <div class="mock-side">
+              <div class="mock-search">⌕ Поиск модуля</div>
+              <div class="mock-sub">Категории</div>
+              <div class="mock-cats" id="mockCats">
+                <button class="mock-cat active" data-cat="Visuals">Visuals</button>
+                <button class="mock-cat" data-cat="Utils">Utils</button>
+                <button class="mock-cat" data-cat="Configs">Configs</button>
+                <button class="mock-cat" data-cat="Friends">Friends</button>
+                <button class="mock-cat" data-cat="Cosmetics">Cosmetics</button>
+              </div>
+              <div class="mock-sub" id="mockModsLabel">Модули</div>
+              <div class="mock-mods" id="mockMods"></div>
             </div>
-            <div class="card">
-                <table id="usersTable">
-                    <thead>
-                        <tr>
-                            <th>ID</th><th>Username</th><th>Role</th><th>Status</th><th>HWID</th><th>Last Login</th><th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <div class="mock-main">
+              <div class="mock-heading"><b id="mockName">Jump Circle</b><span class="switch on"></span></div>
+              <p class="mock-desc" id="mockDesc"></p>
+              <div class="mock-settings" id="mockSettings"></div>
             </div>
+          </div>
+          <div class="mock-foot"><span>fluxvisuals / fabric</span><span>fabric 1.21.11</span></div>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div id="tab-logs" class="tab-content" style="display:none;">
-            <h2>Authentication Logs</h2>
-            <div class="card">
-                <div id="logsContainer"></div>
-            </div>
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-kicker">Возможности</div>
+        <h2>Модули, которые есть в клиенте</h2>
+        <p>Названия и настройки взяты из самой сборки. Каждый пункт можно включить отдельно и не трогать остальные.</p>
+      </div>
+      <div class="grid-3">
+        <div class="feature"><div class="feature-ic">✦</div><h3>ESP</h3><p>Подсвечивает игроков и мобов в прямой видимости. Цели выбираются в настройках.</p></div>
+        <div class="feature"><div class="feature-ic">◎</div><h3>Jump Circle</h3><p>Круг под ногами при прыжке. Режимы Pulse, Spiral, Nova и Blocks, с настройкой радиуса и длительности.</p></div>
+        <div class="feature"><div class="feature-ic">▤</div><h3>Better F3</h3><p>Чистый оверлей вместо стандартного экрана отладки. Координаты, FPS, пинг и память.</p></div>
+        <div class="feature"><div class="feature-ic">☀</div><h3>Dynamic Lights</h3><p>Свет от факелов, горящих сущностей и предметов в руке. Радиус и сила настраиваются.</p></div>
+        <div class="feature"><div class="feature-ic">◫</div><h3>Block Outline</h3><p>Контур или оверлей на целевом блоке. Цвет, прозрачность и скорость анимации.</p></div>
+        <div class="feature"><div class="feature-ic">◐</div><h3>CameraCustomer</h3><p>Зум, FOV, аспект, тряска и сглаживание камеры. Всё в одном модуле.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt" id="access">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-kicker">Доступ</div>
+        <h2>Клиент бесплатный</h2>
+        <p>Аккаунт открывает доступ сразу. Скачивай лоадер из кабинета и запускай мод.</p>
+      </div>
+      <div class="plans">
+        <div class="plan" style="grid-column:1/-1">
+          <div class="plan-name">Бесплатный доступ</div>
+          <div class="plan-price">Бесплатно<small>для всех аккаунтов</small></div>
+          <div class="plan-desc">Все модули и обновления доступны сразу после регистрации.</div>
+          <ul class="plan-list">
+            <li>Все модули клиента</li>
+            <li>Обновления включены</li>
+            <li>Один аккаунт на сайт и лоадер</li>
+          </ul>
+          <a class="btn btn-primary" href="/register.html">Создать аккаунт</a>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div id="tab-settings" class="tab-content" style="display:none;">
-            <h2>Server Settings</h2>
-            <div class="card">
-                <div class="form-group">
-                    <label>Mod Download URL</label>
-                    <input type="text" id="modUrlInput" placeholder="https://..." style="width:100%;">
-                </div>
-                <button class="btn btn-primary" onclick="saveModUrl()">Save Mod URL</button>
-            </div>
+  <section class="section" id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-kicker">Как начать</div>
+        <h2>Три шага до первой игры</h2>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num">01</div><h3>Аккаунт</h3><p>Регистрируешься на сайте. Эти логин и пароль понадобятся лоадеру.</p></div>
+        <div class="step"><div class="step-num">02</div><h3>Лоадер</h3><p>Скачиваешь exe из кабинета. Установка не требуется.</p></div>
+        <div class="step"><div class="step-num">03</div><h3>Игра</h3><p>Входишь в лоадер и жмёшь «Играть». Мод скачается сам.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt" id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-kicker">Вопросы</div>
+        <h2>Что спрашивают чаще всего</h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item"><summary>Можно ли получить бан за клиент?</summary><p>Клиент не отправляет игровые пакеты от твоего имени. Он рисует поверх игры и меняет только клиентскую картинку.</p></details>
+        <details class="faq-item"><summary>Сколько стоит доступ?</summary><p>Ничего. Доступ открывается сразу после регистрации.</p></details>
+        <details class="faq-item"><summary>Можно ли играть без аккаунта?</summary><p>Нет. Лоадер проверяет аккаунт и привязывает его к HWID. Для сброса привязки напиши в поддержку.</p></details>
+        <details class="faq-item"><summary>Сколько весит клиент?</summary><p>Лоадер около 65 МБ. Мод и библиотеки скачиваются при первом запуске, дальше запуск быстрый.</p></details>
+        <details class="faq-item"><summary>Лоадер не пускает после входа</summary><p>Проверь, что входишь тем же логином, что и на сайте. Если доступ не открывается, напиши в поддержку и укажи логин из кабинета.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="support">
+    <div class="wrap">
+      <div class="support-card">
+        <div>
+          <div class="section-kicker">Поддержка</div>
+          <h2>Что-то не работает?</h2>
+          <p>Напиши в Discord. Укажи логин, версию клиента и что ты делал перед ошибкой. Так разобраться получится быстрее.</p>
         </div>
+        <a class="btn btn-primary btn-lg" href="https://discord.gg/HScqNfYcca" target="_blank" rel="noopener">Открыть Discord</a>
+      </div>
+    </div>
+  </section>
+</main>
 
-        <!-- User Modal -->
-        <div class="modal" id="userModal">
-            <div class="modal-content">
-                <h3 id="modalTitle">Add User</h3>
-                <form id="userForm">
-                    <input type="hidden" id="userId">
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="usernameInput" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="passwordInput" placeholder="Leave empty to keep current">
-                    </div>
-                    <div class="form-group">
-                        <label>Role</label>
-                        <select id="roleSelect">
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="isActiveCheck"> Active
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="resetHwidCheck"> Reset HWID
-                        </label>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeUserModal()">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+<footer class="site-footer">
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <a class="brand" href="/"><span class="brand-mark">F</span><span class="brand-text">FLUX<span>VISUALS</span></span></a>
+      <p>Клиент для Minecraft 1.21.11 на Fabric. Не является продуктом Mojang.</p>
+    </div>
+    <div class="foot-col"><h4>Сайт</h4><a href="#features">Возможности</a><a href="#access">Доступ</a><a href="#support">Поддержка</a></div>
+    <div class="foot-col"><h4>Кабинет</h4><a href="/login.html">Войти</a><a href="/register.html">Регистрация</a><a href="/account.html">Мой аккаунт</a></div>
+    <div class="foot-col"><h4>Информация</h4><a href="#how">Как начать</a><a href="#faq">Вопросы</a><span style="color:var(--dim);font-size:13px;display:block;padding:4px 0">Minecraft 1.21.11</span><span style="color:var(--dim);font-size:13px;display:block;padding:4px 0">Fabric Loader</span></div>
+  </div>
+  <div class="foot-bottom"><span>© 2026 FluxVisuals</span><span>Сделано для игры, а не для рекламы</span></div>
+</footer>
 
-        <div class="toast" id="toast"></div>
-    </main>
+<script src="/js/site.js?v=3"></script>
+<script>
+  initNav('home');
 
-    <script>
-        let authToken = '';
-        const API_BASE = '/api';
+  const mockData = {
+    Visuals: {
+      modules: [
+        { name: 'Jump Circle', desc: 'Круг под ногами при прыжке', settings: [
+          { label: 'Mode', type: 'mode', value: 'Pulse' },
+          { label: 'Radius', type: 'range', value: 0.5, min: 0.3, max: 1.0 },
+          { label: 'Block Radius', type: 'range', value: 4.0, min: 1.0, max: 8.0 },
+          { label: 'Time', type: 'range', value: 1000, min: 200, max: 2000 },
+          { label: 'Anim', type: 'range', value: 500, min: 100, max: 1000 }
+        ]},
+        { name: 'Smooth Camera', desc: 'Добавляет камере от первого лица плавность движения', settings: [
+          { label: 'Delay', type: 'range', value: 5.0, min: 5.0, max: 50.0 }
+        ]},
+        { name: 'Block Outline', desc: 'Подсветка целевого блока: контур или плазма-оверлей', settings: [
+          { label: 'Mode', type: 'mode', value: 'Both' },
+          { label: 'Fill', type: 'bool', value: false },
+          { label: 'Alpha', type: 'range', value: 130, min: 40, max: 220 },
+          { label: 'Speed', type: 'range', value: 1.0, min: 0.2, max: 3.0 }
+        ]},
+        { name: 'Dynamic Lights', desc: 'Динамическое освещение от факелов и горящих сущностей', settings: [
+          { label: 'Radius', type: 'range', value: 8, min: 3, max: 15 },
+          { label: 'Strength', type: 'range', value: 1.0, min: 0.3, max: 2.0 },
+          { label: 'Held Items', type: 'bool', value: true },
+          { label: 'Burning Entities', type: 'bool', value: true }
+        ]},
+        { name: 'Attack Distance Indicator', desc: 'Показывает расстояние до цели в цифрах под прицелом', settings: [
+          { label: 'Display Mode', type: 'mode', value: 'Numeric' },
+          { label: 'Text Size', type: 'range', value: 12, min: 8, max: 20 },
+          { label: 'Y Offset', type: 'range', value: 18, min: 0, max: 50 },
+          { label: 'Only on target', type: 'bool', value: true },
+          { label: 'Show Max Reach', type: 'bool', value: false }
+        ]},
+        { name: 'Motion Blur', desc: 'Плавный эффект размытия движения', settings: [
+          { label: 'Strength', type: 'range', value: 0.5, min: 0.1, max: 1.5 }
+        ]}
+      ]
+    },
+    Utils: {
+      modules: [
+        { name: 'Better F3', desc: 'Замена стандартного экрана отладки F3 на чистый оверлей', settings: [
+          { label: 'Coords', type: 'bool', value: true },
+          { label: 'FPS', type: 'bool', value: true },
+          { label: 'Direction', type: 'bool', value: true },
+          { label: 'Ping', type: 'bool', value: true },
+          { label: 'Entities', type: 'bool', value: true },
+          { label: 'Memory', type: 'bool', value: true },
+          { label: 'Position', type: 'mode', value: 'Left' }
+        ]},
+        { name: 'AppleSkin', desc: 'Показывает насыщение и предпросмотр восстановления на еде', settings: [
+          { label: 'Show Saturation', type: 'bool', value: true },
+          { label: 'Show Exhaustion', type: 'bool', value: false }
+        ]},
+        { name: 'Discord RPC', desc: 'Показывает активность FluxVisuals в Discord (с кнопкой на сервер)', settings: [] }
+      ]
+    },
+    Configs: { note: 'Вкладка GUI для конфигов: сохранение, загрузка, список, удаление, экспорт и импорт. Отдельных модулей здесь нет.' },
+    Friends: { note: 'Список друзей. Друзья получают зелёный ESP, тег [F] и защиту от френдли-файра.' },
+    Cosmetics: { note: 'Шляпа, крылья и след за игроком. Включаются в модуле Cosmetic, который лежит в Visuals.' }
+  };
 
-        // Tab switching
-        document.querySelectorAll('.nav a').forEach(a => {
-            a.addEventListener('click', e => {
-                e.preventDefault();
-                document.querySelectorAll('.nav a').forEach(x => x.classList.remove('active'));
-                a.classList.add('active');
-                document.querySelectorAll('.tab-content').forEach(x => x.style.display = 'none');
-                document.getElementById('tab-' + a.dataset.tab).style.display = 'block';
-                document.getElementById('pageTitle').textContent = a.textContent.trim();
-            });
-        });
+  let activeCat = 'Visuals';
 
-        // Toast
-        function showToast(message, type = 'success') {
-            const t = document.getElementById('toast');
-            t.textContent = message;
-            t.className = 'toast show ' + type;
-            setTimeout(() => t.classList.remove('show'), 3000);
-        }
+  function renderMockMods() {
+    const box = document.getElementById('mockMods');
+    const cat = mockData[activeCat];
+    document.getElementById('mockModsLabel').textContent = cat.modules ? 'Модули' : 'Раздел';
+    box.innerHTML = cat.modules
+      ? cat.modules.map((m, i) => '<button class="mock-item' + (i === 0 ? ' active' : '') + '" data-mod="' + i + '">' + esc(m.name) + '</button>').join('')
+      : '<div class="mock-note">' + esc(cat.note) + '</div>';
+    box.querySelectorAll('[data-mod]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        box.querySelectorAll('.mock-item').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        renderMockSettings(cat.modules[Number(btn.dataset.mod)]);
+      });
+    });
+    if (cat.modules) renderMockSettings(cat.modules[0]);
+  }
 
-        // Auth
-        async function api(path, options = {}) {
-            const headers = { 'Content-Type': 'application/json', ...options.headers };
-            if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
-            const res = await fetch(API_BASE + path, { ...options, headers });
-            if (res.status === 401) { logout(); return null; }
-            return res;
-        }
+  function renderMockSettings(mod) {
+    document.getElementById('mockName').textContent = mod.name;
+    document.getElementById('mockDesc').textContent = mod.desc;
+    const box = document.getElementById('mockSettings');
+    if (!mod.settings.length) {
+      box.innerHTML = '<div class="mock-note">У модуля нет дополнительных настроек.</div>';
+      return;
+    }
+    box.innerHTML = mod.settings.map(s => {
+      if (s.type === 'bool') {
+        return '<div class="mock-row"><span class="mock-label">' + esc(s.label) + '</span><span class="mock-toggle' + (s.value ? ' on' : '') + '"></span></div>';
+      }
+      if (s.type === 'mode') {
+        return '<div class="mock-row"><span class="mock-label">' + esc(s.label) + '</span><span class="mock-mode">' + esc(s.value) + '</span></div>';
+      }
+      const pct = Math.round((s.value - s.min) / (s.max - s.min) * 100);
+      return '<div class="mock-row"><span class="mock-label">' + esc(s.label) + '</span><span class="track"><i style="width:' + pct + '%"></i></span><span class="mock-val">' + s.value + '</span></div>';
+    }).join('');
+  }
 
-        async function checkAuth() {
-            const token = localStorage.getItem('authToken');
-            if (!token) { showLogin(); return; }
-            authToken = token;
-            const res = await api('/auth/verify');
-            if (res && res.ok) {
-                const data = await res.json();
-                document.getElementById('currentUser').textContent = data.username + (data.isAdmin ? ' (Admin)' : '');
-                loadDashboard();
-            } else {
-                showLogin();
-            }
-        }
-
-        function showLogin() {
-            const user = prompt('Enter username:');
-            const pass = prompt('Enter password:');
-            if (!user || !pass) { showLogin(); return; }
-            login(user, pass);
-        }
-
-        async function login(username, password) {
-            const res = await fetch(API_BASE + '/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                authToken = data.token;
-                localStorage.setItem('authToken', authToken);
-                document.getElementById('currentUser').textContent = data.username + (data.isAdmin ? ' (Admin)' : '');
-                loadDashboard();
-            } else {
-                const err = await res.json();
-                alert('Login failed: ' + (err.error || 'Unknown error'));
-                showLogin();
-            }
-        }
-
-        function logout() {
-            authToken = '';
-            localStorage.removeItem('authToken');
-            showLogin();
-        }
-
-        // Dashboard
-        async function loadDashboard() {
-            const res = await api('/admin/stats');
-            if (!res) return;
-            const data = await res.json();
-            document.getElementById('statTotal').textContent = data.totalUsers;
-            document.getElementById('statActive').textContent = data.activeUsers;
-            document.getElementById('statAdmin').textContent = data.adminUsers;
-            document.getElementById('statHwid').textContent = data.hwidLocked;
-            document.getElementById('statLogins').textContent = data.recentLogins;
-
-            if (data.adminUsers === 0) {
-                document.getElementById('tab-users').style.display = 'none';
-                document.querySelector('[data-tab="users"]').style.display = 'none';
-                document.querySelector('[data-tab="logs"]').style.display = 'none';
-                document.querySelector('[data-tab="settings"]').style.display = 'none';
-            } else {
-                loadUsers();
-                loadLogs();
-                loadModUrl();
-            }
-        }
-
-        // Users
-        async function loadUsers() {
-            const res = await api('/admin/users');
-            if (!res) return;
-            const users = await res.json();
-            const tbody = document.querySelector('#usersTable tbody');
-            tbody.innerHTML = users.map(u => `
-                <tr>
-                    <td>${u.id}</td>
-                    <td>${u.username}</td>
-                    <td><span class="badge ${u.isAdmin ? 'badge-admin' : ''}">${u.isAdmin ? 'Admin' : 'User'}</span></td>
-                    <td><span class="badge ${u.isActive ? 'badge-active' : 'badge-inactive'}">${u.isActive ? 'Active' : 'Disabled'}</span></td>
-                    <td><span class="badge ${u.hwid ? 'badge-hwid' : ''}">${u.hwid ? 'Locked' : 'Not bound'}</span></td>
-                    <td>${u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : 'Never'}</td>
-                    <td>
-                        <div class="actions">
-                            <button class="btn btn-secondary" style="padding:6px 10px;font-size:0.8rem;" onclick="editUser(${u.id}, '${u.username}', ${u.isAdmin}, ${u.isActive}, '${u.hwid || ''}')">Edit</button>
-                            <button class="btn btn-danger" style="padding:6px 10px;font-size:0.8rem;" onclick="deleteUser(${u.id}, '${u.username}')">Delete</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function openUserModal(user = null) {
-            document.getElementById('userForm').reset();
-            document.getElementById('userId').value = '';
-            document.getElementById('passwordInput').required = !user;
-            document.getElementById('modalTitle').textContent = user ? 'Edit User' : 'Add User';
-            if (user) {
-                document.getElementById('userId').value = user.id;
-                document.getElementById('usernameInput').value = user.username;
-                document.getElementById('roleSelect').value = user.isAdmin ? 'admin' : 'user';
-                document.getElementById('isActiveCheck').checked = user.isActive;
-                document.getElementById('passwordInput').placeholder = 'Leave empty to keep current';
-            } else {
-                document.getElementById('passwordInput').placeholder = 'Required for new user';
-            }
-            document.getElementById('userModal').classList.add('show');
-        }
-
-        function closeUserModal() {
-            document.getElementById('userModal').classList.remove('show');
-        }
-
-        document.getElementById('userForm').addEventListener('submit', async e => {
-            e.preventDefault();
-            const id = document.getElementById('userId').value;
-            const data = {
-                username: document.getElementById('usernameInput').value,
-                password: document.getElementById('passwordInput').value,
-                isAdmin: document.getElementById('roleSelect').value === 'admin',
-                isActive: document.getElementById('isActiveCheck').checked,
-                resetHwid: document.getElementById('resetHwidCheck').checked
-            };
-            if (!data.password && !id) { alert('Password required for new user'); return; }
-
-            const res = await api(id ? `/admin/users/${id}` : '/admin/users', {
-                method: id ? 'PUT' : 'POST',
-                body: JSON.stringify(data)
-            });
-            if (res && res.ok) {
-                showToast(id ? 'User updated' : 'User created');
-                closeUserModal();
-                loadUsers();
-            } else {
-                const err = await res?.json();
-                showToast(err?.error || 'Failed', 'error');
-            }
-        });
-
-        async function editUser(id, username, isAdmin, isActive, hwid) {
-            openUserModal({ id, username, isAdmin, isActive, hwid });
-        }
-
-        async function deleteUser(id, username) {
-            if (!confirm(`Delete user "${username}"?`)) return;
-            const res = await api('/admin/users/' + id, { method: 'DELETE' });
-            if (res && res.ok) {
-                showToast('User deleted');
-                loadUsers();
-            } else {
-                showToast('Failed to delete', 'error');
-            }
-        }
-
-        // Logs
-        async function loadLogs() {
-            const res = await api('/admin/logs?limit=100');
-            if (!res) return;
-            const logs = await res.json();
-            document.getElementById('logsContainer').innerHTML = logs.map(l => `
-                <div class="log-entry ${l.success ? 'success' : 'fail'}">
-                    [${new Date(l.createdAt).toLocaleString()}] ${l.username || 'Unknown'} - ${l.action} - ${l.ipAddress || ''} ${l.hwid ? '- HWID: ' + l.hwid : ''} - ${l.success ? 'OK' : 'FAILED'}
-                </div>
-            `).join('');
-        }
-
-        // Settings
-        async function loadModUrl() {
-            const res = await api('/mod/version');
-            if (res) {
-                const data = await res.json();
-                document.getElementById('modUrlInput').value = data.downloadUrl;
-            }
-        }
-
-        async function saveModUrl() {
-            const url = document.getElementById('modUrlInput').value;
-            const res = await api('/mod/version', {
-                method: 'POST',
-                body: JSON.stringify({ downloadUrl: url })
-            });
-            if (res && res.ok) showToast('Mod URL updated');
-            else showToast('Failed', 'error');
-        }
-
-        // Init
-        checkAuth();
-    </script>
+  document.querySelectorAll('.mock-cat').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mock-cat').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      activeCat = btn.dataset.cat;
+      renderMockMods();
+    });
+  });
+  renderMockMods();
+</script>
 </body>
 </html>
