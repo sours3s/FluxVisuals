@@ -26,7 +26,7 @@ public final class GlState {
          IntBuffer buf4 = stack.mallocInt(4);
          IntBuffer buf1 = stack.mallocInt(1);
          s.framebuffer = GL11.glGetInteger(36006);
-         s.drawFramebuffer = GL11.glGetInteger(36011);
+         s.drawFramebuffer = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING); // 36006, не 36011
          s.readFramebuffer = GL11.glGetInteger(36010);
          GL11.glGetIntegerv(2978, buf4);
          s.viewport[0] = buf4.get(0);

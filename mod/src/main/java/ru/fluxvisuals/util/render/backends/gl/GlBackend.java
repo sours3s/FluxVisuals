@@ -317,9 +317,32 @@ public final class GlBackend {
    public void endFrame() {
       this.flush();
       GL30.glBindVertexArray(0);
-      // GlState.pop восстанавливает в том числе FBO — без этого отложенная очередь
-      // DrawContext рисует иконки предметов не в основной кадрбуфер.
-      GlState.pop(this.snapshot, false);
+      // НЕ вызываем GlState.pop здесь: он вернёт FBO из snapshot и оставит
+      // последующий ванильный рендер в чужом кадрбуфере (чёрный экран с HUD).
+      // Восстанавливаем только состояние самого бэкенда, как в v1.0.44.
+      if (this.snapshot != null) {
+         GlStateManager._glUseProgram(this.snapshot.program);
+         GL30.glBindVertexArray(this.snapshot.vao);
+         GL15.glBindBuffer(34962, this.snapshot.arrayBuffer);
+         GL15.glBindBuffer(34963, this.snapshot.elementArrayBuffer);
+         GL13.glActiveTexture(this.snapshot.activeTexture);
+         GL11.glBindTexture(3553, this.snapshot.texture2D);
+         GL11.glPixelStorei(3317, this.snapshot.unpackAlignment);
+         setEnabled(3089, this.snapshot.scissorEnabled);
+         setEnabled(2929, this.snapshot.depthTestEnabled);
+         setEnabled(2884, this.snapshot.cullFaceEnabled);
+         setEnabled(3042, this.snapshot.blendEnabled);
+         setEnabled(36281, this.snapshot.framebufferSrgbEnabled);
+         GL14.glBlendFuncSeparate(this.snapshot.blendSrcRGB, this.snapshot.blendDstRGB, this.snapshot.blendSrcAlpha,
+               this.snapshot.blendDstAlpha);
+         GL11.glColorMask(this.snapshot.colorMaskR, this.snapshot.colorMaskG, this.snapshot.colorMaskB,
+               this.snapshot.colorMaskA);
+         GL11.glDepthMask(this.snapshot.depthMask);
+         GL11.glViewport(this.snapshot.viewport[0], this.snapshot.viewport[1], this.snapshot.viewport[2],
+               this.snapshot.viewport[3]);
+         GL11.glScissor(this.snapshot.scissorBox[0], this.snapshot.scissorBox[1], this.snapshot.scissorBox[2],
+               this.snapshot.scissorBox[3]);
+      }
 
       this.snapshot = null;
       this.instanceCount = 0;
