@@ -148,7 +148,10 @@ public class TextureAtlas {
             uvMap.put(name, uv);
             return uv;
         } finally {
-            GlState.pop(snapshot, true);
+            // 1.21.11: glReadBuffer/glDrawBuffer между очередями отрисовки ломают
+            // GUI-проход (чёрный экран, жирный мигающий текст). FBO восстанавливаем,
+            // а эти два состояния трогать нельзя.
+            GlState.pop(snapshot, false);
         }
     }
 
@@ -192,7 +195,10 @@ public class TextureAtlas {
 
             cleanupFbos(readFbo, drawFbo);
         } finally {
-            GlState.pop(snapshot, true);
+            // 1.21.11: glReadBuffer/glDrawBuffer между очередями отрисовки ломают
+            // GUI-проход (чёрный экран, жирный мигающий текст). FBO восстанавливаем,
+            // а эти два состояния трогать нельзя.
+            GlState.pop(snapshot, false);
         }
     }
 

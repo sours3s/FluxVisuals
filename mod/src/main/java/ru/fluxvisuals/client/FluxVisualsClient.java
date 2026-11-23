@@ -238,7 +238,9 @@ public class FluxVisualsClient implements ClientModInitializer {
                draggableManager.endFrame();
             }
          } finally {
-            GlState.pop(snapshot);
+            // Возвращаем FBO и состояние бэкенда, но НЕ read/draw buffer:
+            // в 1.21.11 это ломает GUI-проход и даёт чёрный экран с жирным текстом.
+            GlState.pop(snapshot, false);
          }
       }
    }
