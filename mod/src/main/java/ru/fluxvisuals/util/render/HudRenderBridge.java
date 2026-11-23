@@ -57,10 +57,10 @@ public final class HudRenderBridge {
       // выхода из InGameHud.render, поэтому смена/удаление FBO между постановкой и
       // отрисовкой ломала состояние цели и приводила к пропаже иконок. Рисуем в текущий
       // кадрбуфер, который на этом этапе уже является основным.
-      GlState.Snapshot snapshot = GlState.push();
       GL11.glColorMask(true, true, true, true);
       GL11.glDisable(2929);
       GL11.glEnable(3042);
+      GlState.Snapshot snapshot = GlState.push();
 
       try {
          AnimationSystem.getInstance().tick();
@@ -88,10 +88,10 @@ public final class HudRenderBridge {
             }
          }
       } finally {
-         // Возвращаем ВСЁ состояние GL, включая привязку кадрбуфера и read/draw buffer.
-         // В 1.21.11 иконки предметов рисуются через офскрин-атлас GuiRenderer, поэтому
-         // потерянный FBO ломает их даже если остальной HUD выглядит нормально.
-         GlState.pop(snapshot);
+         // Возвращаем состояние GL, включая привязку кадрбуфера (это чинит иконки),
+         // но НЕ трогаем read/draw buffer: в 1.21.11 это ломает последующий GUI-проход
+         // и даёт чёрный экран с жирным текстом.
+         GlState.pop(snapshot, false);
       }
    }
 }

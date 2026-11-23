@@ -88,6 +88,16 @@ public final class GlState {
    }
 
    public static void pop(GlState.Snapshot s) {
+      pop(s, true);
+   }
+
+   /**
+    * @param restoreBuffers false — не трогать glReadBuffer/glDrawBuffer.
+    *                       Нужно для HUD-оверлея: в 1.21.11 смена этих буферов
+    *                       между очередью DrawContext и GuiRenderer ломает GUI-проход
+    *                       (чёрный экран, жирный текст).
+    */
+   public static void pop(GlState.Snapshot s, boolean restoreBuffers) {
       if (s != null) {
          GL20.glUseProgram(s.program);
          GL30.glBindVertexArray(s.vao);
@@ -109,8 +119,10 @@ public final class GlState {
          GL30.glBindFramebuffer(36009, s.drawFramebuffer);
          GL30.glBindFramebuffer(36008, s.readFramebuffer);
          GL30.glBindFramebuffer(36160, s.framebuffer);
-         GL11.glReadBuffer(s.readBuffer);
-         GL11.glDrawBuffer(s.drawBuffer);
+         if (restoreBuffers) {
+            GL11.glReadBuffer(s.readBuffer);
+            GL11.glDrawBuffer(s.drawBuffer);
+         }
       }
    }
 
