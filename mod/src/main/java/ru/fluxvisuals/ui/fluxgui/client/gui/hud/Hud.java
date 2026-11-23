@@ -190,6 +190,21 @@ public final class Hud {
                     this.currentElementId = null;
                 }
 
+                if (editing) {
+                    String title = elementTitle(element);
+                    float size = 11.0F;
+                    float textWidth = TextRender.width(title, size);
+                    float labelX = elemX;
+                    float labelY = elemY - 15.0F;
+                    if (labelY < 4.0F) {
+                        labelY = elemY + elemH + 4.0F;
+                    }
+                    int labelBg = fade(0xC8000000, ease);
+                    int labelText = fade(-1, ease);
+                    RoundedRenderer.drawRoundedRect(context, labelX - 4.0F, labelY - 2.0F, textWidth + 8.0F, 15.0F, 4.0F, labelBg);
+                    TextRender.draw(context, title, labelX, labelY + 8.0F, size, labelText);
+                }
+
                 context.getMatrices().popMatrix();
             }
         }
@@ -579,6 +594,32 @@ public final class Hud {
         ELEMENT_ANIMS.clear();
         DRAG_ANIMS.clear();
         HOVER_ANIMS.clear();
+    }
+
+    private static String elementTitle(HudElement element) {
+        String id = element.id();
+        if (element == Watermark.INSTANCE) {
+            return "Watermark";
+        } else if (element == Notifications.INSTANCE) {
+            return "Notifications";
+        } else if (element == Target.INSTANCE) {
+            return "Target HUD";
+        } else if (element == Hotkeys.INSTANCE) {
+            return "Hotkeys";
+        } else if (element == Potions.INSTANCE) {
+            return "Potion Effects";
+        } else if (element == Cooldowns.INSTANCE) {
+            return "Cooldowns";
+        } else if (element == MediaPlayer.INSTANCE) {
+            return "Media Player";
+        } else if (element == Inventory.INSTANCE) {
+            return "Inventory HUD";
+        } else if (element == ArmorHud.INSTANCE) {
+            return "Armor HUD";
+        } else if (element == CustomHotbar.INSTANCE) {
+            return "Hotbar";
+        }
+        return id.isEmpty() ? "HUD" : id.substring(0, 1).toUpperCase(Locale.ROOT) + id.substring(1);
     }
 
     private static void renderEditorGuides(DrawContext context) {
