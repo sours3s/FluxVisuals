@@ -33,18 +33,7 @@ function events.tick()
 end
 
 function events.render(delta, context)
-    if context:find("FIRST") then
-        local holdingSword = player:getHeldItem(true).id:find("sword") ~= nil
-        if player:isLeftHanded() and not holdingSword then
-            models.komachi.ItemScythe:setPos(-10,-10,-10)
-        elseif player:isLeftHanded() or not holdingSword then
-            models.komachi.ItemScythe:setPos(5,-10,-10)
-        else
-            models.komachi.ItemScythe:setPos(10,-10,-10)
-        end
-    else
-        models.komachi.ItemScythe:setPos(0,0,0)
-    end
+    models.komachi.ItemScythe:setPos(0,0,0)
 end
 
 function events.skull_render(delta, blockstate, item, entity, context)

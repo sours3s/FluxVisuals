@@ -18,8 +18,7 @@ import ru.fluxvisuals.module.api.setting.impl.MultiBooleanSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 import ru.fluxvisuals.module.api.setting.impl.StringSetting;
 import ru.fluxvisuals.module.impl.utils.ClientSound;
-import ru.fluxvisuals.module.impl.visuals.Hud;
-import ru.fluxvisuals.util.render.core.Renderer2D;
+import ru.fluxvisuals.ui.fluxgui.client.gui.hud.Notifications;
 import ru.fluxvisuals.util.render.math.animation.Translate;
 import ru.fluxvisuals.util.render.math.animation.anim.util.Animation2;
 import ru.fluxvisuals.util.render.math.animation.anim.util.Easings;
@@ -73,8 +72,9 @@ public class Module extends Config {
          return;
       }
 
+      // Единственное уведомление о включении: «Модуль … переключён».
       if (mc.player != null) {
-         FluxVisualsClient.get.manager.get(Hud.class).showNotification("on", this.name + " включен", 2400L, Renderer2D.ColorUtil.getTextTwoColor(1, 1));
+         Notifications.post(this.name, true);
          Module.playToggleSound("on");
       }
 
@@ -83,8 +83,9 @@ public class Module extends Config {
 
    public void onDisable() {
       EventManager.unregister(this);
+      // Единственное уведомление о выключении: «Модуль … переключён».
       if (mc.player != null) {
-         FluxVisualsClient.get.manager.get(Hud.class).showNotification("off", this.name + " выключен", 2400L, Renderer2D.ColorUtil.getTextTwoColor(1, 1));
+         Notifications.post(this.name, false);
          Module.playToggleSound("off");
       }
 

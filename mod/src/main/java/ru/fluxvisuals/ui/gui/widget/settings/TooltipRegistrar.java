@@ -42,7 +42,6 @@ public final class TooltipRegistrar {
       registerModule(MenuSettingsModule.class, "Настройки главного меню: фон, анимации, кастомный текст, версия.");
       registerModule(Friends.class, "Система друзей: зелёный ESP (не сквозь стены), тэг [F], защита от френдли-файра.");
       registerModule(Cosmetic.class, "Косметика: китайская шляпа/нимб, анимированные крылья, след за игроком.");
-      registerModule(InventoryHUD.class, "Мини-инвентарь на экране + счётчики тотемов и стрел с автообновлением.");
       registerModule(Freecam.class, "Отсоединяет камеру от игрока; движение ограничено — камера не проходит сквозь твёрдые блоки.");
 
       // === Utils ===
@@ -134,12 +133,6 @@ public final class TooltipRegistrar {
       registerSetting(Cosmetic.class, "Wing Speed", "Скорость взмаха крыльев.");
       registerSetting(Cosmetic.class, "Trail Self/Friends", "Кому показывать след.");
       registerSetting(Cosmetic.class, "Trail Opacity", "Прозрачность следа.");
-
-      // InventoryHUD
-      registerSetting(InventoryHUD.class, "Render Inventory", "Показывать мини-инвентарь на экране.");
-      registerSetting(InventoryHUD.class, "Render Totems", "Показывать счётчик тотемов.");
-      registerSetting(InventoryHUD.class, "Render Arrows", "Показывать счётчик стрел.");
-      registerSetting(InventoryHUD.class, "Compact Mode", "Компактный режим (меньше места).");
 
       // Freecam
       registerSetting(Freecam.class, "Speed", "Скорость полёта камеры.");

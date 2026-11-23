@@ -7,6 +7,7 @@ import ru.fluxvisuals.ui.fluxgui.client.gui.render.TextRender;
 import ru.fluxvisuals.ui.fluxgui.client.gui.screen.ClickGui;
 import ru.fluxvisuals.ui.fluxgui.compat.Gui;
 import ru.fluxvisuals.ui.fluxgui.compat.Gui$Color;
+import ru.fluxvisuals.module.impl.visuals.HUD.ArrayListHUD;
 import ru.fluxvisuals.ui.fluxgui.util.ClientProfile;
 import ru.fluxvisuals.ui.fluxgui.util.render.FrameEspGlow;
 import ru.fluxvisuals.ui.fluxgui.util.render.MirageGlassPipeline;
@@ -26,7 +27,7 @@ import net.minecraft.util.math.MathHelper;
 
 public final class Hud {
     public static final Hud INSTANCE = new Hud();
-    static final float DESIGN_WIDTH = 1920.0F;
+    public static final float DESIGN_WIDTH = 1920.0F;
     static final float DESIGN_HEIGHT = 1080.0F;
     private static final float BACKDROP_BLUR_SIGMA = 16.0F;
     private static final float BLUR_DISK_PER_SIGMA = 2.462F;
@@ -69,6 +70,7 @@ public final class Hud {
     private static final float EFFECT_SPRITE_SIZE = 18.0F;
     private static final HudElement[] ELEMENTS = new HudElement[]{
         Watermark.INSTANCE,
+        ArrayListHUD.INSTANCE,
         Notifications.INSTANCE,
         Target.INSTANCE,
         Hotkeys.INSTANCE,
@@ -255,6 +257,8 @@ public final class Hud {
         String key;
         if (element == Watermark.INSTANCE) {
             key = "Watermark";
+        } else if (element == ArrayListHUD.INSTANCE) {
+            key = "ArrayList";
         } else if (element == Notifications.INSTANCE) {
             key = "Notifications";
         } else if (element == Target.INSTANCE) {
@@ -608,6 +612,8 @@ public final class Hud {
         String id = element.id();
         if (element == Watermark.INSTANCE) {
             return "Watermark";
+        } else if (element == ArrayListHUD.INSTANCE) {
+            return "ArrayList";
         } else if (element == Notifications.INSTANCE) {
             return "Notifications";
         } else if (element == Target.INSTANCE) {

@@ -5,90 +5,134 @@ import java.util.Comparator;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.module.api.Module;
 import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
+import ru.fluxvisuals.ui.fluxgui.client.gui.hud.Hud;
+import ru.fluxvisuals.ui.fluxgui.client.gui.hud.HudElement;
+import ru.fluxvisuals.ui.fluxgui.client.gui.render.RoundedRenderer;
+import ru.fluxvisuals.ui.fluxgui.client.gui.render.TextRender;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.util.math.MathHelper;
 
-/** Список активных модулей в стиле исходного FluxVisuals: 12 px строки, правый верхний угол. */
+/**
+ * Список активных модулей. Полноценный элемент HUD: жидкое стекло, наш шрифт,
+ * стили и перемещение через редактор — как у остальных элементов интерфейса.
+ */
 @Environment(EnvType.CLIENT)
-public final class ArrayListHUD {
+public final class ArrayListHUD implements HudElement {
+    public static final ArrayListHUD INSTANCE = new ArrayListHUD();
+
     public static final BooleanSetting sortByWidth = new BooleanSetting("Sort by width", true);
     public static final BooleanSetting smooth = new BooleanSetting("Smooth animation", true);
 
-    private static final int ROW_HEIGHT = 12;
-    private static final int PADDING = 4;
+    private static final float Y = 12.0F;
+    private static final float RIGHT_INSET = 8.0F;
+    private static final float ROW_HEIGHT = 16.0F;
+    private static final float ROW_GAP = 3.0F;
+    private static final float PAD_X = 9.0F;
+    private static final float PAD_Y = 8.0F;
+    private static final float MARK_WIDTH = 2.0F;
+    private static final float MARK_GAP = 7.0F;
+    private static final float MIN_WIDTH = 116.0F;
+    private static final float MAX_WIDTH = 260.0F;
 
-    private static final List<Module> visible = new ArrayList<>();
+    private static final List<Module> VISIBLE = new ArrayList<>();
+    private static float currentWidth = MIN_WIDTH;
 
     private ArrayListHUD() {
     }
 
-    public static boolean hasContent() {
-        if (FluxVisualsClient.get != null && FluxVisualsClient.get.manager != null) {
-            for (Module module : FluxVisualsClient.get.manager.getModules()) {
-                if (module.enable || module.mAnim.getValue() > 0.001) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    @Override
+    public String id() {
+        return "arraylist";
     }
 
-    public static void arraylist(DrawContext context) {
+    @Override
+    public float x() {
+        return Hud.DESIGN_WIDTH - currentWidth - RIGHT_INSET;
+    }
+
+    @Override
+    public float y() {
+        return Y;
+    }
+
+    @Override
+    public float width() {
+        return currentWidth;
+    }
+
+    @Override
+    public float height() {
+        return PAD_Y * 2.0F + Math.max(1, VISIBLE.size()) * ROW_HEIGHT + Math.max(0, VISIBLE.size() - 1) * ROW_GAP;
+    }
+
+    @Override
+    public boolean hasContent() {
+        return !active().isEmpty();
+    }
+
+    @Override
+    public void render(DrawContext context, Hud hud) {
         if (FluxVisualsClient.get == null || FluxVisualsClient.get.manager == null) {
             return;
         }
 
-        visible.clear();
         for (Module module : FluxVisualsClient.get.manager.getModules()) {
             module.mAnim.update();
-            if (module.enable || module.mAnim.getValue() > 0.001) {
-                visible.add(module);
-            }
         }
-        if (visible.isEmpty()) {
+
+        VISIBLE.clear();
+        VISIBLE.addAll(active());
+        if (VISIBLE.isEmpty()) {
             return;
         }
 
-        TextRenderer font = MinecraftClient.getInstance().textRenderer;
         if (sortByWidth.get()) {
-            visible.sort(Comparator.comparingDouble((Module m) -> font.getWidth(m.name)).reversed());
+            VISIBLE.sort(Comparator.comparingDouble((Module module) -> TextRender.width(module.name, Hud.ROW_SIZE)).reversed());
         } else {
-            visible.sort(Comparator.comparingDouble((Module m) -> -m.mAnim.getValue()));
+            VISIBLE.sort(Comparator.comparingDouble((Module module) -> -module.mAnim.getValue()));
         }
 
-        int y = PADDING;
-        int scaledWidth = context.getScaledWindowWidth();
-        for (Module module : visible) {
-            float alpha = (float) (smooth.get() ? module.mAnim.getValue() : 1.0);
-            if (alpha <= 0.01F) {
-                continue;
-            }
-            int rowWidth = font.getWidth(module.name) + 12;
-            int x = scaledWidth - PADDING - rowWidth;
-            int bottom = y + ROW_HEIGHT;
+        float targetWidth = MIN_WIDTH;
+        for (Module module : VISIBLE) {
+            targetWidth = Math.max(targetWidth, PAD_X * 2.0F + MARK_WIDTH + MARK_GAP + TextRender.width(module.name, Hud.ROW_SIZE));
+        }
+        targetWidth = Math.min(MAX_WIDTH, targetWidth);
+        currentWidth = MathHelper.lerp(0.12F, currentWidth, targetWidth);
+        if (Math.abs(currentWidth - targetWidth) < 0.05F) {
+            currentWidth = targetWidth;
+        }
 
-            context.fill(x, y, x + rowWidth, bottom,
-                  DonorHudTheme.withAlpha(DonorHudTheme.BG, (int) (DonorHudTheme.BG_ALPHA * alpha)));
-            int accent = DonorHudTheme.mulAlpha(DonorHudTheme.category(module.category), alpha);
-            context.fill(x, y, x + 2, bottom, accent);
-            context.drawTextWithShadow(font, module.name, x + 6, y + 1,
-                  DonorHudTheme.mulAlpha(DonorHudTheme.TEXT, alpha));
-            y += ROW_HEIGHT;
+        float left = x();
+        float top = y();
+        hud.panel(context, left, top, currentWidth, height(), 10.0F);
+
+        int index = 0;
+        for (Module module : VISIBLE) {
+            float rowY = top + PAD_Y + index * (ROW_HEIGHT + ROW_GAP);
+            float alpha = smooth.get() ? MathHelper.clamp((float)module.mAnim.getValue(), 0.0F, 1.0F) : 1.0F;
+            int rowColor = Hud.fade(Hud.styledColor(Hud.TEXT_ROW), Hud.animatedOpacity() * alpha);
+            RoundedRenderer.drawRoundedRect(
+                  context, left + PAD_X, rowY, MARK_WIDTH, ROW_HEIGHT, MARK_WIDTH / 2.0F,
+                  Hud.fade(Hud.accent(), Hud.animatedOpacity() * alpha)
+            );
+            TextRender.draw(context, module.name, left + PAD_X + MARK_WIDTH + MARK_GAP, rowY + 12.0F, Hud.ROW_SIZE, rowColor);
+            index++;
         }
     }
 
-    public static void renderEmpty(DrawContext context) {
-        TextRenderer font = MinecraftClient.getInstance().textRenderer;
-        int rowWidth = font.getWidth("ArrayList") + 12;
-        int x = context.getScaledWindowWidth() - PADDING - rowWidth;
-        context.fill(x, PADDING, x + rowWidth, PADDING + ROW_HEIGHT,
-              DonorHudTheme.withAlpha(DonorHudTheme.BG, 90));
-        context.fill(x, PADDING, x + 2, PADDING + ROW_HEIGHT, DonorHudTheme.ACCENT);
-        context.drawTextWithShadow(font, "ArrayList", x + 6, PADDING + 1,
-              DonorHudTheme.withAlpha(DonorHudTheme.TEXT, 120));
+    private static List<Module> active() {
+        List<Module> result = new ArrayList<>();
+        if (FluxVisualsClient.get == null || FluxVisualsClient.get.manager == null) {
+            return result;
+        }
+        for (Module module : FluxVisualsClient.get.manager.getModules()) {
+            if (module.enable || module.mAnim.getValue() > 0.001) {
+                result.add(module);
+            }
+        }
+        return result;
     }
 }

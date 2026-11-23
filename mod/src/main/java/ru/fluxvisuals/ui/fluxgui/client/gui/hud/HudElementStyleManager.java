@@ -8,7 +8,7 @@ import net.minecraft.util.math.MathHelper;
 
 public final class HudElementStyleManager {
     public static final List<String> ELEMENT_IDS = List.of(
-        "watermark", "notifications", "target", "hotkeys", "potions", "cooldowns", "mediaPlayer", "inventory", "armorHud", "customHotbar"
+        "watermark", "arraylist", "notifications", "target", "hotkeys", "potions", "cooldowns", "mediaPlayer", "inventory", "armorHud", "customHotbar"
     );
     public static final Set<String> ICONS = Set.of(
         "logo",

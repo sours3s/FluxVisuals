@@ -3,7 +3,6 @@ package ru.fluxvisuals.util.render;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 import org.lwjgl.opengl.GL11;
@@ -58,31 +57,11 @@ public final class HudRenderBridge {
          return;
       }
 
-      Framebuffer mainFramebuffer = client.getFramebuffer();
-      int tempFbo = 0;
-      // glGetInteger принимает именно *BINDING-константы (36011/36010),
-      // а не GL_DRAW_FRAMEBUFFER/GL_READ_FRAMEBUFFER (36009/36008), которые нужны только для glBindFramebuffer.
-      int savedDrawFbo = GL30.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
-      int savedReadFbo = GL30.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING);
-      if (mainFramebuffer != null) {
-         int mainFramebufferTextureId = ru.fluxvisuals.util.render.utils.FramebufferUtils.getColorTextureId(mainFramebuffer);
-         if (mainFramebufferTextureId > 0) {
-            tempFbo = GL30.glGenFramebuffers();
-            GL30.glBindFramebuffer(36160, tempFbo);
-            GL30.glFramebufferTexture2D(36160, 36064, 3553, mainFramebufferTextureId, 0);
-            GL11.glDrawBuffer(36064);
-            int status = GL30.glCheckFramebufferStatus(36160);
-            if (status != 36053) {
-               GL30.glDeleteFramebuffers(tempFbo);
-               tempFbo = 0;
-            }
-         } else {
-            GL30.glBindFramebuffer(36160, 0);
-         }
-      } else {
-         GL30.glBindFramebuffer(36160, 0);
-      }
-
+      // Раньше здесь создавался временный legacy-FBO с текстурой основного кадрбуфера.
+      // В 1.21.11 иконки предметов рисуются из отложенной очереди DrawContext уже после
+      // выхода из InGameHud.render, поэтому смена/удаление FBO между постановкой и
+      // отрисовкой ломала состояние цели и приводила к пропаже иконок. Рисуем в текущий
+      // кадрбуфер, который на этом этапе уже является основным.
       GL11.glColorMask(true, true, true, true);
       GL11.glDisable(2929);
       GL11.glEnable(3042);
@@ -134,16 +113,7 @@ public final class HudRenderBridge {
             GL11.glScissor(snapshot.scissorBox[0], snapshot.scissorBox[1], snapshot.scissorBox[2], snapshot.scissorBox[3]);
          }
 
-         if (tempFbo != 0) {
-            GL30.glBindFramebuffer(36160, tempFbo);
-            GL30.glFramebufferTexture2D(36160, 36064, 3553, 0, 0);
-         }
 
-         GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, savedDrawFbo);
-         GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, savedReadFbo);
-         if (tempFbo != 0) {
-            GL30.glDeleteFramebuffers(tempFbo);
-         }
       }
    }
 

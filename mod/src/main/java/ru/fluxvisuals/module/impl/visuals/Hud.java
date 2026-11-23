@@ -104,16 +104,6 @@ public class Hud extends Module {
       return false;
    }
 
-   public static boolean isArrayListActive() {
-      if (element == null) return false;
-      for (BooleanSetting setting : element.settings) {
-         if ("ArrayList".equals(setting.name)) {
-            return setting.get();
-         }
-      }
-      return false;
-   }
-
    public static MultiBooleanSetting notify = new MultiBooleanSetting(
       "Notification Settings",
       new BooleanSetting("Modules", true),
@@ -239,10 +229,8 @@ public class Hud extends Module {
                ru.fluxvisuals.ui.fluxgui.client.gui.hud.Hud.INSTANCE;
          donorHud.render(e.drawContext());
          donorHud.renderNotifications(e.drawContext());
-         // Список активных модулей не попал в донорский HUD — рисуем его отдельно.
-         if (isArrayListActive()) {
-            ArrayListHUD.arraylist(e.drawContext());
-         }
+         // Список активных модулей теперь рисуется как элемент HUD.
+         // ArrayList рисуется как обычный элемент HUD через Hud.render().
       }
       } finally {
          currentDrawContext = null;

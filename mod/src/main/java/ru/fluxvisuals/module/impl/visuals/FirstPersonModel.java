@@ -34,6 +34,16 @@ public class FirstPersonModel extends Module {
       if (!this.enable || mc.player == null || mc.options == null) return false;
       if (!mc.options.getPerspective().isFirstPerson()) return false;
       if (onlySneaking.get() && !mc.player.isSneaking()) return false;
-      return showBody.get();
+      if (!showBody.get()) return false;
+      // С активным Figura-аватаром тело рисуется на месте камеры — камера оказывается
+      // внутри модели. Модели оружия Figura работают и без принудительного тела.
+      try {
+         if (org.figuramc.figura.avatar.AvatarManager.getAvatarForPlayer(mc.player.getUuid()) != null) {
+            return false;
+         }
+      } catch (Throwable ignored) {
+         // Figura недоступна — поведение остаётся прежним.
+      }
+      return true;
    }
 }

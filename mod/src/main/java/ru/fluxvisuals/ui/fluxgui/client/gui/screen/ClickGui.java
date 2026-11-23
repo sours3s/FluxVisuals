@@ -580,7 +580,7 @@ public class ClickGui extends Screen {
         }
 
         TextRender.draw(context, "FluxVisuals @", 67.82F, 34.936F, 10.0F, -1);
-        TextRender.draw(context, "Build: #1.0.39", 67.82F, 49.313F, 12.206F, -2130706433);
+        TextRender.draw(context, "Build: #1.0.40", 67.82F, 49.313F, 12.206F, -2130706433);
     }
 
     void renderSearch(DrawContext context) {

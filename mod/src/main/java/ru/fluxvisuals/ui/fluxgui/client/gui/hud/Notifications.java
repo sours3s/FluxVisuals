@@ -3,12 +3,9 @@ package ru.fluxvisuals.ui.fluxgui.client.gui.hud;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.IconRender;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.RoundedRenderer;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.TextRender;
-import ru.fluxvisuals.ui.fluxgui.module.Module;
-import ru.fluxvisuals.ui.fluxgui.module.ModuleManager;
 import ru.fluxvisuals.ui.fluxgui.util.language.LanguageManager;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,7 +20,7 @@ public final class Notifications implements HudElement {
     public static final Notifications INSTANCE = new Notifications();
     static final float X = 791.0F;
     static final float LEFT_ANCHOR = 24.0F;
-    static final float ANCHOR_RIGHT = 1896.0F;
+    static final float ANCHOR_RIGHT = Hud.DESIGN_WIDTH;
     static final float Y = 84.0F;
     static final float HEIGHT = 37.0F;
     static final float GAP_Y = 7.0F;
@@ -51,15 +48,21 @@ public final class Notifications implements HudElement {
     static final long FADE_MILLIS = 400L;
     static final int MAX_VISIBLE = 3;
     static final CopyOnWriteArrayList<Notifications$Entry> ENTRIES = new CopyOnWriteArrayList<>();
-    static final Map<Module, Boolean> KNOWN = new IdentityHashMap<>();
     static final Map<RegistryEntry<StatusEffect>, Boolean> WARNED_EFFECTS = new HashMap<>();
 
     // 0 = левый край, 1 = правый край. Позицию задаёт x(), а смещение
     // перетаскивания живёт в HudEditor и анимируется к нулю при смене стороны.
     private static int side = 1;
-    private static boolean wasDragging = false;
 
     Notifications() {
+    }
+
+    static int side() {
+        return side;
+    }
+
+    static void setSide(int value) {
+        side = value == 0 ? 0 : 1;
     }
 
     @Override
@@ -72,27 +75,25 @@ public final class Notifications implements HudElement {
         return MathHelper.lerp((float)side, LEFT_ANCHOR, ANCHOR_RIGHT - width());
     }
 
-    /** Прилипание к стороне, куда перетащили блок, с плавной анимацией переезда. */
+    /** Плавный переезд к выбранному краю после отпускания блока. */
+    static void finishDrag() {
+        float[] offset = HudEditor.offset(INSTANCE.id());
+        float center = INSTANCE.x() + offset[0] + INSTANCE.width() / 2.0F;
+        int target = center < Hud.DESIGN_WIDTH / 2.0F ? 0 : 1;
+        if (target != side) {
+            float oldX = INSTANCE.x();
+            side = target;
+            // Компенсируем скачок якоря, затем плавно ведём смещение к нулю.
+            offset[0] += oldX - INSTANCE.x();
+        }
+    }
+
+    /** Возвращает смещение к нулю; сторону выбирает finishDrag() в момент отпускания. */
     static void updateSnap() {
         float[] offset = HudEditor.offset(INSTANCE.id());
-
         if (HudEditor.isDragging(INSTANCE.id())) {
-            wasDragging = true;
             return;
         }
-
-        if (wasDragging) {
-            wasDragging = false;
-            float center = INSTANCE.x() + offset[0] + INSTANCE.width() / 2.0F;
-            int target = center < 960.0F ? 0 : 1;
-            if (target != side) {
-                float oldX = INSTANCE.x();
-                side = target;
-                //Компенсируем скачок якоря, затем плавно ведём смещение к нулю.
-                offset[0] += oldX - INSTANCE.x();
-            }
-        }
-
         if (Math.abs(offset[0]) > 0.1F) {
             offset[0] = MathHelper.lerp(0.18F, offset[0], 0.0F);
         } else {
@@ -165,50 +166,44 @@ public final class Notifications implements HudElement {
     }
 
     /** Зеркалим X внутри панели, не отражая сами глифы текста. */
-    private static float mirroredX(float width, float designX, float designWidth) {
-        return side == 0 ? X + width - (designX - X) - designWidth : designX;
+    private static float contentX(float left, float width, float designX, float designWidth) {
+        return side == 0 ? left + width - (designX - X) - designWidth : left + (designX - X);
     }
 
     static void renderEntry(DrawContext context, Hud hud, Notifications$Entry entry, float yOffset, float opacity) {
         if (!(opacity <= 0.0F)) {
             float y = Y + yOffset;
             float width = entryWidth(entry);
-            float blockLeft = INSTANCE.x();
-            float blockWidth = INSTANCE.width();
-            // Выравнивание берётся из состояния side, а не из сохранённого offset:
-            // старый отрицательный offset из конфига не должен тянуть блок влево.
-            float finalX = blockLeft + (blockWidth - width) * (float)side;
-            context.getMatrices().pushMatrix();
-            context.getMatrices().translate(finalX - X, 0.0F);
-            hud.panel(context, X, y, width, 37.0F, 10.0F, opacity);
+            float finalX = side == 0 ? LEFT_ANCHOR : ANCHOR_RIGHT - width;
+            hud.panel(context, finalX, y, width, 37.0F, 10.0F, opacity);
             int visualAccent = visualAccent();
             String primaryIcon = Hud.primaryIcon("command_small");
             float iconSize = IconRender.getDesignSize(primaryIcon) * Hud.primaryIconScale();
             IconRender.draw(
-                context, primaryIcon, mirroredX(width, 802.25F, iconSize), y + 12.25F, iconSize, Hud.fade(visualAccent, opacity)
+                context, primaryIcon, contentX(finalX, width, 802.25F, iconSize), y + 12.25F, iconSize, Hud.fade(visualAccent, opacity)
             );
-            Hud.separator(context, mirroredX(width, 824.0F, 12.0F), y + 12.5F, 12.0F, Hud.fade(452984831, opacity));
+            Hud.separator(context, contentX(finalX, width, 824.0F, 12.0F), y + 12.5F, 12.0F, Hud.fade(452984831, opacity));
             if (entry.message != null) {
                 float textWidth = TextRender.width(entry.message, 14.241F);
-                TextRender.draw(context, entry.message, mirroredX(width, 835.603F, textWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
+                TextRender.draw(context, entry.message, contentX(finalX, width, 835.603F, textWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
             } else {
                 String prefix = ru.fluxvisuals.ui.fluxgui.module.render.Hud.text("Модуль", "Module");
-                String suffix = ru.fluxvisuals.ui.fluxgui.module.render.Hud.text("переключён", "was switched to");
+                String suffix = ru.fluxvisuals.ui.fluxgui.module.render.Hud.text("переключён", "switched");
                 float pen = 835.603F;
                 float prefixWidth = TextRender.width(prefix, 14.241F);
-                TextRender.draw(context, prefix, mirroredX(width, pen, prefixWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
+                TextRender.draw(context, prefix, contentX(finalX, width, pen, prefixWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
                 pen += prefixWidth + 4.5F;
                 float nameWidth = TextRender.width(entry.moduleName, 14.241F);
-                TextRender.draw(context, entry.moduleName, mirroredX(width, pen, nameWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-1), opacity));
+                TextRender.draw(context, entry.moduleName, contentX(finalX, width, pen, nameWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-1), opacity));
                 pen += nameWidth + 4.5F;
                 float suffixWidth = TextRender.width(suffix, 14.241F);
-                TextRender.draw(context, suffix, mirroredX(width, pen, suffixWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
+                TextRender.draw(context, suffix, contentX(finalX, width, pen, suffixWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
                 pen += suffixWidth;
                 float tailSeparatorX = pen + 12.0F;
-                Hud.separator(context, mirroredX(width, tailSeparatorX, 12.0F), y + 12.5F, 12.0F, Hud.fade(452984831, opacity));
+                Hud.separator(context, contentX(finalX, width, tailSeparatorX, 12.0F), y + 12.5F, 12.0F, Hud.fade(452984831, opacity));
                 entry.toggleAnimation = MathHelper.lerp(0.1F, entry.toggleAnimation, entry.enabled ? 1.0F : 0.0F);
                 float toggleEase = smooth(entry.toggleAnimation);
-                float trackX = mirroredX(width, tailSeparatorX + 12.0F, 25.0F);
+                float trackX = contentX(finalX, width, tailSeparatorX + 12.0F, 25.0F);
                 float trackY = y + 12.5F;
                 RoundedRenderer.drawRoundedRect(context, trackX, trackY, 25.0F, 12.0F, 6.0F, Hud.fade(lerpColor(452984831, visualAccent, toggleEase), opacity));
                 float knobX = side == 0
@@ -216,7 +211,6 @@ public final class Notifications implements HudElement {
                      : trackX + 2.0F + 6.0F * toggleEase;
                 RoundedRenderer.drawRoundedRect(context, knobX, trackY + 2.0F, 15.0F, 8.0F, 4.0F, Hud.fade(-1, opacity));
             }
-            context.getMatrices().popMatrix();
         }
     }
 
@@ -224,11 +218,6 @@ public final class Notifications implements HudElement {
         if (ru.fluxvisuals.ui.fluxgui.module.render.Hud.notifications.getValue()) {
             addEntry(Notifications$Entry.module(moduleName, enabled));
         }
-    }
-
-    public static void post(Module module, boolean enabled) {
-        KNOWN.put(module, enabled);
-        post(module.getName(), enabled);
     }
 
     public static void postMessage(String message) {
@@ -249,15 +238,8 @@ public final class Notifications implements HudElement {
         }
     }
 
+    /** Только эффекты: уведомления о модулях отправляет Module.onEnable()/onDisable() — одно на переключение. */
     static void poll() {
-        for (Module module : ModuleManager.INSTANCE.getModules()) {
-            boolean enabled = module.isEnabled();
-            Boolean known = KNOWN.put(module, enabled);
-            if (known != null && known != enabled) {
-                post(module.getName(), enabled);
-            }
-        }
-
         pollEffects();
     }
 
@@ -326,7 +308,7 @@ public final class Notifications implements HudElement {
         }
 
         String prefix = ru.fluxvisuals.ui.fluxgui.module.render.Hud.text("Модуль", "Module");
-        String suffix = ru.fluxvisuals.ui.fluxgui.module.render.Hud.text("переключён", "was switched to");
+        String suffix = ru.fluxvisuals.ui.fluxgui.module.render.Hud.text("переключён", "switched");
         float textWidth = TextRender.width(prefix, 14.241F) + TextRender.width(entry.moduleName, 14.241F) + TextRender.width(suffix, 14.241F) + 9.0F;
         float width = 44.603F + textWidth + 12.0F + 2.0F + 10.0F + 25.0F + 12.0F;
         return Math.max(145.0F, width);

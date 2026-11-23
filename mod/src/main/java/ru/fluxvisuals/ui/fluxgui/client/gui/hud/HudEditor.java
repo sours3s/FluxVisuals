@@ -138,6 +138,9 @@ public final class HudEditor {
             value.addProperty("x", elementOffset[0]);
             value.addProperty("y", elementOffset[1]);
             value.addProperty("scale", element == CustomHotbar.INSTANCE ? 1.0F : SCALES.getOrDefault(element.id(), 1.0F));
+            if (element == Notifications.INSTANCE) {
+                value.addProperty("side", Notifications.side());
+            }
             layout.add(element.id(), value);
         }
 
@@ -162,6 +165,9 @@ public final class HudEditor {
                         float x = finite(value, "x", 0.0F);
                         float y = finite(value, "y", 0.0F);
                         float elementScale = MathHelper.clamp(finite(value, "scale", 1.0F), 0.6F, 1.6F);
+                        if (element == Notifications.INSTANCE) {
+                            Notifications.setSide(Math.round(MathHelper.clamp(finite(value, "side", 1.0F), 0.0F, 1.0F)));
+                        }
                         OFFSETS.put(element.id(), new float[]{x, y});
                         SCALES.put(element.id(), elementScale);
                         ANIMATED_SCALES.put(element.id(), elementScale);
@@ -366,10 +372,14 @@ public final class HudEditor {
     }
 
     private static void stopDragging() {
+        HudElement released = dragging;
         dragging = null;
         freeDrag = false;
         pendingWatermarkBossOffset = false;
         guideX = null;
         guideY = null;
+        if (released == Notifications.INSTANCE) {
+            Notifications.finishDrag();
+        }
     }
 }

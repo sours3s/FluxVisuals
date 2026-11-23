@@ -32,7 +32,6 @@ import ru.fluxvisuals.module.impl.visuals.KillEffect;
 import ru.fluxvisuals.module.impl.visuals.ShaderHand;
 import ru.fluxvisuals.module.impl.visuals.GlassHand;
 import ru.fluxvisuals.module.impl.visuals.Freecam;
-import ru.fluxvisuals.module.impl.visuals.InventoryHUD;
 import ru.fluxvisuals.module.impl.visuals.Friends;
 import ru.fluxvisuals.module.impl.utils.LagDetector;
 import ru.fluxvisuals.module.impl.utils.SoundFX;
@@ -79,7 +78,6 @@ public class Manager {
       this.module.add(new ShaderHand());
       this.module.add(new GlassHand());
       this.module.add(new Freecam());
-      this.module.add(new InventoryHUD());
       this.module.add(new Friends());
       this.module.add(new ClientSound());
       this.module.add(new HitSound());
@@ -91,8 +89,6 @@ public class Manager {
       // === Новые модули (Etaps 2-4) ===
       this.module.add(new ru.fluxvisuals.module.impl.visuals.MaceHelper());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.ReachCircle());
-      this.module.add(new ru.fluxvisuals.module.impl.visuals.Keystrokes());
-      this.module.add(new ru.fluxvisuals.module.impl.visuals.ArmorStatus());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.BetterPing());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.Zoom());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.Hitboxes());

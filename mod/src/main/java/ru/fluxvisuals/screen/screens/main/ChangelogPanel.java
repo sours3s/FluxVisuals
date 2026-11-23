@@ -24,6 +24,13 @@ public final class ChangelogPanel {
    private static final float HEADER_HEIGHT = 20f;
 
     private static final String[][] SECTIONS = {
+       {"v1.0.40", null},
+       {"fixed", "ArrayList в жидком стекле и фирменном шрифте"},
+       {"fixed", "Одно уведомление о переключении модуля"},
+       {"fixed", "Иконки предметов и отложенная очередь рендера"},
+       {"fixed", "Модели оружия Figura от первого лица"},
+       {"fixed", "Камера не уходит в тело при активном аватаре"},
+       {"removed", "Отдельные модули Armor Status, Keystrokes и Inventory HUD"},
        {"v1.0.21", null},
        {"fixed", "Краш при использовании косметики с включённым Customizable Player Models"},
        {"v1.0.15", null},
@@ -67,8 +74,6 @@ public final class ChangelogPanel {
       {"v1.0.11", null},
       {"added", "Mace Helper"},
       {"added", "Reach Circle"},
-      {"added", "Keystrokes"},
-      {"added", "Armor Status"},
       {"added", "Better Ping"},
       {"added", "Zoom (bind)"},
       {"added", "Hitboxes"},
