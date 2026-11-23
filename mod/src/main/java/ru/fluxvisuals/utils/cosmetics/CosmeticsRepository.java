@@ -34,6 +34,8 @@ public final class CosmeticsRepository {
    private static final String WEAPON_PREFIX = "weapon-";
    private static final String BUNDLED_ROOT = "/fluxvisuals/cosmetics/";
    private static final String BUNDLED_INDEX = "/fluxvisuals/cosmetics.index";
+   private static final String EXTRACTED_VERSION = "2";
+   private static final String VERSION_MARKER = ".fluxvisuals-cosmetics-version";
    private static final int MAX_DEPTH = 4;
    private static final List<CosmeticEntry> ENTRIES = new ArrayList<>();
    private static boolean scanned;
@@ -63,6 +65,20 @@ public final class CosmeticsRepository {
          if (entry.kind() == kind) {
             filtered.add(entry);
          }
+      }
+      if (kind == CosmeticEntry.Kind.WEAPON) {
+         // В архиве есть папки только с avatar.json + avatar.png — Figura нечему
+         // рендерить. Не показываем их как рабочие мечи.
+         filtered.removeIf(entry -> {
+            try (Stream<Path> files = Files.walk(entry.folder())) {
+               return files.noneMatch(path -> {
+                  String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
+                  return name.endsWith(".bbmodel") || name.endsWith(".lua");
+               });
+            } catch (Exception e) {
+               return true;
+            }
+         });
       }
       return filtered;
    }
@@ -164,26 +180,37 @@ public final class CosmeticsRepository {
    }
 
    private static void ensureExtracted(Path target) {
-      if (!extracted) {
-         extracted = true;
-         try (Stream<Path> existing = Files.list(target)) {
-            if (existing.findAny().isPresent()) {
-               return;
-            }
-         } catch (Exception var7) {
-            return;
-         }
-         List<String> index = readIndex();
-         if (!index.isEmpty()) {
-            int written = 0;
-            for (String relative : index) {
-               if (copyBundled(relative, target)) {
-                  written++;
-               }
-            }
-            LOGGER.info("Unpacked {} of {} bundled cosmetic files into {}", written, index.size(), target);
+      if (extracted) {
+         return;
+      }
+      extracted = true;
+
+      // Старые версии оставляли в извлечённых аватарах autoScripts только со своим
+      // hide-скриптом. Из-за этого родные Lua (скрытие ванильного тела, item_render
+      // для мечей) не запускались. Перераспаковываем по маркеру версии.
+      Path marker = target.resolve(VERSION_MARKER);
+      boolean upToDate = false;
+      try {
+         upToDate = Files.isRegularFile(marker)
+               && EXTRACTED_VERSION.equals(Files.readString(marker, StandardCharsets.UTF_8).trim());
+      } catch (Exception ignored) {
+      }
+      if (upToDate) {
+         return;
+      }
+
+      List<String> index = readIndex();
+      int written = 0;
+      for (String relative : index) {
+         if (copyBundled(relative, target)) {
+            written++;
          }
       }
+      try {
+         Files.writeString(marker, EXTRACTED_VERSION, StandardCharsets.UTF_8);
+      } catch (Exception ignored) {
+      }
+      LOGGER.info("Unpacked/repaired {} of {} bundled cosmetic files into {}", written, index.size(), target);
    }
 
    private static List<String> readIndex() {

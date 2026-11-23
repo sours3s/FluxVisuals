@@ -22,6 +22,8 @@ import net.minecraft.util.math.MathHelper;
 public final class Notifications implements HudElement {
     public static final Notifications INSTANCE = new Notifications();
     static final float X = 791.0F;
+    static final float LEFT_ANCHOR = 24.0F;
+    static final float ANCHOR_RIGHT = 1896.0F;
     static final float Y = 84.0F;
     static final float HEIGHT = 37.0F;
     static final float GAP_Y = 7.0F;
@@ -52,6 +54,12 @@ public final class Notifications implements HudElement {
     static final Map<Module, Boolean> KNOWN = new IdentityHashMap<>();
     static final Map<RegistryEntry<StatusEffect>, Boolean> WARNED_EFFECTS = new HashMap<>();
 
+    // 1 = правый край, 0 = левый край. renderLeft — реальная анимированная граница блока.
+    private static float anchorBlend = 1.0F;
+    private static float renderLeft = Float.NaN;
+    private static boolean wasDragging = false;
+    private static float pendingCenter = 0.0F;
+
     Notifications() {
     }
 
@@ -62,7 +70,40 @@ public final class Notifications implements HudElement {
 
     @Override
     public float x() {
-        return 791.0F;
+        if (Float.isNaN(renderLeft)) {
+            renderLeft = MathHelper.lerp(anchorBlend, LEFT_ANCHOR, ANCHOR_RIGHT - width());
+        }
+        // Hud прибавляет offset при рендере — вычитаем его здесь, чтобы блок
+        // находился ровно в renderLeft и во время перетаскивания, и после него.
+        return renderLeft - HudEditor.offset(id())[0];
+    }
+
+    /** Прилипание к стороне, куда перетащили блок, с плавной анимацией переезда. */
+    private static void updateSnap() {
+        float blockWidth = INSTANCE.width();
+        float leftTarget = LEFT_ANCHOR;
+        float rightTarget = ANCHOR_RIGHT - blockWidth;
+        boolean dragging = HudEditor.isDragging(INSTANCE.id());
+
+        if (dragging) {
+            // Пока тянем — обычный free-drag через offset, сторону запоминаем для отпускания.
+            renderLeft = MathHelper.lerp(anchorBlend, leftTarget, rightTarget) + HudEditor.offset(INSTANCE.id())[0];
+            pendingCenter = renderLeft + blockWidth / 2.0F;
+        } else {
+            if (wasDragging) {
+                anchorBlend = pendingCenter < 960.0F ? 0.0F : 1.0F;
+                HudEditor.offset(INSTANCE.id())[0] = 0.0F;
+            }
+            float target = MathHelper.lerp(anchorBlend, leftTarget, rightTarget);
+            if (Float.isNaN(renderLeft)) {
+                renderLeft = target;
+            }
+            renderLeft = MathHelper.lerp(0.18F, renderLeft, target);
+            if (Math.abs(renderLeft - target) < 0.15F) {
+                renderLeft = target;
+            }
+        }
+        wasDragging = dragging;
     }
 
     @Override
@@ -93,6 +134,7 @@ public final class Notifications implements HudElement {
 
     @Override
     public boolean hasContent() {
+        updateSnap();
         if (!ru.fluxvisuals.ui.fluxgui.module.render.Hud.notifications.getValue()) {
             return false;
         }
@@ -133,7 +175,14 @@ public final class Notifications implements HudElement {
         if (!(opacity <= 0.0F)) {
             float y = Y + yOffset;
             float width = entryWidth(entry);
-            hud.panel(context, 791.0F, y, width, 37.0F, 10.0F, opacity);
+            float blockLeft = INSTANCE.x();
+            float blockWidth = INSTANCE.width();
+            float span = Math.max(1.0F, ANCHOR_RIGHT - blockWidth - LEFT_ANCHOR);
+            float side = MathHelper.clamp((blockLeft + HudEditor.offset(INSTANCE.id())[0] - LEFT_ANCHOR) / span, 0.0F, 1.0F);
+            float finalX = blockLeft + (blockWidth - width) * side;
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translate(finalX - X, 0.0F);
+            hud.panel(context, X, y, width, 37.0F, 10.0F, opacity);
             int visualAccent = visualAccent();
             String primaryIcon = Hud.primaryIcon("command_small");
             IconRender.draw(
@@ -161,6 +210,7 @@ public final class Notifications implements HudElement {
                 RoundedRenderer.drawRoundedRect(context, trackX, trackY, 25.0F, 12.0F, 6.0F, Hud.fade(lerpColor(452984831, visualAccent, toggleEase), opacity));
                 RoundedRenderer.drawRoundedRect(context, trackX + 2.0F + 6.0F * toggleEase, trackY + 2.0F, 15.0F, 8.0F, 4.0F, Hud.fade(-1, opacity));
             }
+            context.getMatrices().popMatrix();
         }
     }
 

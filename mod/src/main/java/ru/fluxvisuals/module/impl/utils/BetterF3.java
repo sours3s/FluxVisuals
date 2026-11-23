@@ -1,5 +1,6 @@
 package ru.fluxvisuals.module.impl.utils;
 
+import com.google.gson.JsonObject;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -44,5 +45,23 @@ public class BetterF3 extends Module {
    public static boolean isF3Pressed() {
       if (mc.options == null) return false;
       return mc.options.debugOverlayKey.isPressed();
+   }
+
+   @Override
+   public void load(JsonObject object) {
+      super.load(object);
+      // Старые конфиги могли сохранить F3 как бинд модуля — больше не разрешаем,
+      // иначе Better F3 включался бы по ванильной клавише.
+      if (this.bind == 292) {
+         this.bind = -1;
+      }
+   }
+
+   @Override
+   public void onDisable() {
+      if (mc != null && mc.debugHudEntryList != null) {
+         mc.debugHudEntryList.setF3Enabled(false);
+      }
+      super.onDisable();
    }
 }

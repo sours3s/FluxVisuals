@@ -30,6 +30,16 @@ final class CosmeticFirstPerson {
    private CosmeticFirstPerson() {
    }
 
+   /** autoScripts может хранить имя и с .lua, и без, и с путём — сравниваем нормализованно. */
+   private static String scriptId(String value) {
+      String id = value == null ? "" : value.strip().replace('\\', '/');
+      int slash = id.lastIndexOf('/');
+      if (slash >= 0) {
+         id = id.substring(slash + 1);
+      }
+      return id.endsWith(".lua") ? id.substring(0, id.length() - 4) : id;
+   }
+
    static void installHide(Path folder) {
       if (folder == null) {
          return;
@@ -83,7 +93,7 @@ final class CosmeticFirstPerson {
       }
       JsonArray scripts = avatar.getAsJsonArray(AUTO_SCRIPTS);
       for (JsonElement element : scripts) {
-         if (element.isJsonPrimitive() && script.equals(element.getAsString())) {
+         if (element.isJsonPrimitive() && script.equals(scriptId(element.getAsString()))) {
             return false;
          }
       }
@@ -107,19 +117,58 @@ final class CosmeticFirstPerson {
       return BLOCK_START + "\n"
             + "-- Written by FluxVisuals. Hides only the avatar head from its wearer's\n"
             + "-- own camera; hands, held items and custom swords stay visible.\n"
+            + "local fluxvisualsHeads = nil\n"
             + "local fluxvisualsHidden = nil\n"
+            + "local function fluxvisualsIsHead(part)\n"
+            + "    local name = part:getName():lower()\n"
+            + "    local parent = part:getParentType() or ''\n"
+            + "    return parent == 'Head'\n"
+            + "        or name == 'head' or name:match('head$') ~= nil\n"
+            + "        or name == 'skull' or name:match('skull$') ~= nil\n"
+            + "end\n"
+            + "local function fluxvisualsIsItem(part)\n"
+            + "    local name = part:getName():lower()\n"
+            + "    local parent = part:getParentType() or ''\n"
+            + "    if parent == 'Item' or parent == 'Trident' or parent == 'Arrow'\n"
+            + "        or parent == 'LeftItemPivot' or parent == 'RightItemPivot' then\n"
+            + "        return true\n"
+            + "    end\n"
+            + "    return name:match('item') ~= nil or name:match('sword') ~= nil\n"
+            + "        or name:match('scythe') ~= nil or name:match('trident') ~= nil\n"
+            + "        or name:match('blade') ~= nil or name:match('spear') ~= nil\n"
+            + "        or name:match('axe') ~= nil or name:match('hammer') ~= nil\n"
+            + "        or name:match('bow') ~= nil or name:match('staff') ~= nil\n"
+            + "end\n"
+            + "local function fluxvisualsCollect(part, blocked, out)\n"
+            + "    if not part then return end\n"
+            + "    local isItem = fluxvisualsIsItem(part)\n"
+            + "    if not blocked and not isItem and fluxvisualsIsHead(part) then\n"
+            + "        out[#out + 1] = {part = part, visible = part:getVisible()}\n"
+            + "    end\n"
+            + "    for _, child in pairs(part:getChildren() or {}) do\n"
+            + "        fluxvisualsCollect(child, blocked or isItem, out)\n"
+            + "    end\n"
+            + "end\n"
+            + "local function fluxvisualsFindHeads()\n"
+            + "    local out = {}\n"
+            + "    for _, model in pairs(models) do\n"
+            + "        fluxvisualsCollect(model, false, out)\n"
+            + "    end\n"
+            + "    return out\n"
+            + "end\n"
             + "local function fluxvisualsApplyHide()\n"
-            + "    if not host:isHost() then\n"
-            + "        return\n"
-            + "    end\n"
+            + "    if not host:isHost() then return end\n"
             + "    local hide = renderer:isFirstPerson()\n"
-            + "    if hide == fluxvisualsHidden then\n"
-            + "        return\n"
-            + "    end\n"
+            + "    if hide == fluxvisualsHidden then return end\n"
             + "    fluxvisualsHidden = hide\n"
-            + "    local head = models and models.root and models.root.Head\n"
-            + "    if head then\n"
-            + "        head:setVisible(not hide)\n"
+            + "    if not fluxvisualsHeads then fluxvisualsHeads = fluxvisualsFindHeads() end\n"
+            + "    for _, entry in ipairs(fluxvisualsHeads) do\n"
+            + "        if hide then\n"
+            + "            entry.visible = entry.part:getVisible()\n"
+            + "            entry.part:setVisible(false)\n"
+            + "        else\n"
+            + "            entry.part:setVisible(entry.visible)\n"
+            + "        end\n"
             + "    end\n"
             + "end\n"
             + "events.TICK:register(fluxvisualsApplyHide)\n"
@@ -152,7 +201,7 @@ final class CosmeticFirstPerson {
          JsonArray kept = new JsonArray();
          boolean removed = false;
          for (JsonElement element : scripts) {
-            if (element.isJsonPrimitive() && OWN_SCRIPTS.contains(element.getAsString())) {
+            if (element.isJsonPrimitive() && OWN_SCRIPTS.contains(scriptId(element.getAsString()))) {
                removed = true;
             } else {
                kept.add(element);
@@ -183,7 +232,7 @@ final class CosmeticFirstPerson {
          return false;
       }
       for (JsonElement element : scripts) {
-         if (!element.isJsonPrimitive() || !present.contains(element.getAsString())) {
+         if (!element.isJsonPrimitive() || !present.contains(scriptId(element.getAsString()))) {
             return false;
          }
       }

@@ -580,7 +580,7 @@ public class ClickGui extends Screen {
         }
 
         TextRender.draw(context, "FluxVisuals @", 67.82F, 34.936F, 10.0F, -1);
-        TextRender.draw(context, "Build: #1.0.36", 67.82F, 49.313F, 12.206F, -2130706433);
+        TextRender.draw(context, "Build: #1.0.37", 67.82F, 49.313F, 12.206F, -2130706433);
     }
 
     void renderSearch(DrawContext context) {
@@ -2595,7 +2595,7 @@ public class ClickGui extends Screen {
                 );
             }
 
-            String title = this.modePopupSetting instanceof MultiBooleanSetting ? "Выберите режимы" : "Выберите режим";
+            String title = this.modePopupSetting != null ? this.modePopupSetting.getDisplayName() : "Настройка";
             TextRender.draw(context, title, this.modePopupX + 14.0F, this.modePopupY + 25.0F, 13.0F, fade(-1, eased));
             context.fill(
                 (int)(this.modePopupX + 12.0F),
@@ -2639,7 +2639,13 @@ public class ClickGui extends Screen {
 
                     int optionColor = lerpColor(-2130706433, accentAt(this.modePopupX, rowY), selectionAnim);
                     float optionX = MathHelper.lerp(selectionAnim, this.modePopupX + 16.0F, this.modePopupX + 25.0F);
-                    TextRender.draw(context, trimText(option, 12.5F, 132.0F), optionX, rowY + 18.0F, 12.5F, fade(optionColor, eased));
+                    TextRender.draw(context, trimText(option, 12.5F, 86.0F), optionX, rowY + 18.0F, 12.5F, fade(optionColor, eased));
+                    if (this.modePopupSetting instanceof MultiBooleanSetting) {
+                        String state = selected ? "ON" : "OFF";
+                        float stateWidth = TextRender.width(state, 11.0F);
+                        int stateColor = selected ? accentAt(this.modePopupX, rowY) : 0xFF8C8A99;
+                        TextRender.draw(context, state, this.modePopupX + 162.0F - stateWidth, rowY + 18.0F, 11.0F, fade(stateColor, eased));
+                    }
                 }
             }
 
@@ -3043,11 +3049,11 @@ public class ClickGui extends Screen {
                 count++;
             }
         }
-        return MathHelper.clamp(78.0F + count * 30.8F, 132.0F, SETTINGS_H);
+        return MathHelper.clamp(56.0F + count * 30.8F, 110.0F, SETTINGS_H);
     }
 
     float settingsPanelTop() {
-        return SETTINGS_Y + 66.0F;
+        return SETTINGS_Y + 44.0F;
     }
 
     float settingsPanelBottom(Module module) {

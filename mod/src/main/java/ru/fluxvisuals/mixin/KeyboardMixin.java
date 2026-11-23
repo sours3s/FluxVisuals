@@ -5,6 +5,8 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.input.KeyInput;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.input.KeyInputEvent;
+import ru.fluxvisuals.module.impl.utils.BetterF3;
 import ru.fluxvisuals.module.impl.visuals.MenuSettingsModule;
 import ru.fluxvisuals.ui.clickgui.FluxClickGuiScreen;
 
@@ -33,6 +36,18 @@ public class KeyboardMixin {
 
          boolean clickGuiOpen = client.currentScreen instanceof FluxClickGuiScreen
             || client.currentScreen instanceof ru.fluxvisuals.ui.gui.clickgui.ClickGuiScreen;
+
+         // Better F3 полностью перехватывает F3, пока модуль включён: ванильный
+         // debug-HUD включается ровно на время зажатия и не 「залипает」.
+         BetterF3 betterF3 = FluxVisualsClient.get.manager.get(BetterF3.class);
+         if (!clickGuiOpen && betterF3 != null && betterF3.enable && input.comp_4795() == GLFW.GLFW_KEY_F3) {
+            KeyBinding.setKeyPressed(InputUtil.fromKeyCode(input), action != 0);
+            if (client.debugHudEntryList != null) {
+               client.debugHudEntryList.setF3Enabled(action != 0);
+            }
+            ci.cancel();
+            return;
+         }
 
          MenuSettingsModule module = MenuSettingsModule.getInstanceIfAvailable();
          int menuKey = module != null && module.bind != -1 ? module.bind : GLFW.GLFW_KEY_RIGHT_SHIFT;

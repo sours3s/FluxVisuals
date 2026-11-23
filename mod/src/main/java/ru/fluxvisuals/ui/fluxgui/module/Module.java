@@ -9,6 +9,7 @@ import ru.fluxvisuals.ui.fluxgui.setting.BindSetting;
 import ru.fluxvisuals.ui.fluxgui.setting.BooleanSetting;
 import ru.fluxvisuals.ui.fluxgui.setting.ColorSetting;
 import ru.fluxvisuals.ui.fluxgui.setting.LabelSetting;
+import ru.fluxvisuals.ui.fluxgui.setting.MultiBooleanSetting;
 import ru.fluxvisuals.ui.fluxgui.setting.ModeSetting;
 import ru.fluxvisuals.ui.fluxgui.setting.NumberSetting;
 import ru.fluxvisuals.ui.fluxgui.setting.SeparatorSetting;
@@ -154,7 +155,41 @@ public class Module {
             return new LabelSetting(s.name + ": " + s.getFormattedList());
         }
         if (raw instanceof ru.fluxvisuals.module.api.setting.impl.MultiBooleanSetting s) {
-            return new LabelSetting(s.name + ": " + String.join(", ", s.settings.stream().map(x -> x.name).toList()));
+            String[] keys = s.settings.stream().map(x -> x.name).toArray(String[]::new);
+            MultiBooleanSetting bound = new MultiBooleanSetting(s.name, keys) {
+                @Override
+                public List<String> getValues() {
+                    return List.of(keys);
+                }
+
+                @Override
+                public boolean isEnabled(String key) {
+                    return s.get(key);
+                }
+
+                @Override
+                public void toggle(String key) {
+                    set(key, !s.get(key));
+                }
+
+                @Override
+                public void set(String key, boolean state) {
+                    for (ru.fluxvisuals.module.api.setting.impl.BooleanSetting item : s.settings) {
+                        if (item.name.equals(key)) {
+                            item.set(state);
+                            return;
+                        }
+                    }
+                }
+            };
+            if ("Interface Elements".equalsIgnoreCase(s.name)) {
+                bound.setDisplayName("Interface elements");
+            } else if ("Notification Settings".equalsIgnoreCase(s.name)) {
+                bound.setDisplayName("Notifications");
+            } else if ("Status Line Metrics".equalsIgnoreCase(s.name)) {
+                bound.setDisplayName("Status line metrics");
+            }
+            return bound;
         }
         String label = raw.name != null && !raw.name.isBlank() ? raw.name : "Настройка";
         return new LabelSetting(label);
