@@ -182,9 +182,10 @@ public class KeyBindHUD {
    private static void renderItemIcon(Renderer2D r2, ItemStack stack, int count, float ix, float iy, float size, float alpha) {
       if (stack == null || stack.isEmpty()) return;
 
-      // For Renderer2D, we can't directly draw items - use DrawContext when available
-      // This is a simplified version - the actual item rendering needs DrawContext
-      r2.rect(ix, iy, size, size, 3.0F, Renderer2D.ColorUtil.replAlpha(0xFF333333, (int)(alpha * 200)));
+      // Рисуем реальный спрайт предмета из ванильного атласа. Раньше здесь была
+      // серая заглушка, из-за которой иконки в Hotbar Binds выглядели пропавшими.
+      r2.rect(ix, iy, size, size, 3.0F, Renderer2D.ColorUtil.replAlpha(0xFF333333, (int)(alpha * 120)));
+      ru.fluxvisuals.ui.gui.clickgui.externall.render.ItemRender.drawItem(stack, ix, iy, size / 16.0F, alpha);
 
       if (count >= 0) {
          String cStr = String.valueOf(count);

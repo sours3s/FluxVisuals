@@ -6,11 +6,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL13;
-import org.lwjgl.opengl.GL14;
-import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.impl.EventScreen;
@@ -62,10 +57,10 @@ public final class HudRenderBridge {
       // выхода из InGameHud.render, поэтому смена/удаление FBO между постановкой и
       // отрисовкой ломала состояние цели и приводила к пропаже иконок. Рисуем в текущий
       // кадрбуфер, который на этом этапе уже является основным.
+      GlState.Snapshot snapshot = GlState.push();
       GL11.glColorMask(true, true, true, true);
       GL11.glDisable(2929);
       GL11.glEnable(3042);
-      GlState.Snapshot snapshot = GlState.push();
 
       try {
          AnimationSystem.getInstance().tick();
@@ -93,35 +88,10 @@ public final class HudRenderBridge {
             }
          }
       } finally {
-         if (snapshot != null) {
-            GL20.glUseProgram(snapshot.program);
-            GL30.glBindVertexArray(snapshot.vao);
-            GL15.glBindBuffer(34962, snapshot.arrayBuffer);
-            GL15.glBindBuffer(34963, snapshot.elementArrayBuffer);
-            GL13.glActiveTexture(snapshot.activeTexture);
-            GL11.glBindTexture(3553, snapshot.texture2D);
-            GL11.glPixelStorei(3317, snapshot.unpackAlignment);
-            setEnabled(3089, snapshot.scissorEnabled);
-            setEnabled(2929, snapshot.depthTestEnabled);
-            setEnabled(2884, snapshot.cullFaceEnabled);
-            setEnabled(3042, snapshot.blendEnabled);
-            setEnabled(36281, snapshot.framebufferSrgbEnabled);
-            GL14.glBlendFuncSeparate(snapshot.blendSrcRGB, snapshot.blendDstRGB, snapshot.blendSrcAlpha, snapshot.blendDstAlpha);
-            GL11.glColorMask(snapshot.colorMaskR, snapshot.colorMaskG, snapshot.colorMaskB, snapshot.colorMaskA);
-            GL11.glDepthMask(snapshot.depthMask);
-            GL11.glViewport(snapshot.viewport[0], snapshot.viewport[1], snapshot.viewport[2], snapshot.viewport[3]);
-            GL11.glScissor(snapshot.scissorBox[0], snapshot.scissorBox[1], snapshot.scissorBox[2], snapshot.scissorBox[3]);
-         }
-
-
-      }
-   }
-
-   private static void setEnabled(int cap, boolean enabled) {
-      if (enabled) {
-         GL11.glEnable(cap);
-      } else {
-         GL11.glDisable(cap);
+         // Возвращаем ВСЁ состояние GL, включая привязку кадрбуфера и read/draw buffer.
+         // В 1.21.11 иконки предметов рисуются через офскрин-атлас GuiRenderer, поэтому
+         // потерянный FBO ломает их даже если остальной HUD выглядит нормально.
+         GlState.pop(snapshot);
       }
    }
 }
