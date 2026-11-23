@@ -92,7 +92,6 @@ public final class Hud {
 
     public void render(DrawContext context) {
         FrameEspGlow.update();
-        HudItemFilter.clearFrame();
         ru.fluxvisuals.ui.fluxgui.module.render.Animations.INSTANCE.updateAnimations();
         this.updateLayout(context);
         context.getMatrices().pushMatrix();
@@ -149,6 +148,9 @@ public final class Hud {
                 float dragAnimation = MathHelper.lerp(0.16F, DRAG_ANIMS.getOrDefault(element.id(), 0.0F), dragTarget);
                 DRAG_ANIMS.put(element.id(), dragAnimation);
                 this.currentDragAnimation = dragAnimation;
+                if (element == Notifications.INSTANCE) {
+                    Notifications.updateSnap();
+                }
                 float[] offset = HudEditor.offset(element.id());
                 float automaticY = automaticYOffset(element);
                 float elemX = element.x();
@@ -454,14 +456,7 @@ public final class Hud {
             context.getMatrices().pushMatrix();
             context.getMatrices().translate(x, y);
             context.getMatrices().scale(factor, factor);
-            HudItemFilter.beginCapture();
-
-            try {
-                context.drawItem(stack, 0, 0);
-            } finally {
-                HudItemFilter.endCapture();
-            }
-
+            context.drawItem(stack, 0, 0);
             context.getMatrices().popMatrix();
         }
     }

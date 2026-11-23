@@ -68,9 +68,7 @@
     "accessor.AbstractTextureAccessor",
     "accessor.BossBarHudAccessor",
     "accessor.ItemCooldownManagerAccessor",
-    "accessor.ItemCooldownManagerEntryAccessor",
-    "GuiRenderStateMixin",
-    "GuiRendererMixin"
+    "accessor.ItemCooldownManagerEntryAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

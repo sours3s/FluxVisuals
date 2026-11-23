@@ -73,7 +73,7 @@ public final class Notifications implements HudElement {
     }
 
     /** Прилипание к стороне, куда перетащили блок, с плавной анимацией переезда. */
-    private static void updateSnap() {
+    static void updateSnap() {
         float[] offset = HudEditor.offset(INSTANCE.id());
 
         if (HudEditor.isDragging(INSTANCE.id())) {
@@ -139,9 +139,6 @@ public final class Notifications implements HudElement {
 
     @Override
     public void render(DrawContext context, Hud hud) {
-        // hasContent() не вызывается в редакторе HUD, поэтому снапSide должен
-        // обновляться здесь — иначе после перетаскивания блок остаётся где попало.
-        updateSnap();
         if (hud.isEditing()) {
             poll();
             prune();
@@ -167,6 +164,11 @@ public final class Notifications implements HudElement {
         }
     }
 
+    /** Зеркалим X внутри панели, не отражая сами глифы текста. */
+    private static float mirroredX(float width, float designX, float designWidth) {
+        return side == 0 ? X + width - (designX - X) - designWidth : designX;
+    }
+
     static void renderEntry(DrawContext context, Hud hud, Notifications$Entry entry, float yOffset, float opacity) {
         if (!(opacity <= 0.0F)) {
             float y = Y + yOffset;
@@ -181,30 +183,38 @@ public final class Notifications implements HudElement {
             hud.panel(context, X, y, width, 37.0F, 10.0F, opacity);
             int visualAccent = visualAccent();
             String primaryIcon = Hud.primaryIcon("command_small");
+            float iconSize = IconRender.getDesignSize(primaryIcon) * Hud.primaryIconScale();
             IconRender.draw(
-                context, primaryIcon, 802.25F, y + 12.25F, IconRender.getDesignSize(primaryIcon) * Hud.primaryIconScale(), Hud.fade(visualAccent, opacity)
+                context, primaryIcon, mirroredX(width, 802.25F, iconSize), y + 12.25F, iconSize, Hud.fade(visualAccent, opacity)
             );
-            Hud.separator(context, 824.0F, y + 12.5F, 12.0F, Hud.fade(452984831, opacity));
+            Hud.separator(context, mirroredX(width, 824.0F, 12.0F), y + 12.5F, 12.0F, Hud.fade(452984831, opacity));
             if (entry.message != null) {
-                TextRender.draw(context, entry.message, 835.603F, y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
+                float textWidth = TextRender.width(entry.message, 14.241F);
+                TextRender.draw(context, entry.message, mirroredX(width, 835.603F, textWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
             } else {
                 String prefix = ru.fluxvisuals.ui.fluxgui.module.render.Hud.text("Модуль", "Module");
                 String suffix = ru.fluxvisuals.ui.fluxgui.module.render.Hud.text("переключён", "was switched to");
                 float pen = 835.603F;
-                TextRender.draw(context, prefix, pen, y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
-                pen += TextRender.width(prefix, 14.241F) + 4.5F;
-                TextRender.draw(context, entry.moduleName, pen, y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-1), opacity));
-                pen += TextRender.width(entry.moduleName, 14.241F) + 4.5F;
-                TextRender.draw(context, suffix, pen, y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
-                pen += TextRender.width(suffix, 14.241F);
+                float prefixWidth = TextRender.width(prefix, 14.241F);
+                TextRender.draw(context, prefix, mirroredX(width, pen, prefixWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
+                pen += prefixWidth + 4.5F;
+                float nameWidth = TextRender.width(entry.moduleName, 14.241F);
+                TextRender.draw(context, entry.moduleName, mirroredX(width, pen, nameWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-1), opacity));
+                pen += nameWidth + 4.5F;
+                float suffixWidth = TextRender.width(suffix, 14.241F);
+                TextRender.draw(context, suffix, mirroredX(width, pen, suffixWidth), y + 24.08F, 14.241F, Hud.fade(Hud.styledColor(-2434342), opacity));
+                pen += suffixWidth;
                 float tailSeparatorX = pen + 12.0F;
-                Hud.separator(context, tailSeparatorX, y + 12.5F, 12.0F, Hud.fade(452984831, opacity));
+                Hud.separator(context, mirroredX(width, tailSeparatorX, 12.0F), y + 12.5F, 12.0F, Hud.fade(452984831, opacity));
                 entry.toggleAnimation = MathHelper.lerp(0.1F, entry.toggleAnimation, entry.enabled ? 1.0F : 0.0F);
                 float toggleEase = smooth(entry.toggleAnimation);
-                float trackX = tailSeparatorX + 2.0F + 10.0F;
+                float trackX = mirroredX(width, tailSeparatorX + 12.0F, 25.0F);
                 float trackY = y + 12.5F;
                 RoundedRenderer.drawRoundedRect(context, trackX, trackY, 25.0F, 12.0F, 6.0F, Hud.fade(lerpColor(452984831, visualAccent, toggleEase), opacity));
-                RoundedRenderer.drawRoundedRect(context, trackX + 2.0F + 6.0F * toggleEase, trackY + 2.0F, 15.0F, 8.0F, 4.0F, Hud.fade(-1, opacity));
+                float knobX = side == 0
+                     ? trackX + 25.0F - 2.0F - 15.0F - 6.0F * toggleEase
+                     : trackX + 2.0F + 6.0F * toggleEase;
+                RoundedRenderer.drawRoundedRect(context, knobX, trackY + 2.0F, 15.0F, 8.0F, 4.0F, Hud.fade(-1, opacity));
             }
             context.getMatrices().popMatrix();
         }

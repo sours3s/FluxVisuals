@@ -34,7 +34,7 @@ public final class CosmeticsRepository {
    private static final String WEAPON_PREFIX = "weapon-";
    private static final String BUNDLED_ROOT = "/fluxvisuals/cosmetics/";
    private static final String BUNDLED_INDEX = "/fluxvisuals/cosmetics.index";
-   private static final String EXTRACTED_VERSION = "3";
+   private static final String EXTRACTED_VERSION = "4";
    private static final String VERSION_MARKER = ".fluxvisuals-cosmetics-version";
    private static final int MAX_DEPTH = 4;
    private static final List<CosmeticEntry> ENTRIES = new ArrayList<>();
@@ -104,6 +104,7 @@ public final class CosmeticsRepository {
          return;
       }
       ensureExtracted(root);
+      CosmeticFirstPerson.refreshGenerated(root);
       collect(root, root, 0);
       ENTRIES.sort(Comparator.<CosmeticEntry>comparingInt(entry -> entry.kind().ordinal())
             .thenComparing(entry -> entry.displayName().toLowerCase(Locale.ROOT)));
@@ -113,7 +114,12 @@ public final class CosmeticsRepository {
       if (depth <= MAX_DEPTH && Files.isDirectory(dir) && !isHidden(dir)) {
          if (Files.isRegularFile(dir.resolve(AVATAR_FILE))) {
             if (!dir.equals(root)) {
-               ENTRIES.add(toEntry(root, dir));
+               CosmeticEntry entry = toEntry(root, dir);
+               // Пустые weapon-папки содержат только avatar.json/avatar.png: Figura
+               // загружает такой «аватар», но модели в нём нет — меч не появится.
+               if (entry.kind() != CosmeticEntry.Kind.WEAPON || hasModel(dir)) {
+                  ENTRIES.add(entry);
+               }
             }
          } else {
             try (Stream<Path> stream = Files.list(dir)) {
@@ -130,6 +136,14 @@ public final class CosmeticsRepository {
    private static boolean isHidden(Path dir) {
       Path name = dir.getFileName();
       return name != null && name.toString().startsWith(".");
+   }
+
+   private static boolean hasModel(Path dir) {
+      try (Stream<Path> files = Files.walk(dir)) {
+         return files.anyMatch(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".bbmodel"));
+      } catch (Exception ignored) {
+         return false;
+      }
    }
 
    private static CosmeticEntry toEntry(Path root, Path dir) {

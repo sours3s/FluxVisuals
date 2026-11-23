@@ -168,9 +168,55 @@ final class CosmeticFirstPerson {
             + "        end\n"
             + "    end\n"
             + "end\n"
+            + "-- Некоторые аватары смещают глаз/пивот камеры. От первого лица это\n"
+            + "-- помещает камеру внутрь модели — сбрасываем смещения после рендера.\n"
+            + "local function fluxvisualsResetCamera()\n"
+            + "    if not host:isHost() then return end\n"
+            + "    if renderer:isFirstPerson() then\n"
+            + "        renderer:setEyeOffset(0, 0, 0)\n"
+            + "        renderer:setOffsetCameraPivot(0, 0, 0)\n"
+            + "    end\n"
+            + "end\n"
             + "events.TICK:register(fluxvisualsApplyHide)\n"
             + "events.RENDER:register(fluxvisualsApplyHide)\n"
+            + "events.POST_RENDER:register(fluxvisualsResetCamera)\n"
             + BLOCK_END + "\n";
+   }
+
+   /**
+    * После смены версии ассетов перезаписываем созданные нами Lua-файлы и убираем
+    * autoScripts от старых сборок: пустой/урезанный список глушит родные скрипты
+    * аватара, из-за чего events.item_render с моделями оружия не выполняется.
+    */
+   static void refreshGenerated(Path root) {
+      if (root == null) {
+         return;
+      }
+      List<Path> folders = new ArrayList<>();
+      try (Stream<Path> stream = Files.walk(root, 4)) {
+         stream.filter(Files::isDirectory)
+               .filter(dir -> Files.isRegularFile(dir.resolve("avatar.json")))
+               .forEach(folders::add);
+      } catch (Exception e) {
+         LOGGER.warn("Could not refresh generated Figura scripts in {}", root, e);
+         return;
+      }
+      for (Path folder : folders) {
+         try {
+            Path hide = folder.resolve(HIDE_SCRIPT);
+            if (Files.isRegularFile(hide)) {
+               Files.writeString(hide, hideBlock(), StandardCharsets.UTF_8);
+            }
+            Files.deleteIfExists(folder.resolve("fluxvisuals_fit.lua"));
+            cleanupLegacyInjection(folder);
+            Path avatarFile = folder.resolve("avatar.json");
+            if (Files.isRegularFile(avatarFile)) {
+               repairAvatar(folder, avatarFile);
+            }
+         } catch (Exception e) {
+            LOGGER.debug("Could not refresh generated script in {}", folder, e);
+         }
+      }
    }
 
    static void repair(Path folder) {
@@ -205,7 +251,8 @@ final class CosmeticFirstPerson {
             }
          }
          if (removed) {
-            if (matchesEveryScript(folder, kept)) {
+            // Пустой autoScripts запрещает запуск ВСЕХ скриптов — удаляем ключ целиком.
+            if (kept.size() == 0 || matchesEveryScript(folder, kept)) {
                avatar.remove(AUTO_SCRIPTS);
             } else {
                avatar.add(AUTO_SCRIPTS, kept);
