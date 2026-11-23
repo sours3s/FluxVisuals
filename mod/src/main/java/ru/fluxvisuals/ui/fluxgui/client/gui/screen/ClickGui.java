@@ -580,7 +580,7 @@ public class ClickGui extends Screen {
         }
 
         TextRender.draw(context, "FluxVisuals @", 67.82F, 34.936F, 10.0F, -1);
-        TextRender.draw(context, "Build: #1.0.37", 67.82F, 49.313F, 12.206F, -2130706433);
+        TextRender.draw(context, "Build: #1.0.38", 67.82F, 49.313F, 12.206F, -2130706433);
     }
 
     void renderSearch(DrawContext context) {
@@ -2531,7 +2531,10 @@ public class ClickGui extends Screen {
                 this.modePopupScroll = 0.0F;
                 this.modePopupTargetScroll = 0.0F;
                 this.modePopupHeight = MathHelper.clamp(52.0F + modeOptions(setting).size() * 27.0F, 79.0F, 313.0F);
-                this.modePopupX = column == 0 ? cardX + 355.0F + 8.0F : cardX + 14.0F - 8.0F;
+                // Попап открывается из панели настроек (SETTINGS_X = 1000), поэтому
+                // старая формула "cardX + 355" ставила его за пределами GUI и
+                // вне scissor-а. Размещаем его слева от панели, в видимой области.
+                this.modePopupX = SETTINGS_X - 200.0F;
                 this.modePopupAnchorContentY = settingY + scrollOffset;
                 float topLimit = 72.0F;
                 float bottomLimit = 524.0F;

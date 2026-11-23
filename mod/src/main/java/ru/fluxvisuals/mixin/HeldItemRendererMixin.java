@@ -11,6 +11,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.item.HeldItemRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -18,6 +19,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.render.HandAnimationEvent;
@@ -90,6 +92,28 @@ public abstract class HeldItemRendererMixin {
          this.fluxvisuals$currentEquipProgress = equipProgress;
       }
       return equipProgress;
+   }
+
+   @Redirect(
+      method = {"renderItem(FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;Lnet/minecraft/client/network/ClientPlayerEntity;I)V"},
+      at = @At(
+         value = "INVOKE",
+         target = "Lnet/minecraft/client/network/ClientPlayerEntity;getPitch(F)F"
+      )
+   )
+   private float redirectGetPitch(ClientPlayerEntity instance, float tickProgress) {
+      return MinecraftClient.getInstance().gameRenderer.getCamera().getPitch();
+   }
+
+   @Redirect(
+      method = {"renderItem(FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;Lnet/minecraft/client/network/ClientPlayerEntity;I)V"},
+      at = @At(
+         value = "INVOKE",
+         target = "Lnet/minecraft/client/network/ClientPlayerEntity;getYaw(F)F"
+      )
+   )
+   private float redirectGetYaw(ClientPlayerEntity instance, float tickProgress) {
+      return MinecraftClient.getInstance().gameRenderer.getCamera().getYaw();
    }
 
    @Inject(

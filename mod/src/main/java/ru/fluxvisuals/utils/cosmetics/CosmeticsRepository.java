@@ -34,7 +34,7 @@ public final class CosmeticsRepository {
    private static final String WEAPON_PREFIX = "weapon-";
    private static final String BUNDLED_ROOT = "/fluxvisuals/cosmetics/";
    private static final String BUNDLED_INDEX = "/fluxvisuals/cosmetics.index";
-   private static final String EXTRACTED_VERSION = "2";
+   private static final String EXTRACTED_VERSION = "3";
    private static final String VERSION_MARKER = ".fluxvisuals-cosmetics-version";
    private static final int MAX_DEPTH = 4;
    private static final List<CosmeticEntry> ENTRIES = new ArrayList<>();
@@ -67,16 +67,15 @@ public final class CosmeticsRepository {
          }
       }
       if (kind == CosmeticEntry.Kind.WEAPON) {
-         // В архиве есть папки только с avatar.json + avatar.png — Figura нечему
-         // рендерить. Не показываем их как рабочие мечи.
+         // Папки только с avatar.json не имеют модели — не показываем их как мечи.
          filtered.removeIf(entry -> {
             try (Stream<Path> files = Files.walk(entry.folder())) {
                return files.noneMatch(path -> {
                   String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
                   return name.endsWith(".bbmodel") || name.endsWith(".lua");
                });
-            } catch (Exception e) {
-               return true;
+            } catch (Exception ignored) {
+               return false;
             }
          });
       }
@@ -185,14 +184,13 @@ public final class CosmeticsRepository {
       }
       extracted = true;
 
-      // Старые версии оставляли в извлечённых аватарах autoScripts только со своим
-      // hide-скриптом. Из-за этого родные Lua (скрытие ванильного тела, item_render
-      // для мечей) не запускались. Перераспаковываем по маркеру версии.
+      // Перераспаковываем по маркеру версии, чтобы обновить hide-скрипт и убрать
+      // autoScripts, оставшиеся от старых сборок.
       Path marker = target.resolve(VERSION_MARKER);
       boolean upToDate = false;
       try {
          upToDate = Files.isRegularFile(marker)
-               && EXTRACTED_VERSION.equals(Files.readString(marker, StandardCharsets.UTF_8).trim());
+              && EXTRACTED_VERSION.equals(Files.readString(marker, StandardCharsets.UTF_8).trim());
       } catch (Exception ignored) {
       }
       if (upToDate) {

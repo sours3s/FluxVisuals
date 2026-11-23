@@ -30,7 +30,7 @@ final class CosmeticFirstPerson {
    private CosmeticFirstPerson() {
    }
 
-   /** autoScripts может хранить имя и с .lua, и без, и с путём — сравниваем нормализованно. */
+   /** autoScripts может содержать имя с .lua, без него или с путём. */
    private static String scriptId(String value) {
       String id = value == null ? "" : value.strip().replace('\\', '/');
       int slash = id.lastIndexOf('/');
@@ -56,9 +56,9 @@ final class CosmeticFirstPerson {
          // Старые версии FluxVisuals дописывали блок в чужой script.lua.
          // Убираем его, но сам скрипт и его запись в autoScripts оставляем как было.
          cleanupLegacyInjection(folder);
-         boolean descriptorChanged = registerScript(avatar, HIDE_SCRIPT_ID);
+         boolean changed = registerScript(avatar, HIDE_SCRIPT_ID);
          Files.writeString(folder.resolve(HIDE_SCRIPT), hideBlock(), StandardCharsets.UTF_8);
-         if (descriptorChanged) {
+         if (changed) {
             Files.writeString(avatarFile, avatar.toString(), StandardCharsets.UTF_8);
          }
       } catch (Exception e) {
@@ -79,14 +79,11 @@ final class CosmeticFirstPerson {
    }
 
    /**
-   * Figura выполняет все найденные Lua-файлы, только если autoScripts отсутствует.
-   * Как только список появляется, запускаются только перечисленные скрипты.
-   * Поэтому если аватар не задаёт autoScripts, не создаём его: иначе родные
-   * Lua-скрипты аватара (в том числе кастомные мечи и first-person модели)
-   * перестанут запускаться.
-   *
-   * @return true, если avatar.json был изменён
-   */
+    * Figura запускает родные Lua аватара (скрытие ванильного тела, events.item_render
+    * для мечей), только если autoScripts отсутствует. Поэтому не создаём его сами.
+    *
+    * @return true, если avatar.json был изменён
+    */
    private static boolean registerScript(JsonObject avatar, String script) {
       if (!avatar.has(AUTO_SCRIPTS) || !avatar.get(AUTO_SCRIPTS).isJsonArray()) {
          return false;
@@ -151,7 +148,7 @@ final class CosmeticFirstPerson {
             + "end\n"
             + "local function fluxvisualsFindHeads()\n"
             + "    local out = {}\n"
-            + "    for _, model in pairs(models) do\n"
+            + "    for _, model in pairs(models:getChildren() or {}) do\n"
             + "        fluxvisualsCollect(model, false, out)\n"
             + "    end\n"
             + "    return out\n"

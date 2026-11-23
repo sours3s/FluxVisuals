@@ -10,6 +10,7 @@ public final class HudItemFilter {
     private static final Set<ItemGuiElementRenderState> HUD_ITEMS = Collections.newSetFromMap(new IdentityHashMap<>());
     private static final Map<ItemGuiElementRenderState, Float> HUD_ITEM_OPACITY = new IdentityHashMap<>();
     private static boolean capturing;
+    private static boolean activeIsHudItem;
     private static float activeOpacity = 1.0F;
 
     private HudItemFilter() {
@@ -26,6 +27,7 @@ public final class HudItemFilter {
     public static void clearFrame() {
         HUD_ITEMS.clear();
         HUD_ITEM_OPACITY.clear();
+        activeIsHudItem = false;
         activeOpacity = 1.0F;
     }
 
@@ -37,19 +39,24 @@ public final class HudItemFilter {
     }
 
     public static void beginPreparing(ItemGuiElementRenderState state) {
-        if (!HUD_ITEMS.remove(state)) {
+        activeIsHudItem = HUD_ITEMS.remove(state);
+        if (!activeIsHudItem) {
             activeOpacity = 1.0F;
-        } else {
-            activeOpacity = HUD_ITEM_OPACITY.remove(state);
+            return;
+        }
+        activeOpacity = HUD_ITEM_OPACITY.remove(state);
+        if (Float.isNaN(activeOpacity)) {
+            activeOpacity = 1.0F;
         }
     }
 
     public static void endPreparing() {
+        activeIsHudItem = false;
         activeOpacity = 1.0F;
     }
 
     public static int preparedColor(int original) {
-        if (activeOpacity >= 0.999F) {
+        if (!activeIsHudItem || activeOpacity >= 0.999F) {
             return original;
         }
 

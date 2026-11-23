@@ -54,11 +54,10 @@ public final class Notifications implements HudElement {
     static final Map<Module, Boolean> KNOWN = new IdentityHashMap<>();
     static final Map<RegistryEntry<StatusEffect>, Boolean> WARNED_EFFECTS = new HashMap<>();
 
-    // 1 = правый край, 0 = левый край. renderLeft — реальная анимированная граница блока.
-    private static float anchorBlend = 1.0F;
-    private static float renderLeft = Float.NaN;
+    // 0 = левый край, 1 = правый край. Позицию задаёт x(), а смещение
+    // перетаскивания живёт в HudEditor и анимируется к нулю при смене стороны.
+    private static int side = 1;
     private static boolean wasDragging = false;
-    private static float pendingCenter = 0.0F;
 
     Notifications() {
     }
@@ -70,40 +69,35 @@ public final class Notifications implements HudElement {
 
     @Override
     public float x() {
-        if (Float.isNaN(renderLeft)) {
-            renderLeft = MathHelper.lerp(anchorBlend, LEFT_ANCHOR, ANCHOR_RIGHT - width());
-        }
-        // Hud прибавляет offset при рендере — вычитаем его здесь, чтобы блок
-        // находился ровно в renderLeft и во время перетаскивания, и после него.
-        return renderLeft - HudEditor.offset(id())[0];
+        return MathHelper.lerp((float)side, LEFT_ANCHOR, ANCHOR_RIGHT - width());
     }
 
     /** Прилипание к стороне, куда перетащили блок, с плавной анимацией переезда. */
     private static void updateSnap() {
-        float blockWidth = INSTANCE.width();
-        float leftTarget = LEFT_ANCHOR;
-        float rightTarget = ANCHOR_RIGHT - blockWidth;
-        boolean dragging = HudEditor.isDragging(INSTANCE.id());
+        float[] offset = HudEditor.offset(INSTANCE.id());
 
-        if (dragging) {
-            // Пока тянем — обычный free-drag через offset, сторону запоминаем для отпускания.
-            renderLeft = MathHelper.lerp(anchorBlend, leftTarget, rightTarget) + HudEditor.offset(INSTANCE.id())[0];
-            pendingCenter = renderLeft + blockWidth / 2.0F;
-        } else {
-            if (wasDragging) {
-                anchorBlend = pendingCenter < 960.0F ? 0.0F : 1.0F;
-                HudEditor.offset(INSTANCE.id())[0] = 0.0F;
-            }
-            float target = MathHelper.lerp(anchorBlend, leftTarget, rightTarget);
-            if (Float.isNaN(renderLeft)) {
-                renderLeft = target;
-            }
-            renderLeft = MathHelper.lerp(0.18F, renderLeft, target);
-            if (Math.abs(renderLeft - target) < 0.15F) {
-                renderLeft = target;
+        if (HudEditor.isDragging(INSTANCE.id())) {
+            wasDragging = true;
+            return;
+        }
+
+        if (wasDragging) {
+            wasDragging = false;
+            float center = INSTANCE.x() + offset[0] + INSTANCE.width() / 2.0F;
+            int target = center < 960.0F ? 0 : 1;
+            if (target != side) {
+                float oldX = INSTANCE.x();
+                side = target;
+                //Компенсируем скачок якоря, затем плавно ведём смещение к нулю.
+                offset[0] += oldX - INSTANCE.x();
             }
         }
-        wasDragging = dragging;
+
+        if (Math.abs(offset[0]) > 0.1F) {
+            offset[0] = MathHelper.lerp(0.18F, offset[0], 0.0F);
+        } else {
+            offset[0] = 0.0F;
+        }
     }
 
     @Override
@@ -134,7 +128,6 @@ public final class Notifications implements HudElement {
 
     @Override
     public boolean hasContent() {
-        updateSnap();
         if (!ru.fluxvisuals.ui.fluxgui.module.render.Hud.notifications.getValue()) {
             return false;
         }
@@ -146,6 +139,9 @@ public final class Notifications implements HudElement {
 
     @Override
     public void render(DrawContext context, Hud hud) {
+        // hasContent() не вызывается в редакторе HUD, поэтому снапSide должен
+        // обновляться здесь — иначе после перетаскивания блок остаётся где попало.
+        updateSnap();
         if (hud.isEditing()) {
             poll();
             prune();
@@ -177,9 +173,9 @@ public final class Notifications implements HudElement {
             float width = entryWidth(entry);
             float blockLeft = INSTANCE.x();
             float blockWidth = INSTANCE.width();
-            float span = Math.max(1.0F, ANCHOR_RIGHT - blockWidth - LEFT_ANCHOR);
-            float side = MathHelper.clamp((blockLeft + HudEditor.offset(INSTANCE.id())[0] - LEFT_ANCHOR) / span, 0.0F, 1.0F);
-            float finalX = blockLeft + (blockWidth - width) * side;
+            // Выравнивание берётся из состояния side, а не из сохранённого offset:
+            // старый отрицательный offset из конфига не должен тянуть блок влево.
+            float finalX = blockLeft + (blockWidth - width) * (float)side;
             context.getMatrices().pushMatrix();
             context.getMatrices().translate(finalX - X, 0.0F);
             hud.panel(context, X, y, width, 37.0F, 10.0F, opacity);
