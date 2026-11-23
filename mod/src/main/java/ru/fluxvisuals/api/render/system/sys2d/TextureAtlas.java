@@ -134,9 +134,6 @@ public class TextureAtlas {
         GL30.glBlitFramebuffer(0, 0, width, height, currentX, currentY, currentX + width, currentY + height, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
 
         cleanupFbos(readFbo, drawFbo);
-        // v1.0.44: удаление FBO снимало биндинг и возвращало основной кадрбуфер.
-        // GlState.pop() здесь восстанавливал офскрин-FBO из snapshot и ломал HUD.
-        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
 
         float u0 = (float) currentX / atlasWidth;
         float v0 = (float) currentY / atlasHeight;
@@ -186,8 +183,6 @@ public class TextureAtlas {
         GL30.glBlitFramebuffer(0, 0, blitW, blitH, destX, destY, destX + blitW, destY + blitH, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
 
         cleanupFbos(readFbo, drawFbo);
-        // Возвращаем основной кадрбуфер: GlState.pop здесь возвращал офскрин-FBO.
-        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
     }
 
     private void cleanupFbos(int readFbo, int drawFbo) {

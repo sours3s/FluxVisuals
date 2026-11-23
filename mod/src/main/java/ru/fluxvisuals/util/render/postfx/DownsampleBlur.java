@@ -1,6 +1,5 @@
 package ru.fluxvisuals.util.render.postfx;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import java.nio.ByteBuffer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -182,7 +181,7 @@ public final class DownsampleBlur {
             var12 = this.fullResolutionTarget.texture;
          } finally {
             GL30.glBindVertexArray(0);
-            GlStateManager._glUseProgram(0);
+            GL20.glUseProgram(0);
             GL30.glBindFramebuffer(36160, 0);
             GL13.glActiveTexture(33984);
             GL11.glBindTexture(3553, 0);

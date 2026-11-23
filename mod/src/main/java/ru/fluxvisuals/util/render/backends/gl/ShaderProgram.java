@@ -1,6 +1,5 @@
 package ru.fluxvisuals.util.render.backends.gl;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import java.nio.IntBuffer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -92,7 +91,7 @@ public final class ShaderProgram {
    }
 
    public void use() {
-      GlStateManager._glUseProgram(this.programId);
+      GL20.glUseProgram(this.programId);
    }
 
    public void delete() {

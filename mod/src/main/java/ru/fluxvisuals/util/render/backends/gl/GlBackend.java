@@ -1,6 +1,5 @@
 package ru.fluxvisuals.util.render.backends.gl;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -317,11 +316,9 @@ public final class GlBackend {
    public void endFrame() {
       this.flush();
       GL30.glBindVertexArray(0);
-      // НЕ вызываем GlState.pop здесь: он вернёт FBO из snapshot и оставит
-      // последующий ванильный рендер в чужом кадрбуфере (чёрный экран с HUD).
-      // Восстанавливаем только состояние самого бэкенда, как в v1.0.44.
+      GL20.glUseProgram(0);
       if (this.snapshot != null) {
-         GlStateManager._glUseProgram(this.snapshot.program);
+         GL20.glUseProgram(this.snapshot.program);
          GL30.glBindVertexArray(this.snapshot.vao);
          GL15.glBindBuffer(34962, this.snapshot.arrayBuffer);
          GL15.glBindBuffer(34963, this.snapshot.elementArrayBuffer);
@@ -994,9 +991,6 @@ public final class GlBackend {
       } else if (data == null) {
          throw new IllegalArgumentException("data");
       } else {
-         int previousTexture = GL11.glGetInteger(32873);
-         int previousAlignment = GL11.glGetInteger(3317);
-         int previousRowLength = GL12.glGetInteger(3314);
          int tex = GL11.glGenTextures();
          GL11.glBindTexture(3553, tex);
          GL11.glTexParameteri(3553, 10241, 9729);
@@ -1009,17 +1003,12 @@ public final class GlBackend {
          GL12.glPixelStorei(3314, 0);
          data.rewind();
          GL11.glTexImage2D(3553, 0, 32856, width, height, 0, 6408, 5121, data);
-         GL12.glPixelStorei(3314, previousRowLength);
-         GL11.glPixelStorei(3317, previousAlignment);
-         GL11.glBindTexture(3553, previousTexture);
+         GL11.glBindTexture(3553, 0);
          return tex;
       }
    }
 
    public int createAlphaTexture(int width, int height) {
-      int previousTexture = GL11.glGetInteger(32873);
-      int previousAlignment = GL11.glGetInteger(3317);
-      int previousRowLength = GL12.glGetInteger(3314);
       int tex = GL11.glGenTextures();
       GL11.glBindTexture(3553, tex);
       GL11.glTexParameteri(3553, 10241, 9729);
@@ -1035,16 +1024,13 @@ public final class GlBackend {
       GL11.glPixelStorei(3317, 1);
       GL12.glPixelStorei(3314, 0);
       GL11.glTexImage2D(3553, 0, 33321, width, height, 0, 6403, 5121, (ByteBuffer) null);
-      GL12.glPixelStorei(3314, previousRowLength);
-      GL11.glPixelStorei(3317, previousAlignment);
-      GL11.glBindTexture(3553, previousTexture);
+      GL11.glBindTexture(3553, 0);
       return tex;
    }
 
    public void uploadAlphaSubImage(int tex, int x, int y, int w, int h, ByteBuffer data) {
       int prevAlign = GL11.glGetInteger(3317);
       int prevRowLen = GL11.glGetInteger(3314);
-      int prevTexture = GL11.glGetInteger(32873);
       data.order(ByteOrder.nativeOrder());
       GL11.glBindTexture(3553, tex);
       GL11.glPixelStorei(3317, 1);
@@ -1052,14 +1038,13 @@ public final class GlBackend {
       GL11.glTexSubImage2D(3553, 0, x, y, w, h, 6403, 5121, data);
       GL12.glPixelStorei(3314, prevRowLen);
       GL11.glPixelStorei(3317, prevAlign);
-      GL11.glBindTexture(3553, prevTexture);
+      GL11.glBindTexture(3553, 0);
    }
 
    public void uploadAlphaSubImageWithStride(int tex, int x, int y, int w, int h, ByteBuffer data,
          int sourceRowLength) {
       int prevAlign = GL11.glGetInteger(3317);
       int prevRowLen = GL11.glGetInteger(3314);
-      int prevTexture = GL11.glGetInteger(32873);
       data.order(ByteOrder.nativeOrder());
       GL11.glBindTexture(3553, tex);
       GL11.glPixelStorei(3317, 1);
@@ -1067,7 +1052,7 @@ public final class GlBackend {
       GL11.glTexSubImage2D(3553, 0, x, y, w, h, 6403, 5121, data);
       GL12.glPixelStorei(3314, prevRowLen);
       GL11.glPixelStorei(3317, prevAlign);
-      GL11.glBindTexture(3553, prevTexture);
+      GL11.glBindTexture(3553, 0);
    }
 
    private void ensureCaptureTex(int w, int h, boolean fullscreen) {
@@ -1495,7 +1480,7 @@ public final class GlBackend {
          } finally {
             GL13.glActiveTexture(33984);
             GL11.glBindTexture(3553, 0);
-            GlStateManager._glUseProgram(0);
+            GL20.glUseProgram(0);
             GlState.pop(state);
          }
       }
@@ -1582,7 +1567,7 @@ public final class GlBackend {
          this.textureToSlot.clear();
          this.slotToTexture.clear();
          GL30.glBindVertexArray(0);
-         GlStateManager._glUseProgram(0);
+         GL20.glUseProgram(0);
          if (this.vaoDraw != 0) {
             GL30.glDeleteVertexArrays(this.vaoDraw);
          }

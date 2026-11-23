@@ -1,6 +1,5 @@
 package ru.fluxvisuals.ui.fluxgui.util.render;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import ru.fluxvisuals.ui.fluxgui.FluxVisuals;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
@@ -112,7 +111,7 @@ public final class RawTextureRenderer {
                 GL11.glDisable(2884);
                 GL11.glDepthMask(false);
                 scissorSetup.run();
-                GlStateManager._glUseProgram(program);
+                GL20.glUseProgram(program);
                 GL30.glBindVertexArray(vao);
                 GL15.glBindBuffer(34962, vbo);
                 GL15.glBufferData(34962, transformed, 35040);

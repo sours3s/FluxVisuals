@@ -1,6 +1,5 @@
 package ru.fluxvisuals.util.render.backends.gl;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import net.fabricmc.api.EnvType;
@@ -26,7 +25,7 @@ public final class GlState {
          IntBuffer buf4 = stack.mallocInt(4);
          IntBuffer buf1 = stack.mallocInt(1);
          s.framebuffer = GL11.glGetInteger(36006);
-         s.drawFramebuffer = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING); // 36006, не 36011
+         s.drawFramebuffer = GL11.glGetInteger(36006);
          s.readFramebuffer = GL11.glGetInteger(36010);
          GL11.glGetIntegerv(2978, buf4);
          s.viewport[0] = buf4.get(0);
@@ -100,7 +99,7 @@ public final class GlState {
     */
    public static void pop(GlState.Snapshot s, boolean restoreBuffers) {
       if (s != null) {
-         GlStateManager._glUseProgram(s.program);
+         GL20.glUseProgram(s.program);
          GL30.glBindVertexArray(s.vao);
          GL15.glBindBuffer(34962, s.arrayBuffer);
          GL15.glBindBuffer(34963, s.elementArrayBuffer);
