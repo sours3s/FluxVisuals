@@ -1,5 +1,6 @@
 package ru.fluxvisuals.ui.gui.clickgui.util.model;
 
+import com.mojang.blaze3d.opengl.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL14;
@@ -58,7 +59,7 @@ public final class GlStateSnapshot {
 
     public void revert() {
         if ((this.lastProgram == 0) | GL20.glIsProgram(this.lastProgram)) {
-            GL20.glUseProgram(this.lastProgram);
+            GlStateManager._glUseProgram(this.lastProgram);
         }
         for (int i = 0; i < this.lastTextures.length; i++) {
             GL13.glActiveTexture(33984 + i);

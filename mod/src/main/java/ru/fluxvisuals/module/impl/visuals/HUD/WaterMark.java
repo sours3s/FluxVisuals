@@ -34,10 +34,10 @@ public final class WaterMark {
         context.fill(x + 1, y + 1, right + 1, bottom + 1, 0x88000000);
 
         // Вертикальный градиент в исходнике задаётся как bgcolor→accentSecond.
-        context.fillGradient(x, y, right, bottom, DonorHudTheme.ACCENT, DonorHudTheme.ACCENT_SECOND);
+        context.fillGradient(x, y, right, bottom, HudTheme.ACCENT, HudTheme.ACCENT_SECOND);
 
         // Тонкая светлая обводка.
-        int outline = DonorHudTheme.withAlpha(DonorHudTheme.TEXT, 30);
+        int outline = HudTheme.withAlpha(HudTheme.TEXT, 30);
         context.fill(x, y, right, y + 1, outline);
         context.fill(x, bottom - 1, right, bottom, outline);
         context.fill(x, y, x + 1, bottom, outline);
@@ -48,8 +48,8 @@ public final class WaterMark {
 
         int textX = x + 21;
         int textY = y + 3;
-        context.drawTextWithShadow(font, NAME, textX, textY, DonorHudTheme.TEXT);
+        context.drawTextWithShadow(font, NAME, textX, textY, HudTheme.TEXT);
         context.drawTextWithShadow(font, VERSION, textX + font.getWidth(NAME), textY,
-              DonorHudTheme.withAlpha(DonorHudTheme.TEXT, 190));
+              HudTheme.withAlpha(HudTheme.TEXT, 190));
     }
 }

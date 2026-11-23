@@ -63,7 +63,6 @@ dependencies {
 	include "net.java.dev.jna:jna:5.15.0"
 	include "net.java.dev.jna:jna-platform:5.15.0"
 
-	// Lombok (@Generated и codegen из Arizona-порта).
 	compileOnly "org.projectlombok:lombok:1.18.38"
 	annotationProcessor "org.projectlombok:lombok:1.18.38"
 }

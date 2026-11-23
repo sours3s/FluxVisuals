@@ -322,7 +322,7 @@
     $('#homeUser').textContent = cfg.username || 'Player';
     const nickInput = $('#homeNick');
     if (nickInput && document.activeElement !== nickInput) nickInput.value = cfg.mcNickname || cfg.username || '';
-    $('#homeUid').textContent = cfg.username || '—';
+    $('#homeAccount').textContent = cfg.username || '—';
     $('#homeVersion').textContent = cfg.version || '1.21.11';
     $('#homeRam').textContent = (cfg.ramMb || 4096) + ' МБ';
     $('#sfUserName').textContent = cfg.username || 'Player';
@@ -979,8 +979,8 @@
   // ---------- Настройки ----------
   function renderSettings(cfg) {
     if (!cfg) return;
-    const clientVal = $('#setClientNameVal');
-    if (clientVal) clientVal.textContent = cfg.username || '—';
+    const accountVal = $('#setAccountNameVal');
+    if (accountVal) accountVal.textContent = cfg.username || '—';
     $('#setVersion').textContent = cfg.version ?? '1.21.11';
     $('#setAccent').value = '#' + ((cfg.accent ?? 0x7c5cff) & 0xffffff).toString(16).padStart(6, '0');
     const ram = cfg.ramMb ?? 4096;

@@ -626,7 +626,6 @@ public final class LanguageManager {
         RU_TO_EN.put("Р–РµР»Рµ", "Jelly");
         RU_TO_EN.put("РўСЂСЏСЃРєР°", "Shake");
         RU_TO_EN.put("РџРµСЂРµРјРµС‰РµРЅРёРµ", "Translation");
-        RU_TO_EN.put("РўРѕР»СЊРєРѕ СЃ РєРёР»Р»РєРѕР№", "Only with KillAura");
         RU_TO_EN.put("РџРѕРІРѕСЂРѕС‚", "Rotation");
         RU_TO_EN.put("РЎРёР»Р° РЅР°РєР»РѕРЅР°", "Tilt strength");
         RU_TO_EN.put("Р—РЅР°С‡РµРЅРёРµ РЅР°РєР»РѕРЅР°", "Tilt value");
@@ -854,7 +853,6 @@ public final class LanguageManager {
         RU_TO_EN.put(
             "РџРѕРєР°Р·С‹РІР°РµС‚ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ СЂРµР°Р»СЊРЅРѕ РїРѕРґРЅСЏС‚С‹С… РїСЂРµРґРјРµС‚Р°С…", "Shows info about actually picked up items"
         );
-        RU_TO_EN.put("РўРѕР»СЊРєРѕ РґРѕРЅР°С‚РµСЂСЃРєРёРµ", "Donor items only");
         RU_TO_EN.put("Р”РµР»Р°РµС‚ РјРѕРґРµР»СЊ РёРіСЂРѕРєР° Р·Р°РјРµС‚РЅРѕ РјРµРЅСЊС€Рµ", "Makes the player model noticeably smaller");
         RU_TO_EN.put("Р”СЂСѓРіРёРµ РёРіСЂРѕРєРё", "Other players");
         RU_TO_EN.put("РЈР»СѓС‡С€РµРЅРёРµ С‡Р°С‚Р°", "Chat improvements");
@@ -1316,7 +1314,6 @@ public final class LanguageManager {
         RU_TO_EN.put("Кнопка пласта", "Plast key");
         RU_TO_EN.put("Рисовать радиус", "Draw radius");
         RU_TO_EN.put("Дуэли", "Duels");
-        RU_TO_EN.put("Только донатерские", "Donor only");
         RU_TO_EN.put("Новое имя", "New name");
         RU_TO_EN.put("Анархия", "Anarchy");
         RU_TO_EN.put("Название", "Name");

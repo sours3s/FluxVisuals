@@ -4,7 +4,7 @@ import java.awt.Color;
 import net.minecraft.client.gui.DrawContext;
 
 /**
- * Совместимость донорского HUD с текущим стеклом FluxVisuals.
+ * Совместимость HUD с текущим стеклом FluxVisuals.
  * Вызовы Delegates 1:1 к FluxGlassPipeline, имя оставлено как в исходнике.
  */
 public final class MirageGlassPipeline {

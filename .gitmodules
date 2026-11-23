@@ -1,0 +1,3 @@
+[submodule "server-repo"]
+	path = server-repo
+	url = https://github.com/sours3s/fluxvisuals-server.git

@@ -223,12 +223,12 @@ public class Hud extends Module {
          }
          ru.fluxvisuals.ui.fluxgui.module.render.Hud.blur.setValue(false);
 
-         // Рендер HUD полностью перенесён из донорских исходников: ватермарка,
-         // таргет, список модулей, хотбар, броня, зелья, кулдауны, медиа и т.д.
-         ru.fluxvisuals.ui.fluxgui.client.gui.hud.Hud donorHud =
+         // Ватермарка, таргет, список модулей, хотбар, броня, зелья, кулдауны
+         // и медиа рисуются как элементы HUD FluxVisuals.
+         ru.fluxvisuals.ui.fluxgui.client.gui.hud.Hud hud =
                ru.fluxvisuals.ui.fluxgui.client.gui.hud.Hud.INSTANCE;
-         donorHud.render(e.drawContext());
-         donorHud.renderNotifications(e.drawContext());
+         hud.render(e.drawContext());
+         hud.renderNotifications(e.drawContext());
          // Список активных модулей теперь рисуется как элемент HUD.
          // ArrayList рисуется как обычный элемент HUD через Hud.render().
       }

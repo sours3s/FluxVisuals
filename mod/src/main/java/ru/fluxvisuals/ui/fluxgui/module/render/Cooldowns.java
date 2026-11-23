@@ -9,7 +9,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.ItemCooldownManager;
 import net.minecraft.item.ItemStack;
 
-/** Донорский рендер кулдаунов, адаптированный к текущему менеджеру модулей. */
+/** Рендер кулдаунов, адаптированный к текущему менеджеру модулей. */
 public final class Cooldowns {
     public static final Cooldowns INSTANCE = new Cooldowns();
     private final BooleanSetting hotbar = new BooleanSetting("Хотбар", true);

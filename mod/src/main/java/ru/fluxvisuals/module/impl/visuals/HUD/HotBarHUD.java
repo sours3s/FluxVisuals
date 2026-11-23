@@ -51,7 +51,7 @@ public class HotBarHUD {
 
         // DrawContext рисует в scaled-координатах, а Renderer2D — в физических пикселях
         // framebuffer'а. Раньше оба получали scaled-координаты, из-за чего панель
-        // донорского хотбара уезжала в левый верхний угол и выглядела сломанной.
+        // кастомного хотбара уезжала в левый верхний угол и выглядела сломанной.
         float scale = mc.getWindow().getScaleFactor();
         if (!(scale > 0.0F)) scale = 1.0F;
         float halfWidth = mc.getWindow().getScaledWidth() / 2.0F;

@@ -1,5 +1,6 @@
 package ru.fluxvisuals.util.render.postfx;
 
+import com.mojang.blaze3d.opengl.GlStateManager;
 import java.nio.FloatBuffer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -114,7 +115,7 @@ public final class FogBlurPass {
                   this.quad.bindAndDraw();
                }
 
-               GL20.glUseProgram(0);
+               GlStateManager._glUseProgram(0);
                GL30.glBindFramebuffer(36160, 0);
                GL13.glActiveTexture(33984);
                GL11.glBindTexture(3553, 0);
@@ -219,7 +220,7 @@ public final class FogBlurPass {
 
             unit0 = new FogBlurPass.Result(colorTexture, 0, width, height);
          } finally {
-            GL20.glUseProgram(0);
+            GlStateManager._glUseProgram(0);
             GL30.glBindFramebuffer(36160, 0);
             GL13.glActiveTexture(33984);
             GL11.glBindTexture(3553, 0);

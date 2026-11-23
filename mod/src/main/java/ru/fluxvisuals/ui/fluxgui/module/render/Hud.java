@@ -8,7 +8,7 @@ import ru.fluxvisuals.ui.fluxgui.setting.ModeSetting;
 import ru.fluxvisuals.ui.fluxgui.setting.NumberSetting;
 
 /**
- * Настройки донорского HUD. Логика и значения скопированы из исходного модуля
+ * Настройки HUD FluxVisuals. Логика и значения согласованы с модулем
  * без блока пресетов и редактора — они относятся к другому интерфейсу.
  */
 public final class Hud {

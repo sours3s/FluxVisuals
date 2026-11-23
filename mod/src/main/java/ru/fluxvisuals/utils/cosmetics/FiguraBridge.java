@@ -73,6 +73,9 @@ public final class FiguraBridge {
          // Figura не прячет модель от владельца в первом лице сама: без этого
          // камера оказывается внутри головы аватара. Скрипт ставим до загрузки.
          CosmeticFirstPerson.installHide(entry.folder());
+         // Без clearAvatars старый аватар остаётся активным и его camera/head-хуки
+         // продолжают работать вместе с новым.
+         clearAvatars.invoke(null, mc.player.getUuid());
          loadLocalAvatar.invoke(null, entry.folder());
          appliedId = entry.id();
          LOGGER.info("Avatar loaded: {}", entry.id());

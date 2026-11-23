@@ -5,7 +5,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.option.Perspective;
 
-/** Донорский модуль анимаций, адаптированный к текущему менеджеру модулей. */
+/** Модуль анимаций, адаптированный к текущему менеджеру модулей. */
 public final class Animations {
     public static final Animations INSTANCE = new Animations();
     private final MinecraftClient mc = MinecraftClient.getInstance();

@@ -1,4 +1,5 @@
 package ru.fluxvisuals.ui.gui.clickgui.util.render;
+import com.mojang.blaze3d.opengl.GlStateManager;
 import ru.fluxvisuals.ui.gui.clickgui.FluxVisuals;
 import ru.fluxvisuals.ui.gui.clickgui.util.resource.Reloadable;
 import ru.fluxvisuals.ui.gui.clickgui.util.resource.ResourceSource;
@@ -16,11 +17,11 @@ public class ShaderProgram implements Reloadable {
     public IntConsumer compileCallback = noOpCallback;
 
     public void bind() {
-        GL33.glUseProgram(getProgramId());
+        GlStateManager._glUseProgram(getProgramId());
     }
 
     public void unbind() {
-        GL33.glUseProgram(0);
+        GlStateManager._glUseProgram(0);
     }
 
     @Override

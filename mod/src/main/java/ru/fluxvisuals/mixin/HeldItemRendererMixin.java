@@ -4,20 +4,24 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Arm;
-import net.minecraft.item.CrossbowItem;
+import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.item.HeldItemRenderer;
+import net.minecraft.client.render.item.ItemRenderState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.fluxvisuals.event.EventManager;
@@ -25,12 +29,16 @@ import ru.fluxvisuals.event.render.HandAnimationEvent;
 import ru.fluxvisuals.event.render.RenderItemEvent;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
+import org.figuramc.figura.ducks.FiguraItemStackRenderStateExtension;
 import org.figuramc.figura.lua.api.world.ItemStackAPI;
 import org.figuramc.figura.math.vector.FiguraVec3;
+import net.minecraft.client.render.model.json.Transformation;
 
 @Environment(EnvType.CLIENT)
 @Mixin({HeldItemRenderer.class})
 public abstract class HeldItemRendererMixin {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HeldItemRendererMixin.class);
+    private static long fluxvisuals$lastItemErrorNanos;
     @Shadow
     private ItemStack mainHand;
     @Shadow
@@ -66,27 +74,76 @@ public abstract class HeldItemRendererMixin {
       this.fluxvisuals$currentHand = hand;
       RenderItemEvent renderItemEvent = new RenderItemEvent(matrices, hand, stack);
       EventManager.call(renderItemEvent);
+   }
 
-      // Figura 0.1.5 вызывает itemRenderEvent только в third-person слоях, из-за чего
-      // аватары оружия от первого лица никогда не появляются. Добавляем событие здесь.
-      if (!stack.isEmpty()) {
-         try {
-            Avatar avatar = AvatarManager.getAvatarForPlayer(player.getUuid());
-            if (avatar != null && avatar.luaRuntime != null) {
-               FiguraVec3 zero = FiguraVec3.of();
-               FiguraVec3 one = FiguraVec3.of(1.0, 1.0, 1.0);
-               String context = hand == Hand.OFF_HAND ? "FIRST_PERSON_LEFT_HAND" : "FIRST_PERSON_RIGHT_HAND";
-               boolean rendered = avatar.itemRenderEvent(
-                  ItemStackAPI.verify(stack), context, zero, zero, one,
-                  player.getMainArm() == Arm.LEFT, matrices, queue, light, OverlayTexture.DEFAULT_UV
-               );
-               if (rendered) {
-                  ci.cancel();
-               }
-            }
-         } catch (Throwable ignored) {
-            // Figura может отсутствовать или аватар может быть не загружен — ванильный рендер остаётся.
+   /**
+    * Figura отправляет аватар оружия с той позой MatrixStack, которая есть в момент
+    * вызова. Ванильный слой применяет transform предмета позже, поэтому до вызова
+    * itemRenderEvent применяем его сами на копии матрицы руки.
+    */
+   @Redirect(
+      method = "renderItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;I)V",
+      at = @At(
+         value = "INVOKE",
+         target = "Lnet/minecraft/client/render/item/ItemRenderState;render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;III)V"
+      )
+   )
+   private void fluxvisuals$renderFirstPersonFiguraItem(
+      ItemRenderState renderState, MatrixStack matrices, OrderedRenderCommandQueue queue,
+      int light, int overlay, int seed
+   ) {
+      if (!(renderState instanceof FiguraItemStackRenderStateExtension state)) {
+         renderState.render(matrices, queue, light, overlay, seed);
+         return;
+      }
+      ItemDisplayContext displayContext = state.figura$getDisplayContext();
+      // Third-person Figura уже вызывает itemRenderEvent в своих слоях — здесь
+      // обрабатываем только руки, чтобы не дублировать кастомную модель.
+      if (displayContext != ItemDisplayContext.FIRST_PERSON_LEFT_HAND
+         && displayContext != ItemDisplayContext.FIRST_PERSON_RIGHT_HAND) {
+         renderState.render(matrices, queue, light, overlay, seed);
+         return;
+      }
+      MinecraftClient client = MinecraftClient.getInstance();
+      if (client.player == null) {
+         renderState.render(matrices, queue, light, overlay, seed);
+         return;
+      }
+      try {
+         Avatar avatar = AvatarManager.getAvatarForPlayer(client.player.getUuid());
+         if (avatar == null || avatar.luaRuntime == null) {
+            renderState.render(matrices, queue, light, overlay, seed);
+            return;
          }
+         Transformation transform = state.figura$getItemTransform();
+         if (transform == null) {
+            renderState.render(matrices, queue, light, overlay, seed);
+            return;
+         }
+
+         MatrixStack itemMatrices = new MatrixStack();
+         itemMatrices.peek().copy(matrices.peek());
+         transform.apply(state.figura$isLeftHanded(), itemMatrices.peek());
+
+         boolean rendered = avatar.itemRenderEvent(
+            ItemStackAPI.verify(state.figura$getItemStack()),
+            displayContext.name(),
+            FiguraVec3.fromVec3f(transform.translation()),
+            FiguraVec3.of(transform.rotation().z(), transform.rotation().y(), transform.rotation().x()),
+            FiguraVec3.fromVec3f(transform.scale()),
+            state.figura$isLeftHanded(),
+            itemMatrices, queue, light, OverlayTexture.DEFAULT_UV
+         );
+         if (!rendered) {
+            renderState.render(matrices, queue, light, overlay, seed);
+         }
+      } catch (Throwable t) {
+         long now = System.nanoTime();
+         if (now - fluxvisuals$lastItemErrorNanos > 5_000_000_000L) {
+            fluxvisuals$lastItemErrorNanos = now;
+            LOGGER.warn("Figura first-person item render failed", t);
+         }
+         renderState.render(matrices, queue, light, overlay, seed);
       }
    }
 
@@ -141,8 +198,4 @@ public abstract class HeldItemRendererMixin {
       }
    }
 
-   @Unique
-   private boolean fluxvisuals$isChargedCrossbow(ItemStack stack) {
-      return stack.isOf(Items.CROSSBOW) && CrossbowItem.isCharged(stack);
-   }
 }

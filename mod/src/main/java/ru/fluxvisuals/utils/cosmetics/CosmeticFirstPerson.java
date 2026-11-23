@@ -168,19 +168,9 @@ final class CosmeticFirstPerson {
             + "        end\n"
             + "    end\n"
             + "end\n"
-            + "local function fluxvisualsNormalizeCamera()\n"
-            + "    if not host:isHost() then return end\n"
-            + "    if not renderer:isFirstPerson() then return end\n"
-            + "    -- Аватары задают eye offset и camera pivot в events.render каждый кадр.\n"
-            + "    -- Наш скрипт загружается последним, поэтому этот обработчик выполняется\n"
-            + "    -- после родного и выравнивает камеру только от первого лица. CameraPos\n"
-            + "    -- и CameraRot не трогаем — их сброс давал «только небо» в 1.0.40.\n"
-            + "    renderer:setEyeOffset(0, 0, 0)\n"
-            + "    renderer:setOffsetCameraPivot(0, 0, 0)\n"
-            + "end\n"
             + "events.TICK:register(fluxvisualsApplyHide)\n"
             + "events.RENDER:register(fluxvisualsApplyHide)\n"
-            + "events.RENDER:register(fluxvisualsNormalizeCamera)\n"
+            + "events.POST_RENDER:register(fluxvisualsApplyHide)\n"
             + BLOCK_END + "\n";
    }
 

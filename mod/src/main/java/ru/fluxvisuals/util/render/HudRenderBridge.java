@@ -57,10 +57,10 @@ public final class HudRenderBridge {
       // выхода из InGameHud.render, поэтому смена/удаление FBO между постановкой и
       // отрисовкой ломала состояние цели и приводила к пропаже иконок. Рисуем в текущий
       // кадрбуфер, который на этом этапе уже является основным.
+      GlState.Snapshot snapshot = GlState.push();
       GL11.glColorMask(true, true, true, true);
       GL11.glDisable(2929);
       GL11.glEnable(3042);
-      GlState.Snapshot snapshot = GlState.push();
 
       try {
          AnimationSystem.getInstance().tick();

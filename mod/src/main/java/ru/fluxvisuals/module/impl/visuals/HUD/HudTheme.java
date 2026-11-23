@@ -9,7 +9,7 @@ import ru.fluxvisuals.module.api.Category;
  * чтобы их вид не зависел от MSDF-шрифтов и global theme ClickGUI.
  */
 @Environment(EnvType.CLIENT)
-public final class DonorHudTheme {
+public final class HudTheme {
     public static final int ACCENT = 0xFFA855F7;
     public static final int ACCENT_SECOND = 0xFFEC4899;
     public static final int TEXT = 0xFFF4F4F6;
@@ -18,7 +18,7 @@ public final class DonorHudTheme {
     public static final int ARMOR = 0xFF8FB8FF;
     public static final int BG_ALPHA = 114;
 
-    private DonorHudTheme() {
+    private HudTheme() {
     }
 
     public static int withAlpha(int color, int alpha) {

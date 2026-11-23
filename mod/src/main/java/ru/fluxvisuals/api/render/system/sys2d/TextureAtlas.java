@@ -1,5 +1,6 @@
 package ru.fluxvisuals.api.render.system.sys2d;
 
+import ru.fluxvisuals.util.render.backends.gl.GlState;
 import ru.fluxvisuals.api.render.system.TextureUse;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.AbstractTexture;
@@ -115,35 +116,40 @@ public class TextureAtlas {
         }
 
         rowHeight = Math.max(rowHeight, height);
-        int readFbo = GL30.glGenFramebuffers();
-        GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, readFbo);
-        GL30.glFramebufferTexture2D(GL30.GL_READ_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, srcGlId, 0);
+        GlState.Snapshot snapshot = GlState.push();
+        try {
+            int readFbo = GL30.glGenFramebuffers();
+            GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, readFbo);
+            GL30.glFramebufferTexture2D(GL30.GL_READ_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, srcGlId, 0);
 
-        int drawFbo = GL30.glGenFramebuffers();
-        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, drawFbo);
-        GL30.glFramebufferTexture2D(GL30.GL_DRAW_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, glId, 0);
+            int drawFbo = GL30.glGenFramebuffers();
+            GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, drawFbo);
+            GL30.glFramebufferTexture2D(GL30.GL_DRAW_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, glId, 0);
 
-        if (GL30.glCheckFramebufferStatus(GL30.GL_READ_FRAMEBUFFER) != GL30.GL_FRAMEBUFFER_COMPLETE ||
-                GL30.glCheckFramebufferStatus(GL30.GL_DRAW_FRAMEBUFFER) != GL30.GL_FRAMEBUFFER_COMPLETE) {
+            if (GL30.glCheckFramebufferStatus(GL30.GL_READ_FRAMEBUFFER) != GL30.GL_FRAMEBUFFER_COMPLETE ||
+                    GL30.glCheckFramebufferStatus(GL30.GL_DRAW_FRAMEBUFFER) != GL30.GL_FRAMEBUFFER_COMPLETE) {
+                cleanupFbos(readFbo, drawFbo);
+                throw new RuntimeException("FBO incomplete");
+            }
+
+            GL11.glReadBuffer(GL30.GL_COLOR_ATTACHMENT0);
+            GL11.glDrawBuffer(GL30.GL_COLOR_ATTACHMENT0);
+            GL30.glBlitFramebuffer(0, 0, width, height, currentX, currentY, currentX + width, currentY + height, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
+
             cleanupFbos(readFbo, drawFbo);
-            throw new RuntimeException("FBO incomplete");
+
+            float u0 = (float) currentX / atlasWidth;
+            float v0 = (float) currentY / atlasHeight;
+            float u1 = (float) width / atlasWidth;
+            float v1 = (float) height / atlasHeight;
+            currentX += width;
+
+            UV uv = new UV(u0, v0, u1, v1, width, height);
+            uvMap.put(name, uv);
+            return uv;
+        } finally {
+            GlState.pop(snapshot, true);
         }
-
-        GL11.glReadBuffer(GL30.GL_COLOR_ATTACHMENT0);
-        GL11.glDrawBuffer(GL30.GL_COLOR_ATTACHMENT0);
-        GL30.glBlitFramebuffer(0, 0, width, height, currentX, currentY, currentX + width, currentY + height, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
-
-        cleanupFbos(readFbo, drawFbo);
-
-        float u0 = (float) currentX / atlasWidth;
-        float v0 = (float) currentY / atlasHeight;
-        float u1 = (float) width / atlasWidth;
-        float v1 = (float) height / atlasHeight;
-        currentX += width;
-
-        UV uv = new UV(u0, v0, u1, v1, width, height);
-        uvMap.put(name, uv);
-        return uv;
     }
 
     public void updateTextureFromGL(String name, int srcGlId) {
@@ -162,27 +168,32 @@ public class TextureAtlas {
         int blitW = Math.min(srcW, destW);
         int blitH = Math.min(srcH, destH);
 
-        int readFbo = GL30.glGenFramebuffers();
-        int drawFbo = GL30.glGenFramebuffers();
+        GlState.Snapshot snapshot = GlState.push();
+        try {
+            int readFbo = GL30.glGenFramebuffers();
+            int drawFbo = GL30.glGenFramebuffers();
 
-        GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, readFbo);
-        GL30.glFramebufferTexture2D(GL30.GL_READ_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, srcGlId, 0);
+            GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, readFbo);
+            GL30.glFramebufferTexture2D(GL30.GL_READ_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, srcGlId, 0);
 
-        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, drawFbo);
-        GL30.glFramebufferTexture2D(GL30.GL_DRAW_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, glId, 0);
+            GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, drawFbo);
+            GL30.glFramebufferTexture2D(GL30.GL_DRAW_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, glId, 0);
 
-        if (GL30.glCheckFramebufferStatus(GL30.GL_READ_FRAMEBUFFER) != GL30.GL_FRAMEBUFFER_COMPLETE ||
-                GL30.glCheckFramebufferStatus(GL30.GL_DRAW_FRAMEBUFFER) != GL30.GL_FRAMEBUFFER_COMPLETE) {
+            if (GL30.glCheckFramebufferStatus(GL30.GL_READ_FRAMEBUFFER) != GL30.GL_FRAMEBUFFER_COMPLETE ||
+                    GL30.glCheckFramebufferStatus(GL30.GL_DRAW_FRAMEBUFFER) != GL30.GL_FRAMEBUFFER_COMPLETE) {
+                cleanupFbos(readFbo, drawFbo);
+                return;
+            }
+
+            GL11.glReadBuffer(GL30.GL_COLOR_ATTACHMENT0);
+            GL11.glDrawBuffer(GL30.GL_COLOR_ATTACHMENT0);
+
+            GL30.glBlitFramebuffer(0, 0, blitW, blitH, destX, destY, destX + blitW, destY + blitH, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
+
             cleanupFbos(readFbo, drawFbo);
-            return;
+        } finally {
+            GlState.pop(snapshot, true);
         }
-
-        GL11.glReadBuffer(GL30.GL_COLOR_ATTACHMENT0);
-        GL11.glDrawBuffer(GL30.GL_COLOR_ATTACHMENT0);
-
-        GL30.glBlitFramebuffer(0, 0, blitW, blitH, destX, destY, destX + blitW, destY + blitH, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
-
-        cleanupFbos(readFbo, drawFbo);
     }
 
     private void cleanupFbos(int readFbo, int drawFbo) {

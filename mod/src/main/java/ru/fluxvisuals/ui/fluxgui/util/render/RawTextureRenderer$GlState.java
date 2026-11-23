@@ -1,5 +1,6 @@
 package ru.fluxvisuals.ui.fluxgui.util.render;
 
+import com.mojang.blaze3d.opengl.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
@@ -35,7 +36,7 @@ public final class RawTextureRenderer$GlState {
     void restore() {
         GL30.glBindFramebuffer(36008, this.readFramebuffer);
         GL30.glBindFramebuffer(36009, this.drawFramebuffer);
-        GL20.glUseProgram(this.currentProgram);
+        GlStateManager._glUseProgram(this.currentProgram);
         GL30.glBindVertexArray(this.currentVao);
         GL15.glBindBuffer(34962, this.currentArrayBuffer);
         GL13.glActiveTexture(33984);

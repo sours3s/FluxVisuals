@@ -4,7 +4,7 @@ import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.Identifier;
 
-/** Именной логотип FluxVisuals: отдельная текстура, а не глиф донорского MSDF-атласа. */
+/** Именной логотип FluxVisuals: отдельная текстура, а не глиф MSDF-атласа. */
 public final class BrandLogo {
     public static final Identifier TEXTURE = Identifier.of("fluxvisuals", "textures/logo.png");
 
