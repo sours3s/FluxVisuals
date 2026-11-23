@@ -1,6 +1,7 @@
 package ru.fluxvisuals.ui.fluxgui.util.render;
 
 import ru.fluxvisuals.ui.fluxgui.module.render.Optimization;
+import ru.fluxvisuals.util.render.backends.gl.GlState;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
@@ -102,7 +103,15 @@ public final class FluxGlassPipeline {
                 int fbWidth = client.getFramebuffer().textureWidth;
                 int fbHeight = client.getFramebuffer().textureHeight;
                 ensureTexture(fbWidth, fbHeight, client.getFramebuffer().getColorAttachment().getFormat());
-                FramebufferBlitter.blit(client.getFramebuffer().getColorAttachmentView(), sourceTextureView);
+                // Blit может оставить другой FBO привязанным; это рвёт отложенный
+                // GuiRenderer и делает иконки предметов нестабильными. Возвращаем
+                // привязку, но не трогаем read/draw buffer (ломают GUI-проход).
+                GlState.Snapshot beforeBlit = GlState.push();
+                try {
+                    FramebufferBlitter.blit(client.getFramebuffer().getColorAttachmentView(), sourceTextureView);
+                } finally {
+                    GlState.pop(beforeBlit, false);
+                }
                 lastCaptureNanos = now;
             }
         }

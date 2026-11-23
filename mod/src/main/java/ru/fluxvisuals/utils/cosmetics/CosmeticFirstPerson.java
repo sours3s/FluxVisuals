@@ -168,18 +168,10 @@ final class CosmeticFirstPerson {
             + "        end\n"
             + "    end\n"
             + "end\n"
-            + "-- Некоторые аватары смещают глаз/пивот камеры. От первого лица это\n"
-            + "-- помещает камеру внутрь модели — сбрасываем смещения после рендера.\n"
-            + "local function fluxvisualsResetCamera()\n"
-            + "    if not host:isHost() then return end\n"
-            + "    if renderer:isFirstPerson() then\n"
-            + "        renderer:setEyeOffset(0, 0, 0)\n"
-            + "        renderer:setOffsetCameraPivot(0, 0, 0)\n"
-            + "    end\n"
-            + "end\n"
             + "events.TICK:register(fluxvisualsApplyHide)\n"
             + "events.RENDER:register(fluxvisualsApplyHide)\n"
-            + "events.POST_RENDER:register(fluxvisualsResetCamera)\n"
+            + "-- Камере не мешаем: аватар сам задаёт eye offset и camera pivot под свою модель.\n"
+            + "-- Наш сброс этих смещений ставил камеру внутрь модели с шляпой/крыльями.\n"
             + BLOCK_END + "\n";
    }
 

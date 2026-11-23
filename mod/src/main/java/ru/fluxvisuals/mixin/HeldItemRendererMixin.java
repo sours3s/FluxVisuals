@@ -10,7 +10,6 @@ import net.minecraft.item.Items;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
-import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.item.HeldItemRenderer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,10 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.render.HandAnimationEvent;
 import ru.fluxvisuals.event.render.RenderItemEvent;
-import org.figuramc.figura.avatar.Avatar;
-import org.figuramc.figura.avatar.AvatarManager;
-import org.figuramc.figura.lua.api.world.ItemStackAPI;
-import org.figuramc.figura.math.vector.FiguraVec3;
 
 @Environment(EnvType.CLIENT)
 @Mixin({HeldItemRenderer.class})
@@ -57,8 +52,7 @@ public abstract class HeldItemRendererMixin {
 
    @Inject(
       method = {"renderFirstPersonItem"},
-      at = {@At("HEAD")},
-      cancellable = true
+      at = {@At("HEAD")}
    )
    private void onRenderFirstPersonItem(
       AbstractClientPlayerEntity player, float tickProgress, float pitch, Hand hand, float swingProgress, ItemStack stack, float equipProgress, MatrixStack matrices, OrderedRenderCommandQueue queue, int light, CallbackInfo ci
@@ -67,27 +61,6 @@ public abstract class HeldItemRendererMixin {
       RenderItemEvent renderItemEvent = new RenderItemEvent(matrices, hand, stack);
       EventManager.call(renderItemEvent);
 
-      // Figura 0.1.5 вызывает itemRenderEvent только в third-person слоях, из-за чего
-      // аватары оружия от первого лица никогда не появляются. Добавляем событие здесь.
-      if (!stack.isEmpty()) {
-         try {
-            Avatar avatar = AvatarManager.getAvatarForPlayer(player.getUuid());
-            if (avatar != null && avatar.luaRuntime != null) {
-               FiguraVec3 zero = FiguraVec3.of();
-               FiguraVec3 one = FiguraVec3.of(1.0, 1.0, 1.0);
-               String context = hand == Hand.OFF_HAND ? "FIRST_PERSON_LEFT_HAND" : "FIRST_PERSON_RIGHT_HAND";
-               boolean rendered = avatar.itemRenderEvent(
-                  ItemStackAPI.verify(stack), context, zero, zero, one,
-                  player.getMainArm() == Arm.LEFT, matrices, queue, light, OverlayTexture.DEFAULT_UV
-               );
-               if (rendered) {
-                  ci.cancel();
-               }
-            }
-         } catch (Throwable ignored) {
-            // Figura может отсутствовать или аватар может быть не загружен — ванильный рендер остаётся.
-         }
-      }
    }
 
    @ModifyVariable(
