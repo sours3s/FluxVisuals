@@ -116,7 +116,7 @@ public final class Cooldowns implements HudElement {
     static void row(DrawContext context, int index, ItemStack stack, String name, String timer, float progress) {
         float offset = index * 27.0F;
         float itemOffset = 1.9499998F;
-        Hud.item(context, stack, 108.0F - itemOffset, 589.0F + offset - itemOffset, 16.9F);
+        Hud.itemUnfiltered(context, stack, 108.0F - itemOffset, 589.0F + offset - itemOffset, 16.9F);
         TextRender.draw(context, name, 130.632F, 600.583F + offset, 13.224F, Hud.animatedColor(-2829100));
         float badgeWidth = badgeWidth(timer);
         float badgeX = currentWidth - badgeWidth - 10.0F;

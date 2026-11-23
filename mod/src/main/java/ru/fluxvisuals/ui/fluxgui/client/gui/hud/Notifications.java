@@ -22,7 +22,7 @@ import net.minecraft.util.math.MathHelper;
 public final class Notifications implements HudElement {
     public static final Notifications INSTANCE = new Notifications();
     static final float X = 791.0F;
-    static final float Y = 522.0F;
+    static final float Y = 84.0F;
     static final float HEIGHT = 37.0F;
     static final float GAP_Y = 7.0F;
     static final float ICON_X = 11.25F;
@@ -67,7 +67,7 @@ public final class Notifications implements HudElement {
 
     @Override
     public float y() {
-        return 522.0F;
+        return Y;
     }
 
     @Override
@@ -131,7 +131,7 @@ public final class Notifications implements HudElement {
 
     static void renderEntry(DrawContext context, Hud hud, Notifications$Entry entry, float yOffset, float opacity) {
         if (!(opacity <= 0.0F)) {
-            float y = 522.0F + yOffset;
+            float y = Y + yOffset;
             float width = entryWidth(entry);
             hud.panel(context, 791.0F, y, width, 37.0F, 10.0F, opacity);
             int visualAccent = visualAccent();

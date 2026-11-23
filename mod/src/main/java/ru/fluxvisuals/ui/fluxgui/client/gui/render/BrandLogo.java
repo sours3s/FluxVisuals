@@ -21,6 +21,6 @@ public final class BrandLogo {
         }
         context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE,
               Math.round(x), Math.round(y), 0.0F, 0.0F,
-              Math.round(width), Math.round(height), 128, 128);
+              Math.round(width), Math.round(height), 256, 256);
     }
 }

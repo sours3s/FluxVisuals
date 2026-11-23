@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import ru.fluxvisuals.commands.CommandManager;
 import ru.fluxvisuals.module.impl.utils.LagDetector;
 import ru.fluxvisuals.module.impl.utils.SoundFX;
 import ru.fluxvisuals.module.impl.visuals.BetterWorld;
@@ -28,5 +29,12 @@ public abstract class ClientPlayNetworkHandlerMixin {
    @Inject(method = "onEntityStatus", at = @At("HEAD"))
    private void onEntityStatus(EntityStatusS2CPacket packet, CallbackInfo ci) {
       SoundFX.handleEntityStatus(packet);
+   }
+
+   @Inject(method = "sendChatMessage", at = @At("HEAD"), cancellable = true)
+   private void fluxvisuals$handleClientCommand(String message, CallbackInfo ci) {
+      if (CommandManager.getInstance().handleMessage(message)) {
+         ci.cancel();
+      }
    }
 }

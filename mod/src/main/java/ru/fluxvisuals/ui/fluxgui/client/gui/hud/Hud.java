@@ -466,6 +466,19 @@ public final class Hud {
         }
     }
 
+    /** Иконки кулдаунов рисуются ванильным цветом, без фильтрации HUD-предметов. */
+    public static void itemUnfiltered(DrawContext context, ItemStack stack, float x, float y, float size) {
+        if (stack.isEmpty()) {
+            return;
+        }
+        float factor = size / 16.0F;
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(x, y);
+        context.getMatrices().scale(factor, factor);
+        context.drawItem(stack, 0, 0);
+        context.getMatrices().popMatrix();
+    }
+
     public static void effect(DrawContext context, RegistryEntry<StatusEffect> effect, float x, float y) {
         effect(context, effect, x, y, 18.0F);
     }

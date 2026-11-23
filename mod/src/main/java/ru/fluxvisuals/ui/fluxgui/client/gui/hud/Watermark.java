@@ -1,5 +1,6 @@
 package ru.fluxvisuals.ui.fluxgui.client.gui.hud;
 
+import ru.fluxvisuals.config.StyleConfig;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.BrandLogo;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.IconRender;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.RoundedRenderer;
@@ -53,7 +54,7 @@ public final class Watermark implements HudElement {
 
     @Override
     public float x() {
-        return 776.0F;
+        return Hud.DESIGN_WIDTH / 2.0F - currentWidth / 2.0F;
     }
 
     @Override
@@ -103,21 +104,26 @@ public final class Watermark implements HudElement {
         float pingValX = pingIconX + IconRender.getDesignSize("ping") + 9.099F;
         float pingUnitX = pingValX + pingWidth + 6.0F;
         float rightEdge = pingUnitX + pingUnitWidth + 12.0F;
-        float calculatedWidth = Math.max(368.308F, rightEdge - 776.0F);
+        float calculatedWidth = Math.max(368.308F, rightEdge - curX);
         currentWidth = MathHelper.lerp(0.15F, currentWidth, calculatedWidth);
-        hud.panel(context, 776.0F, 32.0F, currentWidth, 39.0F, 10.0F);
+        float finalX = Hud.DESIGN_WIDTH / 2.0F - currentWidth / 2.0F;
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(finalX - curX, 0.0F);
+        hud.panel(context, curX, 32.0F, currentWidth, 39.0F, 10.0F);
         String primaryIcon = Hud.primaryIcon("logo");
-        if (!primaryIcon.equals("logo") || !drawCompactLogo(context, logoTileX, 42.0F)) {
-            RoundedRenderer.drawRoundedRect(context, logoTileX, 42.0F, 20.0F, 19.0F, 4.0F, Hud.animatedColor(Hud.accent()));
-            float styledIconSize = IconRender.getDesignSize(primaryIcon) * Hud.primaryIconScale();
-            IconRender.draw(
-                context,
-                primaryIcon,
-                logoTileX + (20.0F - styledIconSize) / 2.0F,
-                42.0F + (19.0F - styledIconSize) / 2.0F,
-                styledIconSize,
-                Hud.animatedColor(-1)
-            );
+        if (StyleConfig.watermarkLogo) {
+            if (!primaryIcon.equals("logo") || !drawCompactLogo(context, logoTileX, 42.0F)) {
+                RoundedRenderer.drawRoundedRect(context, logoTileX, 42.0F, 20.0F, 19.0F, 4.0F, Hud.animatedColor(Hud.accent()));
+                float styledIconSize = IconRender.getDesignSize(primaryIcon) * Hud.primaryIconScale();
+                IconRender.draw(
+                    context,
+                    primaryIcon,
+                    logoTileX + (20.0F - styledIconSize) / 2.0F,
+                    42.0F + (19.0F - styledIconSize) / 2.0F,
+                    styledIconSize,
+                    Hud.animatedColor(-1)
+                );
+            }
         }
 
         TextRender.draw(context, CLIENT_NAME, nameX, 56.583F, 14.241F, Hud.animatedColor(-2434342));
@@ -132,6 +138,7 @@ public final class Watermark implements HudElement {
         IconRender.draw(context, "ping", pingIconX, 44.75F, IconRender.getDesignSize("ping"), Hud.animatedColor(Hud.accent()));
         TextRender.draw(context, pingText, pingValX, 56.583F, 13.224F, Hud.animatedColor(-2434342));
         TextRender.draw(context, "ping", pingUnitX, 56.583F, 13.224F, Hud.animatedColor(-1076176166));
+        context.getMatrices().popMatrix();
     }
 
     private static boolean drawCompactLogo(DrawContext context, float tileX, float tileY) {

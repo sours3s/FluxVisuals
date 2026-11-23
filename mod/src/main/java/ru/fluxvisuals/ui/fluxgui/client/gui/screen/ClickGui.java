@@ -2,6 +2,7 @@ package ru.fluxvisuals.ui.fluxgui.client.gui.screen;
 
 import ru.fluxvisuals.ui.fluxgui.client.gui.ChatMessengerScreen;
 import ru.fluxvisuals.ui.fluxgui.client.gui.font.icon.IconTtfBridge;
+import ru.fluxvisuals.config.StyleConfig;
 import ru.fluxvisuals.ui.fluxgui.client.gui.hud.Watermark;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.BrandLogo;
 import ru.fluxvisuals.ui.fluxgui.client.gui.render.IconRender;
@@ -571,13 +572,15 @@ public class ClickGui extends Screen {
 
     void renderHeader(DrawContext context) {
         RoundedRenderer.drawRoundedRect(context, 10.0F, 10.0F, 224.0F, 54.0F, 12.0F, 1073741824);
-        if (!Watermark.drawCompactLogo(context, 39.0F, 37.0F, 25.5F, accentAt(22.0F, 20.0F))) {
-            RoundedRenderer.drawRoundedRect(context, 22.0F, 20.0F, 34.0F, 34.0F, 8.0F, accentAt(22.0F, 20.0F));
-            BrandLogo.draw(context, 26.0F, 24.0F, 26.0F);
+        if (StyleConfig.clickGuiLogo) {
+            if (!Watermark.drawCompactLogo(context, 39.0F, 37.0F, 25.5F, accentAt(22.0F, 20.0F))) {
+                RoundedRenderer.drawRoundedRect(context, 22.0F, 20.0F, 34.0F, 34.0F, 8.0F, accentAt(22.0F, 20.0F));
+                BrandLogo.draw(context, 26.0F, 24.0F, 26.0F);
+            }
         }
 
         TextRender.draw(context, "FluxVisuals @", 67.82F, 34.936F, 10.0F, -1);
-        TextRender.draw(context, "Build: #1.0.23", 67.82F, 49.313F, 12.206F, -2130706433);
+        TextRender.draw(context, "Build: #1.0.36", 67.82F, 49.313F, 12.206F, -2130706433);
     }
 
     void renderSearch(DrawContext context) {

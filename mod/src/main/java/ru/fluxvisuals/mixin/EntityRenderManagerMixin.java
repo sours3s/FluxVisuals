@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.module.impl.visuals.FirstPersonModel;
+import ru.fluxvisuals.utils.cosmetics.FiguraBridge;
 
 /**
  * EntityRenderManagerMixin — заставляет рендерить тело локального игрока
@@ -34,6 +35,12 @@ public class EntityRenderManagerMixin {
 
       MinecraftClient mc = MinecraftClient.getInstance();
       if (entity == mc.player) {
+         // Figura-аватар уже занимает точку камеры; ванильный FPM-рендер
+         // тела поверх него даёт «камеру внутри модели».
+         String applied = FiguraBridge.appliedId();
+         if (applied != null && !applied.isEmpty()) {
+            return;
+         }
          // Force the local player body to render in first person
          cir.setReturnValue(true);
       }

@@ -25,6 +25,7 @@ final class CosmeticFirstPerson {
    private static final String MAIN_SCRIPT = "script.lua";
    /** Отдельный файл: не трогаем чужой script.lua и его физику/анимации. */
    private static final String HIDE_SCRIPT = "fluxvisuals_first_person.lua";
+   private static final String HIDE_SCRIPT_ID = "fluxvisuals_first_person";
 
    private CosmeticFirstPerson() {
    }
@@ -45,9 +46,11 @@ final class CosmeticFirstPerson {
          // Старые версии FluxVisuals дописывали блок в чужой script.lua.
          // Убираем его, но сам скрипт и его запись в autoScripts оставляем как было.
          cleanupLegacyInjection(folder);
-         registerScript(avatar, HIDE_SCRIPT);
+         boolean descriptorChanged = registerScript(avatar, HIDE_SCRIPT_ID);
          Files.writeString(folder.resolve(HIDE_SCRIPT), hideBlock(), StandardCharsets.UTF_8);
-         Files.writeString(avatarFile, avatar.toString(), StandardCharsets.UTF_8);
+         if (descriptorChanged) {
+            Files.writeString(avatarFile, avatar.toString(), StandardCharsets.UTF_8);
+         }
       } catch (Exception e) {
          LOGGER.warn("Could not add first-person hide to {}", folder, e);
       }
@@ -68,24 +71,24 @@ final class CosmeticFirstPerson {
    /**
    * Figura выполняет все найденные Lua-файлы, только если autoScripts отсутствует.
    * Как только список появляется, запускаются только перечисленные скрипты.
-   * Поэтому добавляем только наш лёгкий hide-скрипт: тяжёлые чужие physics/анимации
-   * вместе с аватаром больше не стартуют и не роняют FPS.
+   * Поэтому если аватар не задаёт autoScripts, не создаём его: иначе родные
+   * Lua-скрипты аватара (в том числе кастомные мечи и first-person модели)
+   * перестанут запускаться.
+   *
+   * @return true, если avatar.json был изменён
    */
-   private static JsonArray registerScript(JsonObject avatar, String script) {
-      JsonArray scripts;
-      if (avatar.has(AUTO_SCRIPTS) && avatar.get(AUTO_SCRIPTS).isJsonArray()) {
-         scripts = avatar.getAsJsonArray(AUTO_SCRIPTS);
-      } else {
-         scripts = new JsonArray();
-         avatar.add(AUTO_SCRIPTS, scripts);
+   private static boolean registerScript(JsonObject avatar, String script) {
+      if (!avatar.has(AUTO_SCRIPTS) || !avatar.get(AUTO_SCRIPTS).isJsonArray()) {
+         return false;
       }
+      JsonArray scripts = avatar.getAsJsonArray(AUTO_SCRIPTS);
       for (JsonElement element : scripts) {
          if (element.isJsonPrimitive() && script.equals(element.getAsString())) {
-            return scripts;
+            return false;
          }
       }
       scripts.add(script);
-      return scripts;
+      return true;
    }
 
    private static String stripBlock(String script) {
@@ -102,19 +105,25 @@ final class CosmeticFirstPerson {
 
    private static String hideBlock() {
       return BLOCK_START + "\n"
-            + "-- Written by FluxVisuals. Hides this avatar from its wearer's own\n"
-            + "-- camera; other players keep seeing it.\n"
-            + "local fluxvisualsHidden = nil\n\n"
-            + "events.TICK:register(function()\n"
+            + "-- Written by FluxVisuals. Hides only the avatar head from its wearer's\n"
+            + "-- own camera; hands, held items and custom swords stay visible.\n"
+            + "local fluxvisualsHidden = nil\n"
+            + "local function fluxvisualsApplyHide()\n"
             + "    if not host:isHost() then\n"
             + "        return\n"
             + "    end\n"
             + "    local hide = renderer:isFirstPerson()\n"
-            + "    if hide ~= fluxvisualsHidden then\n"
-            + "        fluxvisualsHidden = hide\n"
-            + "        models:setVisible(not hide)\n"
+            + "    if hide == fluxvisualsHidden then\n"
+            + "        return\n"
             + "    end\n"
-            + "end)\n"
+            + "    fluxvisualsHidden = hide\n"
+            + "    local head = models and models.root and models.root.Head\n"
+            + "    if head then\n"
+            + "        head:setVisible(not hide)\n"
+            + "    end\n"
+            + "end\n"
+            + "events.TICK:register(fluxvisualsApplyHide)\n"
+            + "events.RENDER:register(fluxvisualsApplyHide)\n"
             + BLOCK_END + "\n";
    }
 
