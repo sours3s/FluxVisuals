@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class DiscordIpc {
    public static final String APP_ID = "1574475160218763274";
-   public static final String DISCORD_SERVER_URL = "https://discord.gg/HScqNfYcca";
+   public static final String DISCORD_SERVER_URL = "https://discord.gg/C7XtrV2CaT";
 
    private static final int OP_HANDSHAKE = 0;
    private static final int OP_FRAME = 1;
@@ -76,8 +76,8 @@ public final class DiscordIpc {
       }
       if (!first) activity.append(',');
       activity.append("\"timestamps\":{\"start\":").append(startTimestamp).append("},");
-      activity.append("\"assets\":{\"large_image\":\"flux_logo\",\"large_text\":\"Flux Visuals\",\"small_image\":\"flux_icon\"},");
-      activity.append("\"buttons\":[{\"label\":\"Discord Server\",\"url\":").append(q(DISCORD_SERVER_URL)).append("}]");
+      activity.append("\"assets\":{\"large_image\":\"flux_logo\",\"large_text\":\"Build: Free\",\"small_image\":\"flux_icon\"},");
+      activity.append("\"buttons\":[{\"label\":\"Discord\",\"url\":").append(q(DISCORD_SERVER_URL)).append("}]");
       activity.append('}');
 
       String payload = "{\"cmd\":\"SET_ACTIVITY\",\"args\":{\"pid\":" + ProcessHandle.current().pid() + ",\"activity\":" + activity

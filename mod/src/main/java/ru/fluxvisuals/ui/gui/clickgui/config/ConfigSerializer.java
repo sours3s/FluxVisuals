@@ -69,7 +69,8 @@ public class ConfigSerializer {
             for (ModuleConfigData moduleConfigData : configFile.modules()) {
                 ClickGuiModule class605Var2 = (ClickGuiModule) map.get(moduleConfigData.name());
                 if (class605Var2 != null) {
-                    class605Var2.setStateSilent(moduleConfigData.enabled());
+                    boolean enabled = "Discord RPC".equals(moduleConfigData.name()) || moduleConfigData.enabled();
+                    class605Var2.setStateSilent(enabled);
                     class605Var2.setBind(moduleConfigData.keys(), moduleConfigData.bindType() != null ? moduleConfigData.bindType() : class605Var2.getType());
                     if (moduleConfigData.settings() != null) {
                         Iterator<LayoutNode> it = moduleConfigData.settings().iterator();
@@ -332,7 +333,8 @@ public class ConfigSerializer {
     public List<ModuleConfigData> serializeModules(ModuleRepository moduleRepository) {
         ArrayList arrayList = new ArrayList();
         for (ClickGuiModule module : moduleRepository.getModules()) {
-            ModuleConfigData moduleConfigData = new ModuleConfigData().name(module.getName()).enabled(module.isState()).keys(new ArrayList(module.getKeyBind())).bindType(module.getType());
+            boolean enabled = "Discord RPC".equals(module.getName()) || module.isState();
+            ModuleConfigData moduleConfigData = new ModuleConfigData().name(module.getName()).enabled(enabled).keys(new ArrayList(module.getKeyBind())).bindType(module.getType());
             for (Setting setting : module.getSettings()) {
                 if (setting != null && setting.getName() != null && setting.getName().original() != null) {
                     moduleConfigData.settings().add(serializeSetting(setting));

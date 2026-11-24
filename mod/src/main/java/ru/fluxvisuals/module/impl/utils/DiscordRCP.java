@@ -2,42 +2,78 @@ package ru.fluxvisuals.module.impl.utils;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import java.util.concurrent.atomic.AtomicBoolean;
+import net.minecraft.client.MinecraftClient;
 import ru.fluxvisuals.discord.DiscordIpc;
 import ru.fluxvisuals.event.EventInit;
 import ru.fluxvisuals.event.lifecycle.ClientTickEvent;
+import ru.fluxvisuals.license.LaunchGate;
 import ru.fluxvisuals.module.api.Category;
 import ru.fluxvisuals.module.api.IModule;
 import ru.fluxvisuals.module.api.Module;
 
 /**
- * Discord RPC — показывает активность FluxVisuals в Discord.
- * Включается/выключается в ClickGUI, корректно подключается/отключается.
+ * Discord Rich Presence. The details line shows the loader UID, the state line shows
+ * the current server (localhost for a singleplayer world).
  */
-@IModule(name = "Discord RPC", description = "Показывает активность FluxVisuals в Discord (с кнопкой на сервер)", category = Category.Utils, bind = -1)
+@IModule(name = "Discord RPC", description = "Показывает статус FluxVisuals в Discord", category = Category.Utils, bind = -1)
 @Environment(EnvType.CLIENT)
 public class DiscordRCP extends Module {
+   private static final AtomicBoolean RPC_OWNER = new AtomicBoolean(false);
    private final DiscordIpc ipc = new DiscordIpc();
    private volatile boolean started = false;
+   private volatile boolean owner = false;
+   private volatile String server = "localhost";
    private Thread thread;
    private long lastReconnect = 0L;
 
    public DiscordRCP() {
-      // По умолчанию включен
       this.enable = true;
    }
 
    @EventInit
    public void onTick(ClientTickEvent e) {
       if (enable) {
+         server = resolveServer();
          startRpc();
       } else {
          stopRpc();
       }
    }
 
+   private static String resolveServer() {
+      MinecraftClient client = MinecraftClient.getInstance();
+      if (client == null || client.world == null || client.isConnectedToLocalServer()) {
+         return "localhost";
+      }
+      if (client.getCurrentServerEntry() != null) {
+         String address = client.getCurrentServerEntry().address;
+         if (address != null && !address.isBlank()) {
+            return address;
+         }
+      }
+      try {
+         if (client.getNetworkHandler() != null && client.getNetworkHandler().getConnection() != null) {
+            String address = client.getNetworkHandler().getConnection().getAddress().toString();
+            if (address.startsWith("/")) {
+               address = address.substring(1);
+            }
+            if (!address.isBlank()) {
+               return address;
+            }
+         }
+      } catch (Exception ignored) {
+      }
+      return "localhost";
+   }
+
    private synchronized void startRpc() {
       if (started) return;
+      if (!RPC_OWNER.compareAndSet(false, true)) {
+         return; // Another module instance already owns the Discord pipe.
+      }
       started = true;
+      owner = true;
 
       thread = new Thread(() -> {
          long startTs = System.currentTimeMillis() / 1000L;
@@ -50,7 +86,8 @@ public class DiscordRCP extends Module {
                      ipc.connect();
                   }
                } else {
-                  ipc.updatePresence(null, "Flux Visuals", startTs);
+                  String details = "UID: " + LaunchGate.getUid();
+                  ipc.updatePresence(server, details, startTs);
                }
                Thread.sleep(2000L);
             } catch (InterruptedException ignored) {
@@ -70,7 +107,11 @@ public class DiscordRCP extends Module {
          thread.interrupt();
          thread = null;
       }
-      ipc.shutdown();
+      if (owner) {
+         owner = false;
+         RPC_OWNER.set(false);
+         ipc.shutdown();
+      }
    }
 
    @Override
@@ -82,6 +123,5 @@ public class DiscordRCP extends Module {
    @Override
    public void onEnable() {
       super.onEnable();
-      // startRpc будет вызван на следующем тике
    }
 }

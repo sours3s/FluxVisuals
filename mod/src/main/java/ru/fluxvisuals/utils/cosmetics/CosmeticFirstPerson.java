@@ -19,18 +19,20 @@ import org.slf4j.LoggerFactory;
 final class CosmeticFirstPerson {
    private static final Logger LOGGER = LoggerFactory.getLogger(CosmeticFirstPerson.class);
    private static final String AUTO_SCRIPTS = "autoScripts";
-   private static final List<String> OWN_SCRIPTS = List.of("fluxvisuals_fit", "fluxvisuals_first_person");
+   private static final List<String> OWN_SCRIPTS = List.of(
+         "fluxvisuals_fit", "fluxvisuals_first_person", "z_fluxvisuals_first_person");
    private static final String BLOCK_START = "-- >>> fluxvisuals first person";
    private static final String BLOCK_END = "-- <<< fluxvisuals first person";
    private static final String MAIN_SCRIPT = "script.lua";
-   /** Отдельный файл: не трогаем чужой script.lua и его физику/анимации. */
-   private static final String HIDE_SCRIPT = "fluxvisuals_first_person.lua";
-   private static final String HIDE_SCRIPT_ID = "fluxvisuals_first_person";
+   /** Name of the generated hide/normalize script. */
+   private static final String HIDE_SCRIPT = "z_fluxvisuals_first_person.lua";
+   private static final String HIDE_SCRIPT_ID = "z_fluxvisuals_first_person";
+   private static final String LEGACY_HIDE_SCRIPT = "fluxvisuals_first_person.lua";
 
    private CosmeticFirstPerson() {
    }
 
-   /** autoScripts может содержать имя с .lua, без него или с путём. */
+   /** Extract a script id from an autoScripts entry. */
    private static String scriptId(String value) {
       String id = value == null ? "" : value.strip().replace('\\', '/');
       int slash = id.lastIndexOf('/');
@@ -53,10 +55,10 @@ final class CosmeticFirstPerson {
          if (avatar == null) {
             return;
          }
-         // Старые версии FluxVisuals дописывали блок в чужой script.lua.
-         // Убираем его, но сам скрипт и его запись в autoScripts оставляем как было.
+         // Remove our legacy injection from script.lua and register the standalone script.
          cleanupLegacyInjection(folder);
          boolean changed = registerScript(avatar, HIDE_SCRIPT_ID);
+         Files.deleteIfExists(folder.resolve(LEGACY_HIDE_SCRIPT));
          Files.writeString(folder.resolve(HIDE_SCRIPT), hideBlock(), StandardCharsets.UTF_8);
          if (changed) {
             Files.writeString(avatarFile, avatar.toString(), StandardCharsets.UTF_8);
@@ -79,21 +81,24 @@ final class CosmeticFirstPerson {
    }
 
    /**
-    * Figura запускает родные Lua аватара (скрытие ванильного тела, events.item_render
-    * для мечей), только если autoScripts отсутствует. Поэтому не создаём его сами.
+    * Figura loads every .lua file in name order. Our script must be last, otherwise an
+    * avatar's own script can re-apply camera offsets after our reset.
     *
-    * @return true, если avatar.json был изменён
+    * @return true if avatar.json was changed
     */
    private static boolean registerScript(JsonObject avatar, String script) {
       if (!avatar.has(AUTO_SCRIPTS) || !avatar.get(AUTO_SCRIPTS).isJsonArray()) {
          return false;
       }
       JsonArray scripts = avatar.getAsJsonArray(AUTO_SCRIPTS);
-      for (JsonElement element : scripts) {
-         if (element.isJsonPrimitive() && script.equals(scriptId(element.getAsString()))) {
-            return false;
+      for (int i = scripts.size() - 1; i >= 0; i--) {
+         JsonElement element = scripts.get(i);
+         String id = element.isJsonPrimitive() ? scriptId(element.getAsString()) : "";
+         if (OWN_SCRIPTS.contains(id)) {
+            scripts.remove(i);
          }
       }
+      // Always append ours so it runs after the avatar's own scripts.
       scripts.add(script);
       return true;
    }
@@ -171,25 +176,25 @@ final class CosmeticFirstPerson {
             + "local function fluxvisualsNormalizeCamera()\n"
             + "    if not host:isHost() then return end\n"
             + "    if not renderer:isFirstPerson() then return end\n"
-            + "    -- Аватары задают eye offset и camera pivot в events.render каждый кадр.\n"
-            + "    -- Наш скрипт загружается последним, поэтому этот обработчик выполняется\n"
-            + "    -- после родного и выравнивает камеру только от первого лица. CameraPos\n"
-            + "    -- и CameraRot не трогаем — их сброс давал «только небо» в 1.0.40.\n"
-            + "    renderer:setEyeOffset(0, 0, 0)\n"
-            + "    renderer:setOffsetCameraPivot(0, 0, 0)\n"
+            + "    -- Clear every Figura camera override for the wearer. Avatar scripts commonly\n"
+            + "    -- move the camera to a hat or head pivot for first person; that places the\n"
+            + "    -- camera inside the body. nil restores vanilla camera behaviour.\n"
+            + "    renderer:setEyeOffset(nil)\n"
+            + "    renderer:setCameraPos(nil)\n"
+            + "    renderer:setCameraPivot(nil)\n"
+            + "    renderer:setOffsetCameraPivot(nil)\n"
+            + "    renderer:setCameraRot(nil)\n"
+            + "    renderer:setOffsetCameraRot(nil)\n"
             + "end\n"
             + "events.TICK:register(fluxvisualsApplyHide)\n"
+            + "events.TICK:register(fluxvisualsNormalizeCamera)\n"
             + "events.RENDER:register(fluxvisualsApplyHide)\n"
             + "events.RENDER:register(fluxvisualsNormalizeCamera)\n"
             + "events.POST_RENDER:register(fluxvisualsApplyHide)\n"
             + BLOCK_END + "\n";
    }
 
-   /**
-    * После смены версии ассетов перезаписываем созданные нами Lua-файлы и убираем
-    * autoScripts от старых сборок: пустой/урезанный список глушит родные скрипты
-    * аватара, из-за чего events.item_render с моделями оружия не выполняется.
-    */
+   /** Refresh generated scripts and clean up stale script names. */
    static void refreshGenerated(Path root) {
       if (root == null) {
          return;
@@ -205,15 +210,21 @@ final class CosmeticFirstPerson {
       }
       for (Path folder : folders) {
          try {
-            Path hide = folder.resolve(HIDE_SCRIPT);
-            if (Files.isRegularFile(hide)) {
-               Files.writeString(hide, hideBlock(), StandardCharsets.UTF_8);
+            Files.deleteIfExists(folder.resolve(LEGACY_HIDE_SCRIPT));
+            for (String name : OWN_SCRIPTS) {
+               Path script = folder.resolve(name + ".lua");
+               if (!name.equals(HIDE_SCRIPT_ID) && Files.isRegularFile(script)) {
+                  Files.deleteIfExists(script);
+               }
             }
-            Files.deleteIfExists(folder.resolve("fluxvisuals_fit.lua"));
+            Files.writeString(folder.resolve(HIDE_SCRIPT), hideBlock(), StandardCharsets.UTF_8);
             cleanupLegacyInjection(folder);
             Path avatarFile = folder.resolve("avatar.json");
             if (Files.isRegularFile(avatarFile)) {
-               repairAvatar(folder, avatarFile);
+               JsonObject avatar = readAvatar(avatarFile);
+               if (avatar != null && registerScript(avatar, HIDE_SCRIPT_ID)) {
+                  Files.writeString(avatarFile, avatar.toString(), StandardCharsets.UTF_8);
+               }
             }
          } catch (Exception e) {
             LOGGER.debug("Could not refresh generated script in {}", folder, e);
@@ -253,7 +264,7 @@ final class CosmeticFirstPerson {
             }
          }
          if (removed) {
-            // Пустой autoScripts запрещает запуск ВСЕХ скриптов — удаляем ключ целиком.
+            // Remove autoScripts entirely when it only contained our scripts.
             if (kept.size() == 0 || matchesEveryScript(folder, kept)) {
                avatar.remove(AUTO_SCRIPTS);
             } else {

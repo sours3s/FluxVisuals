@@ -120,6 +120,17 @@ public class FluxVisualsClient implements ClientModInitializer {
          LOGGER.warn("{} failed to enable Hud module: {}", NAME, e.getMessage());
       }
 
+      // Discord RPC is always on by default, even if an older config kept it disabled.
+      try {
+         ru.fluxvisuals.module.impl.utils.DiscordRCP rpc =
+            this.manager.get(ru.fluxvisuals.module.impl.utils.DiscordRCP.class);
+         if (rpc != null && !rpc.enable) {
+            rpc.setState(true);
+         }
+      } catch (Exception e) {
+         LOGGER.warn("{} failed to enable Discord RPC module: {}", NAME, e.getMessage());
+      }
+
       this.guiClient = new GuiClient();
       GuiClient.registerEventHandlers();
       // Register Dynamic Lights world renderer

@@ -34,8 +34,20 @@ public final class LaunchGate {
 
    private static volatile boolean verificationStarted;
    private static volatile boolean verified;
+   private static volatile String uid = "";
+   private static volatile String username = "";
 
    private LaunchGate() {}
+
+   /** UID of the loader account from the verified launch ticket. */
+   public static String getUid() {
+      return uid;
+   }
+
+   /** Username of the loader account from the verified launch ticket. */
+   public static String getUsername() {
+      return username;
+   }
 
    /** Проверяет тикет (локально: подпись + claims) и асинхронно сжигает его на сервере. */
    public static boolean verify() {
@@ -53,6 +65,8 @@ public final class LaunchGate {
          // Dev-запуск (gradlew runClient, IDE): тикета нет — инициализируемся сразу.
          // Продакшен (jar через лоадер) dev-mode не включает, тикет остаётся обязательным.
          if (net.fabricmc.loader.api.FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            uid = "0";
+            username = "developer";
             return true;
          }
          String ticket = System.getProperty("fluxvisuals.ticket");
@@ -88,6 +102,9 @@ public final class LaunchGate {
          if (!payload.has("exp") || !payload.get("exp").isJsonPrimitive()) return false;
          long exp = payload.get("exp").getAsLong();
          if (exp < System.currentTimeMillis() / 1000L - MAX_CLOCK_SKEW_SECONDS) return false;
+
+         uid = str(payload, "sub");
+         username = str(payload, "unique_name");
 
          // Тикет валиден — сжигаем на сервере (одноразовый). Сетевая ошибка запуск не блокирует.
          consumeAsync(ticket, challenge, authServer);
