@@ -13,7 +13,7 @@ import ru.fluxvisuals.util.render.math.MathHelper;
 import ru.fluxvisuals.util.render.text.FontRegistry;
 import ru.fluxvisuals.utils.cosmetics.CosmeticEntry;
 import ru.fluxvisuals.utils.cosmetics.CosmeticsRepository;
-import ru.fluxvisuals.utils.cosmetics.CosmeticBridge;
+import ru.fluxvisuals.utils.cosmetics.BbCosmeticManager;
 
 @Environment(EnvType.CLIENT)
 public class GuiRenderCosmetics extends GuiScreen {
@@ -132,7 +132,7 @@ public class GuiRenderCosmetics extends GuiScreen {
          if (cardY + CARD_H < y - 2.0F || cardY > bottom + 2.0F) continue;
 
          CosmeticEntry entry = entries.get(i);
-         boolean applied = CosmeticBridge.isApplied(entry);
+         boolean applied = BbCosmeticManager.isApplied(entry);
          boolean hov = GuiRenderMain.isHovered((float)GuiScreen.currentMouseX, (float)GuiScreen.currentMouseY, cardX, cardY, cardW, CARD_H);
          if (hov) GuiScreen.cosmeticHoverIndex = i;
 
@@ -271,12 +271,12 @@ public class GuiRenderCosmetics extends GuiScreen {
 
    private static void toggle(CosmeticEntry entry) {
       if (entry == null) return;
-      if (CosmeticBridge.isApplied(entry)) {
-         boolean ok = CosmeticBridge.clear();
-         setStatus(ok ? entry.displayName() + " removed" : "Figura is unavailable", ok);
+      if (BbCosmeticManager.isApplied(entry)) {
+         boolean ok = BbCosmeticManager.clear();
+         setStatus(ok ? entry.displayName() + " removed" : "Model is unavailable", ok);
       } else {
-         boolean ok = CosmeticBridge.apply(entry);
-         setStatus(ok ? entry.displayName() + " equipped" : "Figura is unavailable", ok);
+         boolean ok = BbCosmeticManager.apply(entry);
+         setStatus(ok ? entry.displayName() + " equipped" : "Model is unavailable", ok);
       }
    }
 

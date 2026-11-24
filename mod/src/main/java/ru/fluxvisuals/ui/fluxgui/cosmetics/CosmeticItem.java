@@ -10,7 +10,7 @@ import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
 import ru.fluxvisuals.utils.cosmetics.CosmeticEntry;
 
-/** Элемент косметики GUI FluxVisuals, привязанный к реальному аватару Figura. */
+/** GUI cosmetic item backed by a bundled .bbmodel folder. */
 public final class CosmeticItem {
    private static final Identifier FALLBACK_PREVIEW =
       Identifier.of("fluxvisuals", "textures/gui/fluxvisuals_logo.png");

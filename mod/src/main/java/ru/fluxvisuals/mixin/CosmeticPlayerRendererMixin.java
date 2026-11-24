@@ -16,7 +16,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import ru.fluxvisuals.utils.cosmetics.BbCosmeticManager;
-import ru.fluxvisuals.utils.cosmetics.CosmeticBridge;
 
 /** Replaces the local player's vanilla model with the built-in .bbmodel avatar. */
 @Environment(EnvType.CLIENT)
@@ -34,7 +33,6 @@ public abstract class CosmeticPlayerRendererMixin {
          MatrixStack matrices, RenderLayer layer, int light, int overlay, int mixColor, Sprite sprite,
          int outlineColor, ModelCommandRenderer.CrumblingOverlayCommand crumbling) {
       if (renderState instanceof PlayerEntityRenderState playerState
-            && CosmeticBridge.useBbModel()
             && MinecraftClient.getInstance().player != null
             && playerState.id == MinecraftClient.getInstance().player.getId()) {
          BbCosmeticManager.renderAvatar(matrices, queue, light, overlay);

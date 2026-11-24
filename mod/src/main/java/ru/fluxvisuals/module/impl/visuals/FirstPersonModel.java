@@ -37,7 +37,7 @@ public class FirstPersonModel extends Module {
       if (!showBody.get()) return false;
       // С активным аватаром тело рисуется на месте камеры — камера оказывается
       // внутри модели. Обе ветки рендера работают и без принудительного тела.
-      if (ru.fluxvisuals.utils.cosmetics.CosmeticBridge.hasActiveAvatar()) {
+      if (ru.fluxvisuals.utils.cosmetics.BbCosmeticManager.isActive()) {
          return false;
       }
       return true;

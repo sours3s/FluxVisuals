@@ -15,8 +15,6 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.render.item.ItemRenderState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -29,20 +27,12 @@ import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.render.HandAnimationEvent;
 import ru.fluxvisuals.event.render.RenderItemEvent;
 import ru.fluxvisuals.utils.cosmetics.BbCosmeticManager;
-import ru.fluxvisuals.utils.cosmetics.CosmeticBridge;
 import net.minecraft.registry.tag.ItemTags;
-import org.figuramc.figura.avatar.Avatar;
-import org.figuramc.figura.avatar.AvatarManager;
-import org.figuramc.figura.ducks.FiguraItemStackRenderStateExtension;
-import org.figuramc.figura.lua.api.world.ItemStackAPI;
-import org.figuramc.figura.math.vector.FiguraVec3;
 import net.minecraft.client.render.model.json.Transformation;
 
 @Environment(EnvType.CLIENT)
 @Mixin({HeldItemRenderer.class})
 public abstract class HeldItemRendererMixin {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HeldItemRendererMixin.class);
-    private static long fluxvisuals$lastItemErrorNanos;
     @Shadow
     private ItemStack mainHand;
     @Shadow
@@ -65,12 +55,6 @@ public abstract class HeldItemRendererMixin {
    private boolean fluxvisuals$customPoseApplied;
    @Unique
    private boolean fluxvisuals$customPosePopped;
-   @Unique
-   private boolean fluxvisuals$hideMainArm;
-   @Unique
-   private boolean fluxvisuals$customWeaponRenderedLastFrame;
-   @Unique
-   private boolean fluxvisuals$customWeaponRenderedThisFrame;
 
    @Shadow
    protected abstract void renderFirstPersonItem(
@@ -100,10 +84,7 @@ public abstract class HeldItemRendererMixin {
    }
 
 
-   /**
-    * Apply the swing pose before Figura renders the avatar hand. Figura hooks the HEAD of
-    * HeldItemRenderer.renderItem, so injecting into renderFirstPersonItem would be too late.
-    */
+   /** Apply the swing pose before the held item is rendered. */
    @Inject(
       method = "renderItem(FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;Lnet/minecraft/client/network/ClientPlayerEntity;I)V",
       at = {@At("HEAD")},
@@ -114,8 +95,6 @@ public abstract class HeldItemRendererMixin {
       float tickProgress, MatrixStack matrices, OrderedRenderCommandQueue queue,
       ClientPlayerEntity player, int light, CallbackInfo ci
    ) {
-      this.fluxvisuals$hideMainArm = this.fluxvisuals$customWeaponRenderedLastFrame;
-      this.fluxvisuals$customWeaponRenderedThisFrame = false;
       this.fluxvisuals$customPoseApplied = false;
       this.fluxvisuals$customPosePopped = false;
       if (player == null || player.getMainHandStack().isEmpty() || player.isUsingItem()) return;
@@ -147,7 +126,6 @@ public abstract class HeldItemRendererMixin {
          matrices.pop();
          this.fluxvisuals$customPosePopped = true;
       }
-      this.fluxvisuals$customWeaponRenderedLastFrame = this.fluxvisuals$customWeaponRenderedThisFrame;
    }
 
    @Inject(
@@ -162,11 +140,7 @@ public abstract class HeldItemRendererMixin {
       }
    }
 
-   /**
-    * Figura отправляет аватар оружия с той позой MatrixStack, которая есть в момент
-    * вызова. Ванильный слой применяет transform предмета позже, поэтому до вызова
-    * itemRenderEvent применяем его сами на копии матрицы руки.
-    */
+   /** Draws the equipped .bbmodel weapon instead of the vanilla item layer. */
    @Redirect(
       method = "renderItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;I)V",
       at = @At(
@@ -174,69 +148,14 @@ public abstract class HeldItemRendererMixin {
          target = "Lnet/minecraft/client/render/item/ItemRenderState;render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;III)V"
       )
    )
-   private void fluxvisuals$renderFirstPersonFiguraItem(
+   private void fluxvisuals$renderHeldItem(
       ItemRenderState renderState, MatrixStack matrices, OrderedRenderCommandQueue queue,
       int light, int overlay, int seed
    ) {
-      if (CosmeticBridge.useBbModel()) {
-         MinecraftClient client = MinecraftClient.getInstance();
-         boolean rendered = fluxvisuals$renderBuiltInWeapon(client, renderState, matrices, queue,
-               light, overlay);
-         if (!rendered) {
-            renderState.render(matrices, queue, light, overlay, seed);
-         }
-         return;
-      }
-      if (!(renderState instanceof FiguraItemStackRenderStateExtension state)) {
-         renderState.render(matrices, queue, light, overlay, seed);
-         return;
-      }
-      ItemDisplayContext displayContext = state.figura$getDisplayContext();
-      // Third-person Figura уже вызывает itemRenderEvent в своих слоях — здесь
-      // обрабатываем только руки, чтобы не дублировать кастомную модель.
-      if (displayContext != ItemDisplayContext.FIRST_PERSON_LEFT_HAND
-         && displayContext != ItemDisplayContext.FIRST_PERSON_RIGHT_HAND) {
-         renderState.render(matrices, queue, light, overlay, seed);
-         return;
-      }
       MinecraftClient client = MinecraftClient.getInstance();
-      if (client.player == null) {
-         renderState.render(matrices, queue, light, overlay, seed);
-         return;
-      }
-      try {
-         Avatar avatar = AvatarManager.getAvatarForPlayer(client.player.getUuid());
-         if (avatar == null || avatar.luaRuntime == null) {
-            renderState.render(matrices, queue, light, overlay, seed);
-            return;
-         }
-         Transformation transform = state.figura$getItemTransform();
-         if (transform == null) {
-            renderState.render(matrices, queue, light, overlay, seed);
-            return;
-         }
-
-         boolean rendered = avatar.itemRenderEvent(
-            ItemStackAPI.verify(state.figura$getItemStack()),
-            displayContext.name(),
-            FiguraVec3.fromVec3f(transform.translation()),
-            FiguraVec3.of(transform.rotation().z(), transform.rotation().y(), transform.rotation().x()),
-            FiguraVec3.fromVec3f(transform.scale()),
-            state.figura$isLeftHanded(),
-            matrices, queue, light, overlay
-         );
-         if (rendered && this.fluxvisuals$isMainHandContext(displayContext, client.player)) {
-            this.fluxvisuals$customWeaponRenderedThisFrame = true;
-         }
-         if (!rendered) {
-            renderState.render(matrices, queue, light, overlay, seed);
-         }
-      } catch (Throwable t) {
-         long now = System.nanoTime();
-         if (now - fluxvisuals$lastItemErrorNanos > 5_000_000_000L) {
-            fluxvisuals$lastItemErrorNanos = now;
-            LOGGER.warn("Figura first-person item render failed", t);
-         }
+      boolean rendered = fluxvisuals$renderBuiltInWeapon(client, renderState, matrices, queue,
+            light, overlay);
+      if (!rendered) {
          renderState.render(matrices, queue, light, overlay, seed);
       }
    }
@@ -265,11 +184,7 @@ public abstract class HeldItemRendererMixin {
        if (stack.isEmpty() || !stack.isIn(ItemTags.SWORDS)) {
           return false;
        }
-       boolean rendered = BbCosmeticManager.renderWeapon(context, matrices, queue, light, overlay, transform);
-       if (rendered && fluxvisuals$isMainHandContext(context, client.player)) {
-          this.fluxvisuals$customWeaponRenderedThisFrame = true;
-       }
-       return rendered;
+       return BbCosmeticManager.renderWeapon(context, matrices, queue, light, overlay, transform);
     }
 
     private ItemStack fluxvisuals$stackForContext(ItemDisplayContext context, ClientPlayerEntity player) {
@@ -286,15 +201,7 @@ public abstract class HeldItemRendererMixin {
             || player.getOffHandStack().isIn(ItemTags.SWORDS);
    }
 
-   private boolean fluxvisuals$isMainHandContext(ItemDisplayContext context, ClientPlayerEntity player) {
-      return (player.getMainArm() == Arm.RIGHT && context == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND)
-            || (player.getMainArm() == Arm.LEFT && context == ItemDisplayContext.FIRST_PERSON_LEFT_HAND);
-   }
-
-   /**
-    * Vanilla draws the first-person hand before the item model. If Figura returned a custom
-    * weapon model last frame, skip only that arm — the item render below still runs.
-    */
+   /** Hide both first-person arms only while an equipped .bbmodel sword is in the hands. */
    @Redirect(
       method = "renderFirstPersonItem",
       at = @At(
@@ -307,8 +214,8 @@ public abstract class HeldItemRendererMixin {
       int light, float equipProgress, float swingProgress, Arm arm
    ) {
       MinecraftClient client = MinecraftClient.getInstance();
-      boolean hideArm = client.player != null && fluxvisuals$hasSwordInHands(client.player)
-            && (!CosmeticBridge.useBbModel() || BbCosmeticManager.isWeaponActive());
+      boolean hideArm = client.player != null && BbCosmeticManager.isWeaponActive()
+            && fluxvisuals$hasSwordInHands(client.player);
       if (hideArm) return;
       ((HeldItemRendererMixin) (Object) renderer).renderArmHoldingItem(matrices, queue, light, equipProgress, swingProgress, arm);
    }

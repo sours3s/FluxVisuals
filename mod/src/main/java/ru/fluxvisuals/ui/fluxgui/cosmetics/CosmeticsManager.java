@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Locale;
 import ru.fluxvisuals.utils.cosmetics.CosmeticEntry;
 import ru.fluxvisuals.utils.cosmetics.CosmeticsRepository;
-import ru.fluxvisuals.utils.cosmetics.CosmeticBridge;
+import ru.fluxvisuals.utils.cosmetics.BbCosmeticManager;
 
-/** Хранилище косметики GUI FluxVisuals на базе реальных аватаров Figura. */
+/** Хранилище косметики GUI FluxVisuals на базе встроенных моделей .bbmodel. */
 public final class CosmeticsManager {
    public static final CosmeticsManager INSTANCE = new CosmeticsManager();
 
@@ -59,7 +59,7 @@ public final class CosmeticsManager {
    }
 
    public boolean isEquipped(CosmeticItem item) {
-      return item != null && CosmeticBridge.isApplied(item.entry());
+      return item != null && BbCosmeticManager.isApplied(item.entry());
    }
 
    public void ensureModelLoaded(CosmeticItem item) {
@@ -73,9 +73,9 @@ public final class CosmeticsManager {
          return;
       }
       if (isEquipped(item)) {
-         CosmeticBridge.clear();
+         BbCosmeticManager.clear();
       } else {
-         CosmeticBridge.apply(item.entry());
+         BbCosmeticManager.apply(item.entry());
       }
    }
 }

@@ -38,7 +38,7 @@ public final class BbModelRenderer {
    private void renderNode(BbNode node, BbModel model, String modelKey, MatrixStack matrices,
          OrderedRenderCommandQueue queue, int light, int overlay) {
       matrices.push();
-      // Match Figura's PartCustomization order: translate to pivot + animated
+      // Translate to pivot + animated
       // position, scale, rotate around the pivot, then undo the pivot offset.
       Vec3 origin = node.origin();
       Vec3 position = node.renderPosition();

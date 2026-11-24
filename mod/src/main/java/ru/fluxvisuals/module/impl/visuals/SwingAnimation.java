@@ -64,14 +64,11 @@ public class SwingAnimation extends Module {
       if (!this.enable) return;
       if (!isCustomAnimationActive() || event.getHand() != Hand.MAIN_HAND) return;
       if (event.getSwingProgress() <= 0.0F) return;
-      // Поза уже применена до рендера Figura-руки в HeldItemRendererMixin.
+      // Поза уже применена до рендера руки в HeldItemRendererMixin.
       event.cancel();
    }
 
-   /**
-    * Apply the custom swing pose on the shared first-person stack, before Figura renders
-    * the avatar hand. Both the hand and the custom weapon then inherit the same pose.
-    */
+    /** Apply the custom swing pose on the shared first-person stack before the item render. */
    public static void applyFirstPersonPose(MatrixStack matrix, Hand hand, float swingProgress, float equipProgress) {
       if (hand != Hand.MAIN_HAND || swingProgress <= 0.0F) return;
       if (mc == null || mc.player == null) return;

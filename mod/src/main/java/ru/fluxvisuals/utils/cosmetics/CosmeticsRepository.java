@@ -104,7 +104,6 @@ public final class CosmeticsRepository {
          return;
       }
       ensureExtracted(root);
-      CosmeticFirstPerson.refreshGenerated(root);
       collect(root, root, 0);
       ENTRIES.sort(Comparator.<CosmeticEntry>comparingInt(entry -> entry.kind().ordinal())
             .thenComparing(entry -> entry.displayName().toLowerCase(Locale.ROOT)));
@@ -115,7 +114,7 @@ public final class CosmeticsRepository {
          if (Files.isRegularFile(dir.resolve(AVATAR_FILE))) {
             if (!dir.equals(root)) {
                CosmeticEntry entry = toEntry(root, dir);
-               // Пустые weapon-папки содержат только avatar.json/avatar.png: Figura
+// Weapon folders without a .bbmodel have nothing to render in hand.
                // загружает такой «аватар», но модели в нём нет — меч не появится.
                if (entry.kind() != CosmeticEntry.Kind.WEAPON || hasModel(dir)) {
                   ENTRIES.add(entry);

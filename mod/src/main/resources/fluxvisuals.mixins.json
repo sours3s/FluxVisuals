@@ -68,7 +68,6 @@
     "screen.TitleScreenMixin",
     "screen.SplashOverlayMixin",
     "screen.LogoTextureMixin",
-    "compat.CPMSubmitNodeCollectorCompatMixin",
     "accessor.AbstractTextureAccessor",
     "accessor.BossBarHudAccessor",
     "accessor.ItemCooldownManagerAccessor",

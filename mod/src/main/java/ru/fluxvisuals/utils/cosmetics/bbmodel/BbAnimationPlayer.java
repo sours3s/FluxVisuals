@@ -152,8 +152,8 @@ public final class BbAnimationPlayer {
          List<Keyframe> scale = keyframes(entry.getValue(), "scale");
 
          Vec3 baseRotation = node.rotation();
-         // Figura negates x/y for animated rotations and x for animated positions
-         // to account for the flipped entity render matrix.
+         // Negate x/y for animated rotations and x for animated positions to
+         // account for the flipped entity render matrix.
          Vec3 animatedRotation = rotation.isEmpty() ? Vec3.ZERO : sample(rotation, time, 0);
          Vec3 renderRotation = Vec3.of(
                baseRotation.x() - animatedRotation.x(),
