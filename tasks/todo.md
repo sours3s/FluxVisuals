@@ -4,13 +4,13 @@ Plan: `tasks/plan.md`
 
 ## Phase 1: Parser and renderer foundation
 
-- [ ] Task 1: Добавить модель данных `.bbmodel`
+- [x] Task 1: Добавить модель данных `.bbmodel`
   - Acceptance: классы `BbModel`, `BbNode`, `BbElement` хранят group tree, cube/mesh geometry, animations и texture references.
   - Verification: `./gradlew compileJava`.
   - Dependencies: none.
   - Files: `mod/src/main/java/ru/fluxvisuals/utils/cosmetics/bbmodel/BbModel.java`, `BbNode.java`, `BbElement.java`.
 
-- [ ] Task 2: Реализовать `BbModelLoader` и проверку на всех 68 моделях
+- [x] Task 2: Реализовать `BbModelLoader` и проверку на всех 68 моделях
   - Acceptance: парсер читает `elements`, `outliner`, `textures`, `animations`; находит 2892 cube и 258 mesh элементов; Decode base64-текстур без исключений.
   - Verification: `./gradlew test --tests '*BbModelLoaderTest'`.
   - Dependencies: Task 1.
