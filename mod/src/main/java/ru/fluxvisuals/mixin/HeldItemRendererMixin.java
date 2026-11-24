@@ -10,7 +10,6 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
-import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.render.item.ItemRenderState;
@@ -121,10 +120,6 @@ public abstract class HeldItemRendererMixin {
             return;
          }
 
-         MatrixStack itemMatrices = new MatrixStack();
-         itemMatrices.peek().copy(matrices.peek());
-         transform.apply(state.figura$isLeftHanded(), itemMatrices.peek());
-
          boolean rendered = avatar.itemRenderEvent(
             ItemStackAPI.verify(state.figura$getItemStack()),
             displayContext.name(),
@@ -132,7 +127,7 @@ public abstract class HeldItemRendererMixin {
             FiguraVec3.of(transform.rotation().z(), transform.rotation().y(), transform.rotation().x()),
             FiguraVec3.fromVec3f(transform.scale()),
             state.figura$isLeftHanded(),
-            itemMatrices, queue, light, OverlayTexture.DEFAULT_UV
+            matrices, queue, light, overlay
          );
          if (!rendered) {
             renderState.render(matrices, queue, light, overlay, seed);
