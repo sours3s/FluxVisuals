@@ -4,6 +4,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Arm;
+import net.minecraft.util.Arm;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.entity.LivingEntity;
@@ -62,11 +63,21 @@ public abstract class HeldItemRendererMixin {
    private boolean fluxvisuals$customPoseApplied;
    @Unique
    private boolean fluxvisuals$customPosePopped;
+   @Unique
+   private boolean fluxvisuals$hideMainArm;
+   @Unique
+   private boolean fluxvisuals$customWeaponRenderedLastFrame;
+   @Unique
+   private boolean fluxvisuals$customWeaponRenderedThisFrame;
 
    @Shadow
    protected abstract void renderFirstPersonItem(
       AbstractClientPlayerEntity var1, float var2, float var3, Hand var4, float var5, ItemStack var6, float var7, MatrixStack var8, OrderedRenderCommandQueue var9, int var10
    );
+
+   @Shadow
+   private void renderArmHoldingItem(MatrixStack matrices, OrderedRenderCommandQueue queue, int light,
+         float equipProgress, float swingProgress, Arm arm) { }
 
    @Inject(
       method = {"renderFirstPersonItem"},
@@ -101,6 +112,8 @@ public abstract class HeldItemRendererMixin {
       float tickProgress, MatrixStack matrices, OrderedRenderCommandQueue queue,
       ClientPlayerEntity player, int light, CallbackInfo ci
    ) {
+      this.fluxvisuals$hideMainArm = this.fluxvisuals$customWeaponRenderedLastFrame;
+      this.fluxvisuals$customWeaponRenderedThisFrame = false;
       this.fluxvisuals$customPoseApplied = false;
       this.fluxvisuals$customPosePopped = false;
       if (player == null || player.getMainHandStack().isEmpty() || player.isUsingItem()) return;
@@ -132,6 +145,7 @@ public abstract class HeldItemRendererMixin {
          matrices.pop();
          this.fluxvisuals$customPosePopped = true;
       }
+      this.fluxvisuals$customWeaponRenderedLastFrame = this.fluxvisuals$customWeaponRenderedThisFrame;
    }
 
    @Inject(
@@ -200,6 +214,9 @@ public abstract class HeldItemRendererMixin {
             state.figura$isLeftHanded(),
             matrices, queue, light, overlay
          );
+         if (rendered && this.fluxvisuals$isMainHandContext(displayContext, client.player)) {
+            this.fluxvisuals$customWeaponRenderedThisFrame = true;
+         }
          if (!rendered) {
             renderState.render(matrices, queue, light, overlay, seed);
          }
@@ -211,6 +228,31 @@ public abstract class HeldItemRendererMixin {
          }
          renderState.render(matrices, queue, light, overlay, seed);
       }
+   }
+
+   private boolean fluxvisuals$isMainHandContext(ItemDisplayContext context, ClientPlayerEntity player) {
+      return (player.getMainArm() == Arm.RIGHT && context == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND)
+            || (player.getMainArm() == Arm.LEFT && context == ItemDisplayContext.FIRST_PERSON_LEFT_HAND);
+   }
+
+   /**
+    * Vanilla draws the first-person hand before the item model. If Figura returned a custom
+    * weapon model last frame, skip only that arm — the item render below still runs.
+    */
+   @Redirect(
+      method = "renderFirstPersonItem",
+      at = @At(
+         value = "INVOKE",
+         target = "Lnet/minecraft/client/render/item/HeldItemRenderer;renderArmHoldingItem(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;IFFLnet/minecraft/util/Arm;)V"
+      )
+   )
+   private void fluxvisuals$skipCustomWeaponArm(
+      HeldItemRenderer renderer, MatrixStack matrices, OrderedRenderCommandQueue queue,
+      int light, float equipProgress, float swingProgress, Arm arm
+   ) {
+      MinecraftClient client = MinecraftClient.getInstance();
+      if (this.fluxvisuals$hideMainArm && client.player != null && arm == client.player.getMainArm()) return;
+      ((HeldItemRendererMixin) (Object) renderer).renderArmHoldingItem(matrices, queue, light, equipProgress, swingProgress, arm);
    }
 
    @ModifyVariable(
