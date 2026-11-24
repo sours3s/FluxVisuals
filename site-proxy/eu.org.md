@@ -54,7 +54,7 @@ wrangler deploy
 
 ```text
 https://fluxvisuals.eu.org/                 → сайт FluxVisuals
-https://fluxvisuals.eu.org/api/mod/version  → {"version":"1.0.64",...}
+https://fluxvisuals.eu.org/api/mod/version  → {"version":"1.0.65",...}
 https://fluxvisuals.eu.org/news             → панель публикации новостей
 ```
 

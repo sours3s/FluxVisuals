@@ -84,6 +84,56 @@ local function fluxvisualsFindArms()
     end
     return out
 end
+local function fluxvisualsApplyHide()
+    if not host:isHost() then return end
+    local hide = renderer:isFirstPerson()
+    if hide then
+        -- Avatar scripts re-show parts every render frame, so always re-hide.
+        if not fluxvisualsBody then fluxvisualsBody = fluxvisualsFindBody() end
+        for _, entry in ipairs(fluxvisualsBody) do
+            entry.part:setVisible(false)
+        end
+        fluxvisualsHidden = true
+    elseif fluxvisualsHidden then
+        for _, entry in ipairs(fluxvisualsBody or {}) do
+            entry.part:setVisible(entry.visible)
+        end
+        fluxvisualsHidden = false
+    end
+end
+local function fluxvisualsApplyVanillaHide()
+    if not host:isHost() or not vanilla_model then return end
+    if renderer:isFirstPerson() then
+        -- Match vanilla: no torso, legs or head in first person. Arms and
+        -- held items are separate parts and stay visible.
+        -- Never hide vanilla_model.PLAYER — it contains both arms.
+        vanilla_model.HEAD:setVisible(false)
+        vanilla_model.BODY:setVisible(false)
+        vanilla_model.HAT:setVisible(false)
+        vanilla_model.JACKET:setVisible(false)
+        vanilla_model.LEFT_LEG:setVisible(false)
+        vanilla_model.RIGHT_LEG:setVisible(false)
+        vanilla_model.LEFT_PANTS:setVisible(false)
+        vanilla_model.RIGHT_PANTS:setVisible(false)
+        vanilla_model.CAPE:setVisible(false)
+        vanilla_model.ARMOR:setVisible(false)
+        vanilla_model.ELYTRA:setVisible(false)
+        fluxvisualsVanillaHidden = true
+    elseif fluxvisualsVanillaHidden then
+        vanilla_model.HEAD:setVisible(nil)
+        vanilla_model.BODY:setVisible(nil)
+        vanilla_model.HAT:setVisible(nil)
+        vanilla_model.JACKET:setVisible(nil)
+        vanilla_model.LEFT_LEG:setVisible(nil)
+        vanilla_model.RIGHT_LEG:setVisible(nil)
+        vanilla_model.LEFT_PANTS:setVisible(nil)
+        vanilla_model.RIGHT_PANTS:setVisible(nil)
+        vanilla_model.CAPE:setVisible(nil)
+        vanilla_model.ARMOR:setVisible(nil)
+        vanilla_model.ELYTRA:setVisible(nil)
+        fluxvisualsVanillaHidden = false
+    end
+end
 local function fluxvisualsHasSwordInHands()
     if not host:isHost() or not player:isLoaded() then return false end
     if not renderer:isFirstPerson() then return false end
