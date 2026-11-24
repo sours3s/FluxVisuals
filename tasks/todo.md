@@ -16,7 +16,7 @@ Plan: `tasks/plan.md`
   - Dependencies: Task 1.
   - Files: `mod/src/main/java/ru/fluxvisuals/utils/cosmetics/bbmodel/BbModelLoader.java`, `mod/build.gradle`, `mod/src/test/java/ru/fluxvisuals/utils/cosmetics/bbmodel/BbModelLoaderTest.java`.
 
-- [ ] Task 3: Добавить загрузку текстур и `BbModelRenderer`
+- [x] Task 3: Добавить загрузку текстур и `BbModelRenderer`
   - Acceptance: текстуры из `.bbmodel` превращаются в `Identifier` + `NativeImageBackedTexture`; рендерер рисует cube и mesh через `VertexConsumer` с light/overlay.
   - Verification: `./gradlew compileJava`.
   - Dependencies: Task 2.
@@ -24,9 +24,9 @@ Plan: `tasks/plan.md`
 
 ## Checkpoint: Foundation
 
-- [ ] `./gradlew compileJava` проходит.
-- [ ] `./gradlew test --tests '*BbModelLoaderTest'` проходит.
-- [ ] Все 68 моделей парсятся, найдены 2892 cube + 258 mesh элементов.
+- [x] `./gradlew compileJava` проходит.
+- [x] `./gradlew test --tests '*BbModelLoaderTest'` проходит.
+- [x] Все 68 моделей парсятся, найдены 2892 cube + 258 mesh элементов.
 
 ## Phase 2: Third-person avatar path
 
