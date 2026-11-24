@@ -30,19 +30,19 @@ Plan: `tasks/plan.md`
 
 ## Phase 2: Third-person avatar path
 
-- [ ] Task 4: Добавить `BbCosmeticManager` и флаг `fluxvisuals.bbmodel`
+- [x] Task 4: Добавить `BbCosmeticManager` и флаг `fluxvisuals.bbmodel`
   - Acceptance: API `apply(CosmeticEntry)`, `clear()`, `isApplied()`, `appliedId()` повторяет `FiguraBridge`; флаг читается из system property и по умолчанию `false`.
   - Verification: `./gradlew compileJava`.
   - Dependencies: Task 3.
   - Files: `mod/src/main/java/ru/fluxvisuals/utils/cosmetics/BbCosmeticManager.java`.
 
-- [ ] Task 5: Подключить third-person renderer hook
+- [x] Task 5: Подключить third-person renderer hook
   - Acceptance: при активной модели и включённом флаге ванильная модель игрока скрывается, вместо неё рисуется `BbModelRenderer`; nameplate-логика не затронута.
   - Verification: `./gradlew compileJava`; ручная проверка в одиночном мире.
   - Dependencies: Task 4.
   - Files: `mod/src/main/java/ru/fluxvisuals/mixin/CosmeticPlayerRendererMixin.java`, `mod/src/main/resources/fluxvisuals.mixins.json`.
 
-- [ ] Task 6: Переключить GUI, команду и first-person модули на новый менеджер
+- [x] Task 6: Переключить GUI, команду и first-person модули на новый менеджер
   - Acceptance: клик по косметике вызывает `BbCosmeticManager`; `.reset` очищает его; `FirstPersonModel` и `CameraMixin` не зависят от Figura при включённом флаге; при выключенном флаге старый путь работает.
   - Verification: `./gradlew compileJava`; ручная проверка обеих веток флага.
   - Dependencies: Task 4.

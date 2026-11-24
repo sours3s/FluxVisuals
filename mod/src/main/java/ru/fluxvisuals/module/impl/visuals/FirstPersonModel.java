@@ -35,15 +35,10 @@ public class FirstPersonModel extends Module {
       if (!mc.options.getPerspective().isFirstPerson()) return false;
       if (onlySneaking.get() && !mc.player.isSneaking()) return false;
       if (!showBody.get()) return false;
-      // С активным Figura-аватаром тело рисуется на месте камеры — камера оказывается
-      // внутри модели. Модели оружия Figura работают и без принудительного тела.
-      try {
-         if (!ru.fluxvisuals.utils.cosmetics.FiguraBridge.appliedId().isEmpty()
-               || org.figuramc.figura.avatar.AvatarManager.getAvatarForPlayer(mc.player.getUuid()) != null) {
-            return false;
-         }
-      } catch (Throwable ignored) {
-         // Figura недоступна — поведение остаётся прежним.
+      // С активным аватаром тело рисуется на месте камеры — камера оказывается
+      // внутри модели. Обе ветки рендера работают и без принудительного тела.
+      if (ru.fluxvisuals.utils.cosmetics.CosmeticBridge.hasActiveAvatar()) {
+         return false;
       }
       return true;
    }

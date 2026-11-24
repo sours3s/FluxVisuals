@@ -4,7 +4,7 @@ import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import ru.fluxvisuals.client.FluxVisualsClient;
-import ru.fluxvisuals.utils.cosmetics.FiguraBridge;
+import ru.fluxvisuals.utils.cosmetics.CosmeticBridge;
 
 @Environment(EnvType.CLIENT)
 public final class ResetCommand implements Command {
@@ -43,7 +43,7 @@ public final class ResetCommand implements Command {
         if (FluxVisualsClient.get == null || FluxVisualsClient.get.configManager == null) {
             throw new CommandException("Клиент ещё не инициализирован");
         }
-        FiguraBridge.clear();
+        CosmeticBridge.clear();
         FluxVisualsClient.get.configManager.resetAll();
         context.sendSuccess("FluxVisuals: все настройки, позиции и косметика сброшены");
     }

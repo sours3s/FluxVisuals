@@ -1,11 +1,14 @@
 package ru.fluxvisuals.utils.cosmetics.bbmodel;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.joml.Quaternionf;
@@ -23,17 +26,17 @@ public final class BbModelRenderer {
    }
 
    public void render(BbModel model, String modelKey, MatrixStack matrices,
-         VertexConsumerProvider provider, int light, int overlay) {
+         OrderedRenderCommandQueue queue, int light, int overlay) {
       matrices.push();
       matrices.scale(1.0F / PIXELS_PER_BLOCK, 1.0F / PIXELS_PER_BLOCK, 1.0F / PIXELS_PER_BLOCK);
       for (BbNode root : model.roots()) {
-         renderNode(root, model, modelKey, matrices, provider, light, overlay);
+         renderNode(root, model, modelKey, matrices, queue, light, overlay);
       }
       matrices.pop();
    }
 
    private void renderNode(BbNode node, BbModel model, String modelKey, MatrixStack matrices,
-         VertexConsumerProvider provider, int light, int overlay) {
+         OrderedRenderCommandQueue queue, int light, int overlay) {
       matrices.push();
       Vec3 origin = node.origin();
       if (origin.x() != 0.0F || origin.y() != 0.0F || origin.z() != 0.0F) {
@@ -53,10 +56,10 @@ public final class BbModelRenderer {
       }
 
       if (node.visible() && node.element() != null) {
-         renderElement(node.element(), model, modelKey, matrices, provider, light, overlay);
+         renderElement(node.element(), model, modelKey, matrices, queue, light, overlay);
       }
       for (BbNode child : node.children()) {
-         renderNode(child, model, modelKey, matrices, provider, light, overlay);
+         renderNode(child, model, modelKey, matrices, queue, light, overlay);
       }
       matrices.pop();
    }
@@ -72,16 +75,25 @@ public final class BbModelRenderer {
    }
 
    private void renderElement(BbElement element, BbModel model, String modelKey, MatrixStack matrices,
-         VertexConsumerProvider provider, int light, int overlay) {
+         OrderedRenderCommandQueue queue, int light, int overlay) {
       if (!element.visible()) {
          return;
       }
+      Map<Integer, List<BbElement.Face>> byTexture = new LinkedHashMap<>();
       for (BbElement.Face face : element.faces()) {
-         Identifier texture = face.texture() >= 0 && face.texture() < model.textures().size()
-               ? textures.texture(modelKey, face.texture(), model.textures().get(face.texture()))
+         byTexture.computeIfAbsent(face.texture(), ignored -> new ArrayList<>()).add(face);
+      }
+      for (Map.Entry<Integer, List<BbElement.Face>> entry : byTexture.entrySet()) {
+         int index = entry.getKey();
+         Identifier texture = index >= 0 && index < model.textures().size()
+               ? textures.texture(modelKey, index, model.textures().get(index))
                : textures.fallback();
-         VertexConsumer consumer = provider.getBuffer(RenderLayers.entityCutoutNoCull(texture));
-         emitFace(consumer, matrices.peek(), element, face, light, overlay);
+         List<BbElement.Face> faces = entry.getValue();
+         queue.submitCustom(matrices, RenderLayers.entityCutoutNoCull(texture), (matrixEntry, consumer) -> {
+            for (BbElement.Face face : faces) {
+               emitFace(consumer, matrixEntry, element, face, light, overlay);
+            }
+         });
       }
    }
 

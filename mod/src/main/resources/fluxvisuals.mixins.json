@@ -55,6 +55,7 @@
     "BlockRenderManagerMixin",
     "ArmorStandEntityRendererMixin",
     "PlayerEntityRendererMixin",
+    "CosmeticPlayerRendererMixin",
     "PlayerEntityMixin",
     "EntityRenderManagerMixin",
     "AppleSkinMixin",
