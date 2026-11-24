@@ -34,7 +34,7 @@ public final class CosmeticsRepository {
    private static final String WEAPON_PREFIX = "weapon-";
    private static final String BUNDLED_ROOT = "/fluxvisuals/cosmetics/";
    private static final String BUNDLED_INDEX = "/fluxvisuals/cosmetics.index";
-   private static final String EXTRACTED_VERSION = "6";
+   private static final String EXTRACTED_VERSION = "7";
    private static final String VERSION_MARKER = ".fluxvisuals-cosmetics-version";
    private static final int MAX_DEPTH = 4;
    private static final List<CosmeticEntry> ENTRIES = new ArrayList<>();

@@ -6,6 +6,7 @@ local fluxvisualsBody = nil
 local fluxvisualsHidden = nil
 local fluxvisualsVanillaHidden = false
 local fluxvisualsRightArmHidden = false
+local fluxvisualsRightHandParts = nil
 -- Set by the avatar's own events.item_render when it returns its weapon model.
 FLUXVISUALS_CUSTOM_WEAPON_ID = nil
 local function fluxvisualsIsItem(part)
@@ -46,6 +47,39 @@ local function fluxvisualsFindBody()
     local out = {}
     for _, model in pairs(models:getChildren() or {}) do
         fluxvisualsCollect(model, false, out)
+    end
+    return out
+end
+local function fluxvisualsIsRightHandPart(part)
+    local name = part:getName():lower()
+    local parent = part:getParentType() or ''
+    -- The weapon model itself lives under Item and must stay visible.
+    if parent == 'Item' or parent == 'Trident' or parent == 'Arrow'
+        or parent == 'LeftItemPivot' or parent == 'RightItemPivot' then return false end
+    if name:match('sword') ~= nil or name:match('scythe') ~= nil
+        or name:match('weapon') ~= nil or name:match('blade') ~= nil
+        or name:match('spear') ~= nil or name:match('axe') ~= nil
+        or name:match('hammer') ~= nil or name:match('bow') ~= nil
+        or name:match('staff') ~= nil or name:match('item') ~= nil then return false end
+    if name:match('hand') ~= nil or name == 'arm' or name:match('rightarm') ~= nil
+        or name:match('sleeve') ~= nil or name:match('glove') ~= nil
+        or name:match('finger') ~= nil or name:match('knuckle') ~= nil
+        or name:match('palm') ~= nil or name:match('r_h') ~= nil then return true end
+    return parent == 'RightArm'
+end
+local function fluxvisualsCollectRightHand(part, out)
+    if not part then return end
+    if fluxvisualsIsRightHandPart(part) then
+        out[#out + 1] = {part = part, visible = part:getVisible()}
+    end
+    for _, child in pairs(part:getChildren() or {}) do
+        fluxvisualsCollectRightHand(child, out)
+    end
+end
+local function fluxvisualsFindRightHand()
+    local out = {}
+    for _, model in pairs(models:getChildren() or {}) do
+        fluxvisualsCollectRightHand(model, out)
     end
     return out
 end
@@ -109,10 +143,22 @@ local function fluxvisualsRightHandHasCustomWeapon()
     return held ~= nil and held.id == renderedId
 end
 local function fluxvisualsApplyRightArmHide()
-    if not host:isHost() or not vanilla_model then return end
+    if not host:isHost() then return end
     local hide = fluxvisualsRightHandHasCustomWeapon()
-    for _, part in ipairs({vanilla_model.RIGHT_ARM, vanilla_model.RIGHT_SLEEVE}) do
-        if part then part:setVisible(hide and false or nil) end
+    if vanilla_model then
+        for _, part in ipairs({vanilla_model.RIGHT_ARM, vanilla_model.RIGHT_SLEEVE}) do
+            if part then part:setVisible(hide and false or nil) end
+        end
+    end
+    if hide then
+        if not fluxvisualsRightHandParts then fluxvisualsRightHandParts = fluxvisualsFindRightHand() end
+        for _, entry in ipairs(fluxvisualsRightHandParts) do
+            entry.part:setVisible(false)
+        end
+    elseif fluxvisualsRightArmHidden then
+        for _, entry in ipairs(fluxvisualsRightHandParts or {}) do
+            entry.part:setVisible(entry.visible)
+        end
     end
     fluxvisualsRightArmHidden = hide
 end
