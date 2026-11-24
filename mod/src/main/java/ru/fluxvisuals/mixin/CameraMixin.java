@@ -50,6 +50,9 @@ public abstract class CameraMixin {
       at = {@At("HEAD")}
    )
    private void onUpdateHead(World area, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickProgress, CallbackInfo ci) {
+      // Figura avatar scripts can override the camera; never let that happen for
+      // the local player in first person, where it puts the camera inside the head.
+      ru.fluxvisuals.utils.cosmetics.FiguraCameraGuard.clearLocalOverrides();
       if (focusedEntity != null) {
          this.fluxvisuals$originalYaw = focusedEntity.getYaw(tickProgress);
          this.fluxvisuals$originalPitch = focusedEntity.getPitch(tickProgress);

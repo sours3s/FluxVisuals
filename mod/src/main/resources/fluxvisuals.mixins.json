@@ -57,6 +57,7 @@
     "PlayerEntityRendererMixin",
     "PlayerEntityMixin",
     "EntityRenderManagerMixin",
+    "FiguraCameraGuardMixin",
     "AppleSkinMixin",
     "DebugHudMixin",
     "InGameHudCrosshairMixin",

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.texture.AbstractTexture;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.texture.NativeImage.Format;
@@ -59,9 +60,13 @@ public final class TtfGlyphPage {
         if (this.sourceImage == null) {
             return;
         }
-        if (RenderSystem.isOnRenderThread()
-              && MinecraftClient.getInstance().getTextureManager().getTexture(this.bindToTexture) == null) {
-            registerBufferedImageTexture(this.bindToTexture, this.sourceImage);
+        if (RenderSystem.isOnRenderThread()) {
+            AbstractTexture registered = MinecraftClient.getInstance().getTextureManager().getTexture(this.bindToTexture);
+            // getTexture() never returns null: an unregistered id creates a ResourceTexture
+            // that cannot load our generated atlas. Only our NativeImageBackedTexture is valid.
+            if (!(registered instanceof NativeImageBackedTexture)) {
+                registerBufferedImageTexture(this.bindToTexture, this.sourceImage);
+            }
         }
     }
 
