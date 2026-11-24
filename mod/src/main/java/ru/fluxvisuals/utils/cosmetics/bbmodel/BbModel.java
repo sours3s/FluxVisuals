@@ -97,4 +97,8 @@ public final class BbModel {
    public BbNode node(UUID uuid) {
       return nodesByUuid.get(uuid);
    }
+
+   public java.util.Collection<BbNode> nodes() {
+      return nodesByUuid.values();
+   }
 }

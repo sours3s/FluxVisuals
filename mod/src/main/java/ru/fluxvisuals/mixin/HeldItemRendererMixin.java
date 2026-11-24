@@ -28,6 +28,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.render.HandAnimationEvent;
 import ru.fluxvisuals.event.render.RenderItemEvent;
+import ru.fluxvisuals.utils.cosmetics.BbCosmeticManager;
+import ru.fluxvisuals.utils.cosmetics.CosmeticBridge;
 import net.minecraft.registry.tag.ItemTags;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
@@ -176,6 +178,15 @@ public abstract class HeldItemRendererMixin {
       ItemRenderState renderState, MatrixStack matrices, OrderedRenderCommandQueue queue,
       int light, int overlay, int seed
    ) {
+      if (CosmeticBridge.useBbModel()) {
+         MinecraftClient client = MinecraftClient.getInstance();
+         boolean rendered = fluxvisuals$renderBuiltInWeapon(client, renderState, matrices, queue,
+               light, overlay);
+         if (!rendered) {
+            renderState.render(matrices, queue, light, overlay, seed);
+         }
+         return;
+      }
       if (!(renderState instanceof FiguraItemStackRenderStateExtension state)) {
          renderState.render(matrices, queue, light, overlay, seed);
          return;
@@ -230,7 +241,47 @@ public abstract class HeldItemRendererMixin {
       }
    }
 
-   private boolean fluxvisuals$hasSwordInHands(ClientPlayerEntity player) {
+   private boolean fluxvisuals$renderBuiltInWeapon(MinecraftClient client, ItemRenderState renderState,
+          MatrixStack matrices, OrderedRenderCommandQueue queue, int light, int overlay) {
+       if (client == null || client.player == null || !BbCosmeticManager.isWeaponActive()) {
+          return false;
+       }
+       if (!(renderState instanceof ItemRenderStateAccessor accessor)) {
+          return false;
+       }
+       ItemRenderState.LayerRenderState[] layers = accessor.fluxvisuals$layers();
+       if (layers.length == 0) {
+          return false;
+       }
+       Transformation transform = ((ItemRenderStateLayerAccessor) layers[0]).fluxvisuals$transform();
+       ItemDisplayContext context = ((ItemRenderStateContextAccessor) renderState).fluxvisuals$displayContext();
+       if (context != ItemDisplayContext.FIRST_PERSON_LEFT_HAND
+             && context != ItemDisplayContext.FIRST_PERSON_RIGHT_HAND
+             && context != ItemDisplayContext.THIRD_PERSON_LEFT_HAND
+             && context != ItemDisplayContext.THIRD_PERSON_RIGHT_HAND) {
+          return false;
+       }
+       ItemStack stack = fluxvisuals$stackForContext(context, client.player);
+       if (stack.isEmpty() || !stack.isIn(ItemTags.SWORDS)) {
+          return false;
+       }
+       boolean rendered = BbCosmeticManager.renderWeapon(context, matrices, queue, light, overlay, transform);
+       if (rendered && fluxvisuals$isMainHandContext(context, client.player)) {
+          this.fluxvisuals$customWeaponRenderedThisFrame = true;
+       }
+       return rendered;
+    }
+
+    private ItemStack fluxvisuals$stackForContext(ItemDisplayContext context, ClientPlayerEntity player) {
+       boolean mainHand = switch (context) {
+          case FIRST_PERSON_LEFT_HAND -> player.getMainArm() == Arm.LEFT;
+          case THIRD_PERSON_LEFT_HAND -> player.getMainArm() == Arm.LEFT;
+          default -> true;
+       };
+       return mainHand ? player.getMainHandStack() : player.getOffHandStack();
+    }
+
+    private boolean fluxvisuals$hasSwordInHands(ClientPlayerEntity player) {
       return player.getMainHandStack().isIn(ItemTags.SWORDS)
             || player.getOffHandStack().isIn(ItemTags.SWORDS);
    }
@@ -256,7 +307,9 @@ public abstract class HeldItemRendererMixin {
       int light, float equipProgress, float swingProgress, Arm arm
    ) {
       MinecraftClient client = MinecraftClient.getInstance();
-      if (client.player != null && fluxvisuals$hasSwordInHands(client.player)) return;
+      boolean hideArm = client.player != null && fluxvisuals$hasSwordInHands(client.player)
+            && (!CosmeticBridge.useBbModel() || BbCosmeticManager.isWeaponActive());
+      if (hideArm) return;
       ((HeldItemRendererMixin) (Object) renderer).renderArmHoldingItem(matrices, queue, light, equipProgress, swingProgress, arm);
    }
 

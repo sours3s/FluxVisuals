@@ -56,13 +56,13 @@ Plan: `tasks/plan.md`
 
 ## Phase 3: First-person weapon and animation
 
-- [ ] Task 7: Заменить Figura-item-hook на рендер кастомного меча
+- [x] Task 7: Заменить Figura-item-hook на рендер кастомного меча
   - Acceptance: для `ItemTags.SWORDS` и weapon-записи в first person рисуется модель из `.bbmodel`; руки скрыты; SwingAnimation сохраняет текущую позу;third-person не дублируется.
   - Verification: `./gradlew compileJava`; ручная проверка меча и обычного предмета.
   - Dependencies: Task 5.
   - Files: `mod/src/main/java/ru/fluxvisuals/mixin/HeldItemRendererMixin.java`.
 
-- [ ] Task 8: Добавить `BbAnimationPlayer` и стандартные позы
+- [x] Task 8: Добавить `BbAnimationPlayer` и стандартные позы
   - Acceptance: анимации выбираются по имени и состоянию игрока; `idle/walk/sprint/crouch/fly/elytra/blink/attack*` проигрываются с интерполяцией keyframes; несовместимые имена игнорируются без ошибок.
   - Verification: `./gradlew compileJava`; ручная проверка ходьбы, спринта, приседания и swing.
   - Dependencies: Task 3, Task 7.

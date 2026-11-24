@@ -35,13 +35,12 @@ public abstract class CosmeticPlayerRendererMixin {
          int outlineColor, ModelCommandRenderer.CrumblingOverlayCommand crumbling) {
       if (renderState instanceof PlayerEntityRenderState playerState
             && CosmeticBridge.useBbModel()
-            && BbCosmeticManager.isActive()
-            && BbCosmeticManager.renderer() != null
             && MinecraftClient.getInstance().player != null
             && playerState.id == MinecraftClient.getInstance().player.getId()) {
-         BbCosmeticManager.renderer().render(BbCosmeticManager.activeModel(), BbCosmeticManager.activeKey(),
-               matrices, queue, light, overlay);
-         return;
+         BbCosmeticManager.renderAvatar(matrices, queue, light, overlay);
+         if (BbCosmeticManager.isAvatarActive()) {
+            return;
+         }
       }
       queue.submitModel(model, renderState, matrices, layer, light, overlay, mixColor, sprite, outlineColor, crumbling);
    }

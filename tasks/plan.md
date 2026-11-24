@@ -20,30 +20,30 @@ Source spec: запрос пользователя «убрать Figura и до
 
 ### Phase 1: Parser and renderer foundation
 
-- [ ] Task 1: Добавить модель данных `.bbmodel`
-- [ ] Task 2: Реализовать `BbModelLoader` и проверку на всех 68 моделях
-- [ ] Task 3: Добавить загрузку текстур и `BbModelRenderer`
+- [x] Task 1: Добавить модель данных `.bbmodel`
+- [x] Task 2: Реализовать `BbModelLoader` и проверку на всех 68 моделях
+- [x] Task 3: Добавить загрузку текстур и `BbModelRenderer`
 
 ### Checkpoint: Foundation
-- [ ] `./gradlew compileJava` проходит
-- [ ] `./gradlew test --tests '*BbModelLoaderTest'` проходит
-- [ ] Все 68 моделей парсятся, 2892 cube + 258 mesh элементов найдены
+- [x] `./gradlew compileJava` проходит
+- [x] `./gradlew test --tests '*BbModelLoaderTest'` проходит
+- [x] Все 68 моделей парсятся, 2892 cube + 258 mesh элементов найдены
 
 ### Phase 2: Third-person avatar path
 
-- [ ] Task 4: Добавить `BbCosmeticManager` и флаг `fluxvisuals.bbmodel`
-- [ ] Task 5: Подключить third-person renderer hook
-- [ ] Task 6: Переключить GUI, команду и first-person модули на новый менеджер
+- [x] Task 4: Добавить `BbCosmeticManager` и флаг `fluxvisuals.bbmodel`
+- [x] Task 5: Подключить third-person renderer hook
+- [x] Task 6: Переключить GUI, команду и first-person модули на новый менеджер
 
 ### Checkpoint: Avatar
 - [ ] При `-Dfluxvisuals.bbmodel=true` аватар рисуется в третьем лице
 - [ ] При выключенном флаге поведение `v1.0.65` не меняется
-- [ ] `./gradlew compileJava` проходит
+- [x] `./gradlew compileJava` проходит
 
 ### Phase 3: First-person weapon and animation
 
-- [ ] Task 7: Заменить Figura-item-hook на рендер кастомного меча
-- [ ] Task 8: Добавить `BbAnimationPlayer` и стандартные позы
+- [x] Task 7: Заменить Figura-item-hook на рендер кастомного меча
+- [x] Task 8: Добавить `BbAnimationPlayer` и стандартные позы
 
 ### Checkpoint: Weapon and animation
 - [ ] Меч виден в 1/2/3 лице и находится в руке, не по центру экрана

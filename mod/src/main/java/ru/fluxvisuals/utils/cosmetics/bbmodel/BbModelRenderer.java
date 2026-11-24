@@ -38,22 +38,17 @@ public final class BbModelRenderer {
    private void renderNode(BbNode node, BbModel model, String modelKey, MatrixStack matrices,
          OrderedRenderCommandQueue queue, int light, int overlay) {
       matrices.push();
+      // Match Figura's PartCustomization order: translate to pivot + animated
+      // position, scale, rotate around the pivot, then undo the pivot offset.
       Vec3 origin = node.origin();
-      if (origin.x() != 0.0F || origin.y() != 0.0F || origin.z() != 0.0F) {
-         matrices.translate(origin.x(), origin.y(), origin.z());
-         applyRotation(matrices, node.renderRotation());
-         matrices.translate(-origin.x(), -origin.y(), -origin.z());
-      } else {
-         applyRotation(matrices, node.renderRotation());
-      }
       Vec3 position = node.renderPosition();
-      if (position.x() != 0.0F || position.y() != 0.0F || position.z() != 0.0F) {
-         matrices.translate(position.x(), position.y(), position.z());
-      }
+      matrices.translate(origin.x() + position.x(), origin.y() + position.y(), origin.z() + position.z());
+      applyRotation(matrices, node.renderRotation());
       Vec3 scale = node.renderScale();
       if (scale.x() != 1.0F || scale.y() != 1.0F || scale.z() != 1.0F) {
          matrices.scale(scale.x(), scale.y(), scale.z());
       }
+      matrices.translate(-origin.x(), -origin.y(), -origin.z());
 
       if (node.visible() && node.element() != null) {
          renderElement(node.element(), model, modelKey, matrices, queue, light, overlay);
@@ -68,7 +63,7 @@ public final class BbModelRenderer {
       if (rotation.x() == 0.0F && rotation.y() == 0.0F && rotation.z() == 0.0F) {
          return;
       }
-      matrices.multiply(new Quaternionf().rotationXYZ(
+      matrices.multiply(new Quaternionf().rotationZYX(
             (float) Math.toRadians(rotation.x()),
             (float) Math.toRadians(rotation.y()),
             (float) Math.toRadians(rotation.z())));
