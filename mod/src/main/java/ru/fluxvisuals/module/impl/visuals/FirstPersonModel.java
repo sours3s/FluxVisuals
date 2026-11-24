@@ -38,7 +38,8 @@ public class FirstPersonModel extends Module {
       // С активным Figura-аватаром тело рисуется на месте камеры — камера оказывается
       // внутри модели. Модели оружия Figura работают и без принудительного тела.
       try {
-         if (org.figuramc.figura.avatar.AvatarManager.getAvatarForPlayer(mc.player.getUuid()) != null) {
+         if (!ru.fluxvisuals.utils.cosmetics.FiguraBridge.appliedId().isEmpty()
+               || org.figuramc.figura.avatar.AvatarManager.getAvatarForPlayer(mc.player.getUuid()) != null) {
             return false;
          }
       } catch (Throwable ignored) {

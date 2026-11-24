@@ -60,6 +60,7 @@ public final class TtfIconFonts {
             if (baseIcons == null && baseIcon2 == null && baseCategory == null && baseGui == null) {
                 FluxVisuals.LOGGER.warn("TtfIconFonts: lazy re-init also failed — icons will not render.");
             } else {
+                CACHE.clear();
                 initialized = true;
                 FluxVisuals.LOGGER.info("TtfIconFonts: lazy re-init succeeded.");
             }
