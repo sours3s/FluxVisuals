@@ -5,8 +5,8 @@
 local fluxvisualsBody = nil
 local fluxvisualsHidden = nil
 local fluxvisualsVanillaHidden = false
-local fluxvisualsRightArmHidden = false
-local fluxvisualsRightHandParts = nil
+local fluxvisualsArmsHidden = false
+local fluxvisualsArmParts = nil
 -- Set by the avatar's own events.item_render when it returns its weapon model.
 FLUXVISUALS_CUSTOM_WEAPON_ID = nil
 local function fluxvisualsIsItem(part)
@@ -50,10 +50,10 @@ local function fluxvisualsFindBody()
     end
     return out
 end
-local function fluxvisualsIsRightHandPart(part)
+local function fluxvisualsIsArmPart(part)
     local name = part:getName():lower()
     local parent = part:getParentType() or ''
-    -- The weapon model itself lives under Item and must stay visible.
+    -- The weapon model lives under Item and must stay visible.
     if parent == 'Item' or parent == 'Trident' or parent == 'Arrow'
         or parent == 'LeftItemPivot' or parent == 'RightItemPivot' then return false end
     if name:match('sword') ~= nil or name:match('scythe') ~= nil
@@ -61,106 +61,61 @@ local function fluxvisualsIsRightHandPart(part)
         or name:match('spear') ~= nil or name:match('axe') ~= nil
         or name:match('hammer') ~= nil or name:match('bow') ~= nil
         or name:match('staff') ~= nil or name:match('item') ~= nil then return false end
-    if name:match('hand') ~= nil or name == 'arm' or name:match('rightarm') ~= nil
+    if name:match('hand') ~= nil or name == 'arm'
+        or name:match('leftarm') ~= nil or name:match('rightarm') ~= nil
         or name:match('sleeve') ~= nil or name:match('glove') ~= nil
         or name:match('finger') ~= nil or name:match('knuckle') ~= nil
-        or name:match('palm') ~= nil or name:match('r_h') ~= nil then return true end
-    return parent == 'RightArm'
+        or name:match('palm') ~= nil or name:match('l_h') ~= nil or name:match('r_h') ~= nil then return true end
+    return parent == 'LeftArm' or parent == 'RightArm'
 end
-local function fluxvisualsCollectRightHand(part, out)
+local function fluxvisualsCollectArms(part, out)
     if not part then return end
-    if fluxvisualsIsRightHandPart(part) then
+    if fluxvisualsIsArmPart(part) then
         out[#out + 1] = {part = part, visible = part:getVisible()}
     end
     for _, child in pairs(part:getChildren() or {}) do
-        fluxvisualsCollectRightHand(child, out)
+        fluxvisualsCollectArms(child, out)
     end
 end
-local function fluxvisualsFindRightHand()
+local function fluxvisualsFindArms()
     local out = {}
     for _, model in pairs(models:getChildren() or {}) do
-        fluxvisualsCollectRightHand(model, out)
+        fluxvisualsCollectArms(model, out)
     end
     return out
 end
-local function fluxvisualsApplyHide()
-    if not host:isHost() then return end
-    local hide = renderer:isFirstPerson()
-    if hide then
-        -- Avatar scripts re-show parts every render frame, so always re-hide.
-        if not fluxvisualsBody then fluxvisualsBody = fluxvisualsFindBody() end
-        for _, entry in ipairs(fluxvisualsBody) do
-            entry.part:setVisible(false)
-        end
-        fluxvisualsHidden = true
-    elseif fluxvisualsHidden then
-        for _, entry in ipairs(fluxvisualsBody or {}) do
-            entry.part:setVisible(entry.visible)
-        end
-        fluxvisualsHidden = false
-    end
-end
-local function fluxvisualsApplyVanillaHide()
-    if not host:isHost() or not vanilla_model then return end
-    if renderer:isFirstPerson() then
-        -- Match vanilla: no torso, legs or head in first person. Arms and
-        -- held items are separate parts and stay visible.
-        -- Never hide vanilla_model.PLAYER — it contains both arms.
-        vanilla_model.HEAD:setVisible(false)
-        vanilla_model.BODY:setVisible(false)
-        vanilla_model.HAT:setVisible(false)
-        vanilla_model.JACKET:setVisible(false)
-        vanilla_model.LEFT_LEG:setVisible(false)
-        vanilla_model.RIGHT_LEG:setVisible(false)
-        vanilla_model.LEFT_PANTS:setVisible(false)
-        vanilla_model.RIGHT_PANTS:setVisible(false)
-        vanilla_model.CAPE:setVisible(false)
-        vanilla_model.ARMOR:setVisible(false)
-        vanilla_model.ELYTRA:setVisible(false)
-        fluxvisualsVanillaHidden = true
-    elseif fluxvisualsVanillaHidden then
-        vanilla_model.HEAD:setVisible(nil)
-        vanilla_model.BODY:setVisible(nil)
-        vanilla_model.HAT:setVisible(nil)
-        vanilla_model.JACKET:setVisible(nil)
-        vanilla_model.LEFT_LEG:setVisible(nil)
-        vanilla_model.RIGHT_LEG:setVisible(nil)
-        vanilla_model.LEFT_PANTS:setVisible(nil)
-        vanilla_model.RIGHT_PANTS:setVisible(nil)
-        vanilla_model.CAPE:setVisible(nil)
-        vanilla_model.ARMOR:setVisible(nil)
-        vanilla_model.ELYTRA:setVisible(nil)
-        fluxvisualsVanillaHidden = false
-    end
-end
-local function fluxvisualsRightHandHasCustomWeapon()
+local function fluxvisualsHasSwordInHands()
     if not host:isHost() or not player:isLoaded() then return false end
     if not renderer:isFirstPerson() then return false end
-    if player:isLeftHanded() then return false end
+    local main = player:getHeldItem(false)
+    local off = player:getHeldItem(true)
+    if main and main.id and tostring(main.id):find('sword') then return true end
+    if off and off.id and tostring(off.id):find('sword') then return true end
     local renderedId = FLUXVISUALS_CUSTOM_WEAPON_ID
-    if not renderedId then return false end
-    local held = player:getHeldItem(true)
-    return held ~= nil and held.id == renderedId
+    if renderedId and main and main.id == renderedId then return true end
+    if renderedId and off and off.id == renderedId then return true end
+    return false
 end
-local function fluxvisualsApplyRightArmHide()
+local function fluxvisualsApplyArmHide()
     if not host:isHost() then return end
-    local hide = fluxvisualsRightHandHasCustomWeapon()
+    local hide = fluxvisualsHasSwordInHands()
     if vanilla_model then
-        for _, part in ipairs({vanilla_model.RIGHT_ARM, vanilla_model.RIGHT_SLEEVE}) do
+        for _, part in ipairs({vanilla_model.LEFT_ARM, vanilla_model.LEFT_SLEEVE,
+                               vanilla_model.RIGHT_ARM, vanilla_model.RIGHT_SLEEVE}) do
             if part then part:setVisible(hide and false or nil) end
         end
     end
     if hide then
-        if not fluxvisualsRightHandParts then fluxvisualsRightHandParts = fluxvisualsFindRightHand() end
-        for _, entry in ipairs(fluxvisualsRightHandParts) do
+        if not fluxvisualsArmParts then fluxvisualsArmParts = fluxvisualsFindArms() end
+        for _, entry in ipairs(fluxvisualsArmParts) do
             entry.part:setVisible(false)
         end
-    elseif fluxvisualsRightArmHidden then
-        for _, entry in ipairs(fluxvisualsRightHandParts or {}) do
+    elseif fluxvisualsArmsHidden then
+        for _, entry in ipairs(fluxvisualsArmParts or {}) do
             entry.part:setVisible(entry.visible)
         end
     end
-    fluxvisualsRightArmHidden = hide
+    fluxvisualsArmsHidden = hide
 end
 local function fluxvisualsNormalizeCamera()
     if not host:isHost() then return end
@@ -177,15 +132,15 @@ local function fluxvisualsNormalizeCamera()
 end
 events.TICK:register(fluxvisualsApplyHide)
 events.TICK:register(fluxvisualsApplyVanillaHide)
-events.TICK:register(fluxvisualsApplyRightArmHide)
+events.TICK:register(fluxvisualsApplyArmHide)
 events.TICK:register(fluxvisualsNormalizeCamera)
 events.RENDER:register(fluxvisualsApplyHide)
 events.RENDER:register(fluxvisualsApplyVanillaHide)
-events.RENDER:register(fluxvisualsApplyRightArmHide)
+events.RENDER:register(fluxvisualsApplyArmHide)
 events.RENDER:register(fluxvisualsNormalizeCamera)
 events.POST_RENDER:register(fluxvisualsApplyHide)
 events.POST_RENDER:register(fluxvisualsApplyVanillaHide)
-events.POST_RENDER:register(fluxvisualsApplyRightArmHide)
+events.POST_RENDER:register(fluxvisualsApplyArmHide)
 events.POST_RENDER:register(fluxvisualsNormalizeCamera)
 
 -- <<< fluxvisuals first person

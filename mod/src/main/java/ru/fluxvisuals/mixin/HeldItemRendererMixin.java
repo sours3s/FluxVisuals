@@ -4,7 +4,6 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Arm;
-import net.minecraft.util.Arm;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.entity.LivingEntity;
@@ -29,6 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.render.HandAnimationEvent;
 import ru.fluxvisuals.event.render.RenderItemEvent;
+import net.minecraft.registry.tag.ItemTags;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.ducks.FiguraItemStackRenderStateExtension;
@@ -230,6 +230,11 @@ public abstract class HeldItemRendererMixin {
       }
    }
 
+   private boolean fluxvisuals$hasSwordInHands(ClientPlayerEntity player) {
+      return player.getMainHandStack().isIn(ItemTags.SWORDS)
+            || player.getOffHandStack().isIn(ItemTags.SWORDS);
+   }
+
    private boolean fluxvisuals$isMainHandContext(ItemDisplayContext context, ClientPlayerEntity player) {
       return (player.getMainArm() == Arm.RIGHT && context == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND)
             || (player.getMainArm() == Arm.LEFT && context == ItemDisplayContext.FIRST_PERSON_LEFT_HAND);
@@ -251,7 +256,7 @@ public abstract class HeldItemRendererMixin {
       int light, float equipProgress, float swingProgress, Arm arm
    ) {
       MinecraftClient client = MinecraftClient.getInstance();
-      if (this.fluxvisuals$hideMainArm && client.player != null && arm == client.player.getMainArm()) return;
+      if (client.player != null && fluxvisuals$hasSwordInHands(client.player)) return;
       ((HeldItemRendererMixin) (Object) renderer).renderArmHoldingItem(matrices, queue, light, equipProgress, swingProgress, arm);
    }
 
