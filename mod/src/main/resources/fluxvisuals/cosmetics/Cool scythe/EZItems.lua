@@ -145,6 +145,7 @@ function items:simpleReplace(itemtype,newparts,extrapart)
     events.item_render:register(
         function(item)
             if getItem(item,itemtype) then
+                FLUXVISUALS_CUSTOM_WEAPON_ID = item.id
                 return newparts
             end
         end,

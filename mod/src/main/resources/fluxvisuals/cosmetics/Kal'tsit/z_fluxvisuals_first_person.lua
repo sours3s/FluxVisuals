@@ -5,6 +5,9 @@
 local fluxvisualsBody = nil
 local fluxvisualsHidden = nil
 local fluxvisualsVanillaHidden = false
+local fluxvisualsRightArmHidden = false
+-- Set by the avatar's own events.item_render when it returns its weapon model.
+FLUXVISUALS_CUSTOM_WEAPON_ID = nil
 local function fluxvisualsIsItem(part)
     local name = part:getName():lower()
     local parent = part:getParentType() or ''
@@ -96,6 +99,23 @@ local function fluxvisualsApplyVanillaHide()
         fluxvisualsVanillaHidden = false
     end
 end
+local function fluxvisualsRightHandHasCustomWeapon()
+    if not host:isHost() or not player:isLoaded() then return false end
+    if not renderer:isFirstPerson() then return false end
+    if player:isLeftHanded() then return false end
+    local renderedId = FLUXVISUALS_CUSTOM_WEAPON_ID
+    if not renderedId then return false end
+    local held = player:getHeldItem(true)
+    return held ~= nil and held.id == renderedId
+end
+local function fluxvisualsApplyRightArmHide()
+    if not host:isHost() or not vanilla_model then return end
+    local hide = fluxvisualsRightHandHasCustomWeapon()
+    for _, part in ipairs({vanilla_model.RIGHT_ARM, vanilla_model.RIGHT_SLEEVE}) do
+        if part then part:setVisible(hide and false or nil) end
+    end
+    fluxvisualsRightArmHidden = hide
+end
 local function fluxvisualsNormalizeCamera()
     if not host:isHost() then return end
     if not renderer:isFirstPerson() then return end
@@ -111,12 +131,15 @@ local function fluxvisualsNormalizeCamera()
 end
 events.TICK:register(fluxvisualsApplyHide)
 events.TICK:register(fluxvisualsApplyVanillaHide)
+events.TICK:register(fluxvisualsApplyRightArmHide)
 events.TICK:register(fluxvisualsNormalizeCamera)
 events.RENDER:register(fluxvisualsApplyHide)
 events.RENDER:register(fluxvisualsApplyVanillaHide)
+events.RENDER:register(fluxvisualsApplyRightArmHide)
 events.RENDER:register(fluxvisualsNormalizeCamera)
 events.POST_RENDER:register(fluxvisualsApplyHide)
 events.POST_RENDER:register(fluxvisualsApplyVanillaHide)
+events.POST_RENDER:register(fluxvisualsApplyRightArmHide)
 events.POST_RENDER:register(fluxvisualsNormalizeCamera)
 
 -- <<< fluxvisuals first person

@@ -31,7 +31,6 @@ public class SwingAnimation extends Module {
    private static float lastSwingProgress = 0.0F;
    public static SliderSetting animSpeed = new SliderSetting("Swing Speed", 1.0F, 0.1F, 3.0F, 0.1F, false);
    public static SliderSetting animgsize = new SliderSetting("Swing Scale", 3.7F, 1.0F, 10.0F, 0.1F, false);
-   public static BooleanSetting auraOnly = new BooleanSetting("Aura Only", false);
    public static BooleanSetting customhands = new BooleanSetting("Custom Hand View", false);
    public static BooleanSetting zemetria = new BooleanSetting("Sync Both Hands", false)
          .hidden(() -> !customhands.get());
@@ -56,34 +55,31 @@ public class SwingAnimation extends Module {
 
    public SwingAnimation() {
       this.addSettings(
-            new Setting[] { swingMode, animSpeed, animgsize, auraOnly, customhands, zemetria, x, y, z, right_x, right_y,
+            new Setting[] { swingMode, animSpeed, animgsize, customhands, zemetria, x, y, z, right_x, right_y,
                   right_z, lefvt_x, lefvt_y, lefvt_z });
    }
 
    @EventInit
    public void onEvent(HandAnimationEvent event) {
       if (!this.enable) return;
+      if (!isCustomAnimationActive() || event.getHand() != Hand.MAIN_HAND) return;
+      if (event.getSwingProgress() <= 0.0F) return;
+      // Поза уже применена до рендера Figura-руки в HeldItemRendererMixin.
+      event.cancel();
+   }
 
-      if (!isCustomAnimationActive() || event.getHand() != Hand.MAIN_HAND) {
-         return;
-      }
-
-      // Не сохраняем статичную позу руки, когда игрок просто смотрит на сущность.
-      // Пользовательская анимация применяется только во время реального взмаха.
-      if (event.getSwingProgress() <= 0.0F) {
-         return;
-      }
-
-      MatrixStack matrix = event.getMatrices();
-      float swingProgress = event.getSwingProgress();
-      float equipProgress = event.getEquipProgress();
+   /**
+    * Apply the custom swing pose on the shared first-person stack, before Figura renders
+    * the avatar hand. Both the hand and the custom weapon then inherit the same pose.
+    */
+   public static void applyFirstPersonPose(MatrixStack matrix, Hand hand, float swingProgress, float equipProgress) {
+      if (hand != Hand.MAIN_HAND || swingProgress <= 0.0F) return;
+      if (mc == null || mc.player == null) return;
       float strength = animgsize.get();
       int armSide = mc.player.getMainArm() == Arm.RIGHT ? 1 : -1;
       float sin1 = MathHelper.sin(swingProgress * swingProgress * (float) Math.PI);
       float sin2 = MathHelper.sin(MathHelper.sqrt(swingProgress) * (float) Math.PI);
       float sinSmooth = MathHelper.sin(swingProgress * (float) Math.PI) * 0.5F;
-
-      matrix.translate(-0.56F * armSide, 0.52F + equipProgress * 0.6F, 0.72F);
 
       switch (swingMode.get()) {
          case "Swipe":
@@ -238,7 +234,6 @@ public class SwingAnimation extends Module {
             break;
       }
 
-      event.cancel();
    }
 
    @EventInit
@@ -272,17 +267,7 @@ public class SwingAnimation extends Module {
       if (net.minecraft.client.MinecraftClient.getInstance().player != null && net.minecraft.client.MinecraftClient.getInstance().player.getMainHandStack().isEmpty()) {
          return false;
       }
-      return !swingMode.is("Off") && auraCheck();
-   }
-
-   public static boolean auraCheck() {
-      if (!auraOnly.get()) {
-         return true;
-      } else {
-         // Легитная проверка: анимация активна, когда игрок навёл прицел на сущность.
-         net.minecraft.client.MinecraftClient mc = net.minecraft.client.MinecraftClient.getInstance();
-         return mc != null && mc.player != null && mc.crosshairTarget instanceof net.minecraft.util.hit.EntityHitResult;
-      }
+      return !swingMode.is("Off");
    }
 
    private static void applyZenithEquipOffset(MatrixStack matrices, int armSide) {

@@ -11,6 +11,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.render.item.ItemRenderState;
 import org.slf4j.Logger;
@@ -56,6 +58,10 @@ public abstract class HeldItemRendererMixin {
    private float fluxvisuals$currentEquipProgress;
    @Unique
    private Hand fluxvisuals$currentHand;
+   @Unique
+   private boolean fluxvisuals$customPoseApplied;
+   @Unique
+   private boolean fluxvisuals$customPosePopped;
 
    @Shadow
    protected abstract void renderFirstPersonItem(
@@ -70,9 +76,74 @@ public abstract class HeldItemRendererMixin {
    private void onRenderFirstPersonItem(
       AbstractClientPlayerEntity player, float tickProgress, float pitch, Hand hand, float swingProgress, ItemStack stack, float equipProgress, MatrixStack matrices, OrderedRenderCommandQueue queue, int light, CallbackInfo ci
    ) {
+      // Off-hand must not inherit the main-hand swing pose.
+      if (this.fluxvisuals$customPoseApplied && !this.fluxvisuals$customPosePopped && hand == Hand.OFF_HAND) {
+         matrices.pop();
+         this.fluxvisuals$customPosePopped = true;
+      }
       this.fluxvisuals$currentHand = hand;
       RenderItemEvent renderItemEvent = new RenderItemEvent(matrices, hand, stack);
       EventManager.call(renderItemEvent);
+   }
+
+
+   /**
+    * Apply the swing pose before Figura renders the avatar hand. Figura hooks the HEAD of
+    * HeldItemRenderer.renderItem, so injecting into renderFirstPersonItem would be too late.
+    */
+   @Inject(
+      method = "renderItem(FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;Lnet/minecraft/client/network/ClientPlayerEntity;I)V",
+      at = {@At("HEAD")},
+      cancellable = true,
+      order = 500
+   )
+   private void fluxvisuals$applySwingBeforeAvatar(
+      float tickProgress, MatrixStack matrices, OrderedRenderCommandQueue queue,
+      ClientPlayerEntity player, int light, CallbackInfo ci
+   ) {
+      this.fluxvisuals$customPoseApplied = false;
+      this.fluxvisuals$customPosePopped = false;
+      if (player == null || player.getMainHandStack().isEmpty() || player.isUsingItem()) return;
+      ItemStack held = player.getMainHandStack();
+      if (held.getItem() instanceof net.minecraft.item.CrossbowItem) return;
+      ru.fluxvisuals.module.impl.visuals.SwingAnimation swingAnim =
+            ru.fluxvisuals.client.FluxVisualsClient.get.manager.get(ru.fluxvisuals.module.impl.visuals.SwingAnimation.class);
+      if (swingAnim == null || !swingAnim.enable
+            || !ru.fluxvisuals.module.impl.visuals.SwingAnimation.isCustomAnimationActive()) return;
+      float swingProgress = player.getHandSwingProgress(tickProgress);
+      if (swingProgress <= 0.0F) return;
+      float equipProgress = 1.0F - MathHelper.lerp(
+            tickProgress, this.lastEquipProgressMainHand, this.equipProgressMainHand);
+      matrices.push();
+      ru.fluxvisuals.module.impl.visuals.SwingAnimation.applyFirstPersonPose(
+            matrices, Hand.MAIN_HAND, swingProgress, equipProgress);
+      this.fluxvisuals$customPoseApplied = true;
+   }
+
+   @Inject(
+      method = "renderItem(FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;Lnet/minecraft/client/network/ClientPlayerEntity;I)V",
+      at = {@At("RETURN")}
+   )
+   private void fluxvisuals$restoreSwingAfterAvatar(
+      float tickProgress, MatrixStack matrices, OrderedRenderCommandQueue queue,
+      ClientPlayerEntity player, int light, CallbackInfo ci
+   ) {
+      if (this.fluxvisuals$customPoseApplied && !this.fluxvisuals$customPosePopped) {
+         matrices.pop();
+         this.fluxvisuals$customPosePopped = true;
+      }
+   }
+
+   @Inject(
+      method = "applyEquipOffset",
+      at = {@At("HEAD")},
+      cancellable = true
+   )
+   private void fluxvisuals$cancelEquipOffset(MatrixStack matrices, Arm arm, float equipProgress, CallbackInfo ci) {
+      if (this.fluxvisuals$customPoseApplied && !this.fluxvisuals$customPosePopped
+            && this.fluxvisuals$currentHand == Hand.MAIN_HAND) {
+         ci.cancel();
+      }
    }
 
    /**
