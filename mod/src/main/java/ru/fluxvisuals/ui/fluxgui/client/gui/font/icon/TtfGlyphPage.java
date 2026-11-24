@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.AbstractTexture;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.texture.NativeImage.Format;
@@ -32,7 +31,6 @@ public final class TtfGlyphPage {
     private final int pixelPadding;
     public int width;
     public int height;
-    private BufferedImage sourceImage;
     private boolean generated = false;
 
     public TtfGlyphPage(char from, char to, Font font, Identifier identifier, int padding) {
@@ -44,30 +42,11 @@ public final class TtfGlyphPage {
     }
 
     public TtfGlyph getGlyph(char c) {
-        this.ensureTexture();
-        return this.glyphs.get(c);
-    }
-
-    /**
-     * A resource reload or a texture-manager reset can drop a dynamically registered
-     * glyph atlas. Keep the source image so the page can restore its texture on demand.
-     */
-    public void ensureTexture() {
         if (!this.generated) {
             this.generate();
-            return;
         }
-        if (this.sourceImage == null) {
-            return;
-        }
-        if (RenderSystem.isOnRenderThread()) {
-            AbstractTexture registered = MinecraftClient.getInstance().getTextureManager().getTexture(this.bindToTexture);
-            // getTexture() never returns null: an unregistered id creates a ResourceTexture
-            // that cannot load our generated atlas. Only our NativeImageBackedTexture is valid.
-            if (!(registered instanceof NativeImageBackedTexture)) {
-                registerBufferedImageTexture(this.bindToTexture, this.sourceImage);
-            }
-        }
+
+        return this.glyphs.get(c);
     }
 
     public boolean contains(char c) {
@@ -157,7 +136,6 @@ public final class TtfGlyphPage {
                 }
 
                 g2d.dispose();
-                this.sourceImage = bufferedImage;
                 registerBufferedImageTexture(this.bindToTexture, bufferedImage);
             } catch (Throwable var25) {
                 FluxVisuals.LOGGER.warn("TtfGlyphPage: failed to generate glyphs: {}", var25.getMessage());
