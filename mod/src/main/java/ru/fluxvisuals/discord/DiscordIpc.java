@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * была под патченную версию — поля не совпадали и кнопка не доходила до Discord.
  */
 public final class DiscordIpc {
-   public static final String APP_ID = "1533500628494712952";
+   public static final String APP_ID = "1574475160218763274";
    public static final String DISCORD_SERVER_URL = "https://discord.gg/HScqNfYcca";
 
    private static final int OP_HANDSHAKE = 0;
