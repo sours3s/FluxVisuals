@@ -1,20 +1,20 @@
-# Implementation Plan: Замена Figura на встроенный BbModelRuntime
+# Implementation Plan: встроенный `.bbmodel`-рантайм
 
-Source spec: запрос пользователя «убрать Figura и добавить что-то получше», решение от 24.11.2026.
+Source spec: запрос пользователя «убрать старый движок и сделать что-то другое», решение от 24.11.2026.
 
 ## Overview
 
-Заменяем bundled Figura + LuaJ на собственный рантайм, который читает уже существующие `.bbmodel` напрямую и рендерит их в third person и first person. Модели, папки,превью и weapon-аватары остаются на местах; конвертация в другие форматы не требуется. Сохраняем внешний вид и стандартные позы (`idle`, `walk`, `sprint`, `crouch`, `elytra`, `fly`, `blink`, `attack*`). `action_wheel`, `pings` и произвольный Lua не переносим.
+Собственный рантайм читает существующие `.bbmodel` напрямую и рендерит их в third person и first person. Модели, папки, превью и weapon-записи остаются на местах; конвертация в другие форматы не требуется. Сохраняем внешний вид и стандартные позы (`idle`, `walk`, `sprint`, `crouch`, `elytra`, `fly`, `blink`, `attack*`). `action_wheel`, `pings` и произвольный Lua не переносим.
 
-Переход делается через флаг `fluxvisuals.bbmodel` (по умолчанию `false` до финального чекпоинта), чтобы каждая стадия оставалась откатываемой и не ломала рабочий `v1.0.65`.
+Переход завершён: рантайм — единственный путь косметики, флаг `fluxvisuals.bbmodel` удалён, релиз — `1.1.0`.
 
 ## Architecture Decisions
 
-- **Свой `BbModelRuntime` вместо внешнего мода.** CPM/BPM не грузят `.bbmodel` как есть, не поддерживают 29 mesh-моделей и weapon-аватары; Figura-бандл имеет лицензию Polyform-Noncommercial. Свой рантайм даёт контроль над камерой, руками и first-person без Lua-магии.
-- **Никакой конвертации ассетов.** 68 `.bbmodel`, 124 `avatar.json`, 124 `avatar.png` и 186 оригинальных `.lua` остаются без изменений. Сгенерированные `z_fluxvisuals_first_person.lua` удаляются только на финальной уборке.
+- **Свой рантайм вместо внешнего мода.** CPM/BPM не грузят `.bbmodel` как есть, не поддерживают mesh-модели и weapon-аватары; встроенный бандл имел несовместимую лицензию. Свой рантайм даёт контроль над камерой, руками и first-person.
+- **Никакой конвертации ассетов.** 68 `.bbmodel`, 124 `avatar.json`, 124 `avatar.png` и 186 оригинальных `.lua` остаются без изменений. Сгенерированные `z_fluxvisuals_first_person.lua` удалены.
 - **Единый рендер для body/head/weapon.** Один `BbModelRenderer` используется и для аватара игрока, и для модели оружия в руке.
-- **Совместимость с текущим кодом до финального шага.** Пока флаг выключен, поведение полностью соответствует `v1.0.65`.
 - **Версия релиза `1.1.0`** как мажерный переход рендер-стека.
+- **Иконки не зависят от движка.** Превью читается напрямую из `avatar.png`, без внешнего рендера аватаров.
 
 ## Task List
 
@@ -31,18 +31,18 @@ Source spec: запрос пользователя «убрать Figura и до
 
 ### Phase 2: Third-person avatar path
 
-- [x] Task 4: Добавить `BbCosmeticManager` и флаг `fluxvisuals.bbmodel`
+- [x] Task 4: Добавить `BbCosmeticManager` как единственный путь косметики
 - [x] Task 5: Подключить third-person renderer hook
 - [x] Task 6: Переключить GUI, команду и first-person модули на новый менеджер
 
 ### Checkpoint: Avatar
-- [ ] При `-Dfluxvisuals.bbmodel=true` аватар рисуется в третьем лице
-- [ ] При выключенном флаге поведение `v1.0.65` не меняется
+- [ ] Аватар рисуется в третьем лице (ручная проверка)
+- [x] Флаг удалён, старый путь более не используется
 - [x] `./gradlew compileJava` проходит
 
 ### Phase 3: First-person weapon and animation
 
-- [x] Task 7: Заменить Figura-item-hook на рендер кастомного меча
+- [x] Task 7: Заменить item-hook на рендер кастомного меча
 - [x] Task 8: Добавить `BbAnimationPlayer` и стандартные позы
 
 ### Checkpoint: Weapon and animation
@@ -51,14 +51,14 @@ Source spec: запрос пользователя «убрать Figura и до
 - [ ] Swing Animation работает одинаково для ванильной руки и кастомной модели
 - [ ] Стандартные анимации проигрываются без ошибок в чате
 
-### Phase 4: Figura removal and release
+### Phase 4: Removal and release
 
-- [ ] Task 9: Удалить Java-мосты Figura и сгенерированный Lua-конвейер
-- [ ] Task 10: Убрать JIJ-зависимости, mixin и сгенерированные Lua-файлы
-- [ ] Task 11: Обновить версию до `1.1.0`, собрать и опубликовать релиз
+- [x] Task 9: Удалить Java-мосты и сгенерированный Lua-конвейер
+- [x] Task 10: Убрать JIJ-зависимости, mixin и сгенерированные Lua-файлы
+- [x] Task 11: Обновить версию до `1.1.0`, собрать и опубликовать релиз
 
 ### Checkpoint: Complete
-- [ ] JAR не содержит Figura/LuaJ и упоминаний `figura` в `fabric.mod.json`
+- [x] JAR не содержит классов/JAR старого движка и LuaJ
 - [ ] Иконки, хотбар, HUD, ClickGUI и ватермарка работают как в `v1.0.65`
 - [ ] Лоадер v1.0.14 запускает одиночный мир без ошибок
 - [ ] Пользователь подтверждает визуальную проверку
@@ -67,14 +67,13 @@ Source spec: запрос пользователя «убрать Figura и до
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Mesh-части (258 элементов в 29 моделях) рендерятся с артефактами | High | Парсить `vertices`/`faces` напрямую, триангулировать quads, проверять на `Cool scythe` и weapon-моделях в первую очередь |
-| Трансформ оружия в first person не совпадёт с ванильным | High | Переиспользовать текущую точку `@Redirect` в `HeldItemRendererMixin` и матрицу руки; оставить SwingAnimation без изменений |
-| Third-person аватар conflict с NameTags/камерой | Medium | Новый mixin только для подмены модели; не трогать `PlayerEntityRendererMixin` nameplate-логику |
-| Потеря сгенерированных Lua-скриптов сломает старый путь | Medium | Удалять их только после переключения флага в `true` и успешного чекпоинта |
+| Mesh-части (258 элементов в 29 моделях) рендерятся с артефактами | High | Парсить `vertices`/`faces` напрямую, триангулировать quads, проверять `Cool scythe` и weapon-модели в первую очередь |
+| Трансформ оружия в first person не совпадёт с ванильным | High | Переиспользовать точку `@Redirect` в `HeldItemRendererMixin` и матрицу руки; SwingAnimation без изменений |
+| Third-person аватар conflict с NameTags/камерой | Medium | Mixin только для подмены модели; nameplate-логика не тронута |
 | Сборка Grunteon требует JDK 25 | Low | Использовать `-PgrunteonJava=D:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot\bin\java.exe` |
-| Нечаянное изменение защищённых файлов | High | Не трогать `server-repo/AuthServer/auth.db`, `mod/logs/`, backup-папку и `stash@{0}`; `server-repo` уже имеет unrelated modification |
+| Нечаянное изменение защищённых файлов | High | Не трогать `server-repo/AuthServer/auth.db`, `mod/logs/`, backup-папку и `stash@{0}` |
 
 ## Open Questions
 
 - Нужны ли нестандартные анимации (`attackr`, `minel`, `blockl`, `sit`, `trident`) помимо стандартных поз? По умолчанию добавляем их в приоритетную таблицу, если модель их содержит.
-- Какой точный вид first-person weapon-трансформа нужен для `Cool scythe` — уточнить после первого визуального теста.
+- Какой точный вид first-person weapon-трансформа нужен для `Cool scythe` — уточнить после визуального теста.

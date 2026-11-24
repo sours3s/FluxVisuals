@@ -34,7 +34,7 @@ public final class CosmeticsRepository {
    private static final String WEAPON_PREFIX = "weapon-";
    private static final String BUNDLED_ROOT = "/fluxvisuals/cosmetics/";
    private static final String BUNDLED_INDEX = "/fluxvisuals/cosmetics.index";
-   private static final String EXTRACTED_VERSION = "9";
+   private static final String EXTRACTED_VERSION = "10";
    private static final String VERSION_MARKER = ".fluxvisuals-cosmetics-version";
    private static final int MAX_DEPTH = 4;
    private static final List<CosmeticEntry> ENTRIES = new ArrayList<>();
@@ -115,7 +115,6 @@ public final class CosmeticsRepository {
             if (!dir.equals(root)) {
                CosmeticEntry entry = toEntry(root, dir);
 // Weapon folders without a .bbmodel have nothing to render in hand.
-               // загружает такой «аватар», но модели в нём нет — меч не появится.
                if (entry.kind() != CosmeticEntry.Kind.WEAPON || hasModel(dir)) {
                   ENTRIES.add(entry);
                }
@@ -197,8 +196,6 @@ public final class CosmeticsRepository {
       }
       extracted = true;
 
-      // Перераспаковываем по маркеру версии, чтобы обновить hide-скрипт и убрать
-      // autoScripts, оставшиеся от старых сборок.
       Path marker = target.resolve(VERSION_MARKER);
       boolean upToDate = false;
       try {
