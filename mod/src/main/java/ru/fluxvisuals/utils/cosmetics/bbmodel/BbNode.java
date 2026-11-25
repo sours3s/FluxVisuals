@@ -13,7 +13,7 @@ public final class BbNode {
    private final UUID uuid;
    private final Vec3 origin;
    private final Vec3 rotation;
-   private final boolean visible;
+   private boolean visible;
    private final List<BbNode> children;
    private final BbElement element;
 
@@ -51,6 +51,10 @@ public final class BbNode {
 
    public boolean visible() {
       return visible;
+   }
+
+   public void setVisible(boolean visible) {
+      this.visible = visible;
    }
 
    public List<BbNode> children() {

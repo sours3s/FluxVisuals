@@ -16,9 +16,7 @@ import ru.fluxvisuals.module.impl.visuals.HUD.*;
 public final class TooltipRegistrar {
    public static void registerAll() {
       // === Visuals ===
-      registerModule(GlassHand.class, "Рендерит руку от первого лица с эффектом стекла/свечения/контура. Режим \"Призрак\" комбинирует все эффекты.");
-      registerModule(ShaderHand.class, "Шейдерные эффекты для руки: волна, глитч, хроматическая аберрация, контур, пульсация.");
-      registerModule(CameraCustomer.class, "Настройка камеры: зум (FOV), аспект, трепетание, сглаживание, смещение камеры.");
+      registerModule(HandEffects.class, "Эффекты руки: стекло, свечение, контуры (Frame/Outline) и анимации Wave/Glitch/Chromatic/Pulse.");
       registerModule(BlockOutline.class, "Подсвечивает целевой блок контуром, заливкой или обоим вместе. Работает не сквозь стены.");
       registerModule(GlowCubes.class, "Светящиеся кубы вокруг игрока с анимацией появления/исчезновения и эффектом свечения.");
       registerModule(HitEffect.class, "Эффект волны при попадании по сущности. Рисует расширяющееся кольцо в точке попадания.");
@@ -33,8 +31,13 @@ public final class TooltipRegistrar {
       registerModule(ItemPhysics.class, "Физика предметов на земле: вращение, парение, анимация подбора.");
       registerModule(SwingAnimation.class, "Анимация замаха руки: старый стиль, сглаживание, раскачивание, 1.7/1.8/1.9 стили.");
       registerModule(NoRender.class, "Отключает рендер выбранных элементов: туман, небо, облака, партиклы, эндерменов и др.");
-      registerModule(BetterWorld.class, "Улучшенный мир: цвет неба/тумана, яркость, отсутствие погоды, кастомное время.");
-      registerModule(CustomWorld.class, "Полная кастомизация мира: небо, туман, облака, солнце/луна, звезды, погода.");
+      registerModule(CustomWorld.class, "Единые настройки мира: время суток (пресеты и кастомные тики), погода и FullBright.");
+      registerSetting(CustomWorld.class, "Time Mode", "Пресеты времени или Custom для ручной настройки тиков.");
+      registerSetting(CustomWorld.class, "Time Enabled", "Подменять время суток на клиенте.");
+      registerSetting(CustomWorld.class, "Time", "Множитель тиков для режима Custom: 1–40 × 500.");
+      registerSetting(CustomWorld.class, "FullBright", "Постоянное ночное зрение без факелов.");
+      registerSetting(CustomWorld.class, "Weather", "Принудительно задавать погоду.");
+      registerSetting(CustomWorld.class, "WeatherMode", "Clear, Rain или Storm.");
       registerModule(ProjectilePrediction.class, "Предсказание траектории снарядов (стрелы, снежки, яйца, треш).");
       registerModule(ItemESP.class, "ESP для предметов на земле: название, раритет, дистанция, фильтр по ценности.");
       registerModule(NameTags.class, "Ники над игроками: здоровье, броня, дистанция, команда, кастомные префиксы.");
@@ -42,7 +45,6 @@ public final class TooltipRegistrar {
       registerModule(MenuSettingsModule.class, "Настройки главного меню: фон, анимации, кастомный текст, версия.");
       registerModule(Friends.class, "Система друзей: зелёный ESP (не сквозь стены), тэг [F], защита от френдли-файра.");
       registerModule(Cosmetic.class, "Косметика: китайская шляпа/нимб, анимированные крылья, след за игроком.");
-      registerModule(Freecam.class, "Отсоединяет камеру от игрока; движение ограничено — камера не проходит сквозь твёрдые блоки.");
 
       // === Utils ===
       registerModule(DiscordRCP.class, "Discord Rich Presence: показывает сервер, модуль, активность в профиле.");
@@ -53,40 +55,27 @@ public final class TooltipRegistrar {
       registerModule(ChatSounds.class, "Звуки для чата: сообщения, приватные, упоминания, команды.");
 
       // === Settings descriptions ===
-      // GlassHand
-      registerSetting(GlassHand.class, "Mode", "Режим отображения: Стекло (прозрачный куб), Свечение (билиборды), Контур (линии), Призрак (все вместе).");
-      registerSetting(GlassHand.class, "Alpha", "Базовая непрозрачность эффекта (0-255).");
-      registerSetting(GlassHand.class, "Intensity", "Интенсивность эффекта (множитель альфы).");
-      registerSetting(GlassHand.class, "Pulse Speed", "Скорость пульсации размера/альфы.");
-      registerSetting(GlassHand.class, "Glow Radius", "Радиус глоу-эффекта (для режима Свечение/Призрак).");
-
-      // ShaderHand
-      registerSetting(ShaderHand.class, "Mode", "Тип шейдера: Wave (волна), Glitch (глитч), Chromatic (хром. аберрация), Outline (контур), Pulse (пульсация).");
-      registerSetting(ShaderHand.class, "Enabled", "Включить шейдерный эффект.");
-      registerSetting(ShaderHand.class, "Intensity", "Сила эффекта (1.0 = нормально).");
-      registerSetting(ShaderHand.class, "Speed", "Скорость анимации.");
-      registerSetting(ShaderHand.class, "Scale", "Масштаб эффекта.");
-
-      // CameraCustomer
-      registerSetting(CameraCustomer.class, "Zoom Mode", "HOLD — зум зажат, TOGGLE — переключение.");
-      registerSetting(CameraCustomer.class, "Zoom Key", "Клавиша для зума.");
-      registerSetting(CameraCustomer.class, "Zoom Amount", "Во сколько раз уменьшается FOV (зум).");
-      registerSetting(CameraCustomer.class, "Zoom Scroll", "Скорость изменения зума колесом мыши.");
-      registerSetting(CameraCustomer.class, "Zoom Smooth", "Плавная интерполяция зума.");
-      registerSetting(CameraCustomer.class, "Zoom Smooth Speed", "Скорость сглаживания зума (мс).");
-      registerSetting(CameraCustomer.class, "Zoom Cinematic", "Включает cinematic camera (сглаженное движение).");
-      registerSetting(CameraCustomer.class, "Zoom Hands", "Прятать руки при зуме.");
-      registerSetting(CameraCustomer.class, "FOV Enabled", "Включить кастомный FOV отдельно от зума.");
-      registerSetting(CameraCustomer.class, "FOV Value", "Значение FOV в градусах (30-130).");
-      registerSetting(CameraCustomer.class, "FOV Smooth", "Плавное изменение FOV.");
-      registerSetting(CameraCustomer.class, "Camera Distance", "Отодвинуть камеру назад (third-person-like).");
-      registerSetting(CameraCustomer.class, "Camera Shake", "Трепетание камеры при зуме.");
-      registerSetting(CameraCustomer.class, "Shake Intensity", "Сила трепетания.");
+      // HandEffects
+      registerSetting(HandEffects.class, "Enabled", "Включить эффект руки.");
+      registerSetting(HandEffects.class, "Mode", "Glass — стеклянный куб, Glow — свечение, Frame — контур куба, Ghost — все три вместе; Wave/Glitch/Chromatic/Outline/Pulse — анимированные эффекты.");
+      registerSetting(HandEffects.class, "Intensity", "Общая сила цвета и альфы эффекта.");
+      registerSetting(HandEffects.class, "Alpha", "Базовая непрозрачность для Glass/Glow/Frame/Ghost (0-255).");
+      registerSetting(HandEffects.class, "Glow Radius", "Радиус свечения в режиме Glow/Ghost.");
+      registerSetting(HandEffects.class, "Speed", "Скорость пульсации и анимации.");
+      registerSetting(HandEffects.class, "Scale", "Размер анимированного эффекта.");
 
       // BlockOutline
-      registerSetting(BlockOutline.class, "Mode", "Overlay (заливка), Outline (контур), Both (оба вместе).");
-      registerSetting(BlockOutline.class, "Fill", "Рисовать заливку внутри контура.");
+      registerSetting(BlockOutline.class, "Outline", "Рисовать сглаженный контур целевого блока.");
       registerSetting(BlockOutline.class, "Line Width", "Толщина линий контура.");
+      registerSetting(BlockOutline.class, "Fill", "Заливать грани блока.");
+      registerSetting(BlockOutline.class, "Fill Type", "Normal — однотонная заливка, Shader — процедурный эффект.");
+      registerSetting(BlockOutline.class, "Fill Alpha", "Прозрачность однотонной заливки.");
+      registerSetting(BlockOutline.class, "Shader", "Эффект заливки: Nebula, Stars, Web или Plasma.");
+      registerSetting(BlockOutline.class, "Shader Speed", "Скорость анимации эффекта.");
+      registerSetting(BlockOutline.class, "Shader Alpha", "Прозрачность процедурной заливки.");
+      registerSetting(BlockOutline.class, "Animation", "Дополнительная анимация: Pulse или Wave.");
+      registerSetting(BlockOutline.class, "Client Color", "Использовать цвет клиента.");
+      registerSetting(BlockOutline.class, "Custom Color", "Свой цвет, если Client Color выключен.");
 
       // GlowCubes
       registerSetting(GlowCubes.class, "Block Count", "Количество кубов вокруг игрока.");
@@ -133,11 +122,6 @@ public final class TooltipRegistrar {
       registerSetting(Cosmetic.class, "Wing Speed", "Скорость взмаха крыльев.");
       registerSetting(Cosmetic.class, "Trail Self/Friends", "Кому показывать след.");
       registerSetting(Cosmetic.class, "Trail Opacity", "Прозрачность следа.");
-
-      // Freecam
-      registerSetting(Freecam.class, "Speed", "Скорость полёта камеры.");
-      registerSetting(Freecam.class, "Smooth", "Сглаживание движения камеры.");
-      registerSetting(Freecam.class, "Render Player", "Рендерить игрока в фрикаме.");
 
       // Hud (HUD elements settings)
       registerSetting(Hud.class, "Style", "Dark (тёмный), Glass (стекло с блуром).");

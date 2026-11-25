@@ -20,6 +20,7 @@ import ru.fluxvisuals.utils.cosmetics.bbmodel.BbAnimationPlayer;
 import ru.fluxvisuals.utils.cosmetics.bbmodel.BbModel;
 import ru.fluxvisuals.utils.cosmetics.bbmodel.BbModelLoader;
 import ru.fluxvisuals.utils.cosmetics.bbmodel.BbModelRenderer;
+import ru.fluxvisuals.utils.cosmetics.bbmodel.BbNode;
 import ru.fluxvisuals.utils.cosmetics.bbmodel.BbPoseState;
 import ru.fluxvisuals.utils.cosmetics.bbmodel.BbTextureCache;
 
@@ -87,6 +88,16 @@ public final class BbCosmeticManager {
       }
       try {
          BbModel loaded = LOADER.load(file);
+         if (entry.kind() == CosmeticEntry.Kind.WEAPON) {
+            // Weapon assets are only drawn while equipped; editor hidden flags
+            // must not hide the whole held model.
+            for (BbNode node : loaded.nodes()) {
+               node.setVisible(true);
+               if (node.element() != null) {
+                  node.element().setVisible(true);
+               }
+            }
+         }
          TEXTURES.clear();
          model = loaded;
          modelKey = entry.id();
@@ -121,7 +132,13 @@ public final class BbCosmeticManager {
          return;
       }
       tickAnimation();
+      // Blockbench models are Y-up with their feet at zero. The entity model
+      // matrix passed to submitModel is Y-down and shifted by -1.501 blocks.
+      matrices.push();
+      matrices.translate(0.0F, 1.501F, 0.0F);
+      matrices.scale(1.0F, -1.0F, 1.0F);
       renderer.render(model, modelKey, matrices, queue, light, overlay);
+      matrices.pop();
    }
 
    /** Renders the equipped weapon model in the hand, using the vanilla item transform. */

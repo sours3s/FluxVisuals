@@ -9,7 +9,6 @@ import ru.fluxvisuals.module.api.Module;
 import ru.fluxvisuals.module.api.setting.Setting;
 import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
-import ru.fluxvisuals.util.keyboard.ScaledResolution;
 
 @IModule(
    name = "Aspect Ratio",
@@ -28,26 +27,43 @@ public class AspectRation extends Module {
       this.addSettings(new Setting[]{aspect, customAspect});
    }
 
+   /**
+    * Возвращает разницу между желаемым и текущим аспектом. Миксин прибавляет её
+    * к framebuffer-аспекту при построении проекционной матрицы.
+    */
    public static float getAspectRation() {
-      ScaledResolution sr = new ScaledResolution(mc);
-      if (!FluxVisualsClient.get.manager.getModule(AspectRation.class).enable) {
+      float target = getTargetAspect();
+      if (target <= 0.0F || mc == null) {
          return 0.0F;
-      } else {
-         float aspect1 = (float)sr.getWidth() / sr.getHeight();
-         String var3 = aspect.get();
-
-         float newAspect = switch (var3) {
-            case "16:9" -> 1.7777778F;
-            case "4:3" -> 1.3333334F;
-            case "1:1" -> 1.0F;
-            case "16:10" -> 1.6F;
-            case "21:9" -> 2.3333333F;
-            case "32:9" -> 3.5555556F;
-            case "5:4" -> 1.25F;
-            case "2:1" -> 2.0F;
-            default -> customAspect.get();
-         };
-         return newAspect - aspect1;
       }
+      var window = mc.getWindow();
+      if (window == null || window.getFramebufferHeight() <= 0) {
+         return 0.0F;
+      }
+      float current = (float) window.getFramebufferWidth() / (float) window.getFramebufferHeight();
+      return target - current;
+   }
+
+   /** Желаемый аспект или 0, если модуль выключен. */
+   public static float getTargetAspect() {
+      if (mc == null || FluxVisualsClient.get == null || FluxVisualsClient.get.manager == null) {
+         return 0.0F;
+      }
+      Module module = FluxVisualsClient.get.manager.getModule(AspectRation.class);
+      if (module == null || !module.enable) {
+         return 0.0F;
+      }
+      float target = switch (aspect.get()) {
+         case "16:9" -> 16.0F / 9.0F;
+         case "4:3" -> 4.0F / 3.0F;
+         case "1:1" -> 1.0F;
+         case "16:10" -> 16.0F / 10.0F;
+         case "21:9" -> 21.0F / 9.0F;
+         case "32:9" -> 32.0F / 9.0F;
+         case "5:4" -> 5.0F / 4.0F;
+         case "2:1" -> 2.0F;
+         default -> customAspect.get();
+      };
+      return Float.isFinite(target) && target > 0.0F ? target : 0.0F;
    }
 }

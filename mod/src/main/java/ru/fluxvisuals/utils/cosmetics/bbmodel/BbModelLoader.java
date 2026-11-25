@@ -288,9 +288,29 @@ public final class BbModelLoader {
          return null;
       }
       JsonArray points = object.getAsJsonArray("data_points");
-      Vec3 value = points != null && points.size() > 0 ? vec3(points.get(0), Vec3.ZERO) : Vec3.ZERO;
+      JsonElement point = points != null && points.size() > 0 ? points.get(0) : null;
+      Vec3 fallback = "scale".equals(channel) ? Vec3.ONE : Vec3.ZERO;
+      Vec3 value = keyframeVector(point, fallback);
       return new Keyframe(channel, number(object.get("time"), 0.0F), value,
             string(object.get("interpolation"), "linear").toLowerCase(Locale.ROOT));
+   }
+
+   /** Blockbench stores keyframe points as objects with x/y/z members, not arrays. */
+   private static Vec3 keyframeVector(JsonElement element, Vec3 fallback) {
+      if (element == null) {
+         return fallback;
+      }
+      if (element.isJsonArray()) {
+         return vec3(element, fallback);
+      }
+      if (!element.isJsonObject()) {
+         return fallback;
+      }
+      JsonObject object = element.getAsJsonObject();
+      return Vec3.of(
+            number(object.get("x"), fallback.x()),
+            number(object.get("y"), fallback.y()),
+            number(object.get("z"), fallback.z()));
    }
 
    private static BbNode parseOutlinerItem(JsonElement element, Map<UUID, BbElement> elements,

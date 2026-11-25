@@ -12,15 +12,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.fluxvisuals.commands.CommandManager;
 import ru.fluxvisuals.module.impl.utils.LagDetector;
 import ru.fluxvisuals.module.impl.utils.SoundFX;
-import ru.fluxvisuals.module.impl.visuals.BetterWorld;
+import ru.fluxvisuals.module.impl.visuals.CustomWorld;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayNetworkHandler.class)
 public abstract class ClientPlayNetworkHandlerMixin {
    @Inject(method = "onWorldTimeUpdate", at = @At("HEAD"), cancellable = true)
    private void onWorldTimeUpdate(WorldTimeUpdateS2CPacket packet, CallbackInfo ci) {
-      BetterWorld betterWorld = BetterWorld.getInstance();
-      if (betterWorld != null && betterWorld.enable && betterWorld.changeTime.get()) {
+      if (CustomWorld.overridesServerTime()) {
          ci.cancel();
       }
       LagDetector.onWorldTimePacket(packet);

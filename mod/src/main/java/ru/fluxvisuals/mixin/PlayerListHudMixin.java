@@ -11,38 +11,55 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ru.fluxvisuals.util.render.animation.UiAnimations;
+import ru.fluxvisuals.module.impl.visuals.BetterMinecraft;
 
 /**
- * Плавное «въезжание» списка игроков (TAB) сверху: пока открыт список,
- * его матрица сдвигается по Y по ease-out-кривой.
+ * Масштабная анимация списка игроков: при открытии он «вырастает» на месте,
+ * при закрытии — сжимается. Управляется модулем Better Minecraft.
  */
 @Environment(EnvType.CLIENT)
 @Mixin(PlayerListHud.class)
 public abstract class PlayerListHudMixin {
    @Unique
-   private static boolean fluxvisuals$translated = false;
+   private boolean fluxvisuals$scaled;
 
    @Inject(method = "setVisible(Z)V", at = @At("HEAD"))
-   private void fluxvisuals$trackTabVisibility(boolean visible, CallbackInfo ci) {
-      UiAnimations.onTabVisible(visible);
+   private void fluxvisuals$trackVisibility(boolean visible, CallbackInfo ci) {
+      BetterMinecraft.onTabVisibility(visible);
    }
 
-   @Inject(method = "render(Lnet/minecraft/client/gui/DrawContext;ILnet/minecraft/scoreboard/Scoreboard;Lnet/minecraft/scoreboard/ScoreboardObjective;)V", at = @At("HEAD"))
-   private void fluxvisuals$tabSlidePush(DrawContext context, int x, Scoreboard scoreboard, ScoreboardObjective objective, CallbackInfo ci) {
-      float offset = UiAnimations.tabSlideOffset(60.0F);
-      if (offset != 0.0F) {
-         context.getMatrices().pushMatrix();
-         context.getMatrices().translate(0.0F, offset);
-         fluxvisuals$translated = true;
+   @Inject(
+      method = "render(Lnet/minecraft/client/gui/DrawContext;ILnet/minecraft/scoreboard/Scoreboard;Lnet/minecraft/scoreboard/ScoreboardObjective;)V",
+      at = @At("HEAD")
+   )
+   private void fluxvisuals$tabScaleHead(
+      DrawContext context, int windowWidth, Scoreboard scoreboard, ScoreboardObjective objective, CallbackInfo ci
+   ) {
+      this.fluxvisuals$scaled = false;
+      if (!BetterMinecraft.tabAnimationEnabled()) {
+         return;
       }
+      float scale = BetterMinecraft.tabScale();
+      if (scale >= 0.999F && scale <= 1.001F) {
+         return;
+      }
+      context.getMatrices().pushMatrix();
+      context.getMatrices().translate(windowWidth / 2.0F, 10.0F);
+      context.getMatrices().scale(scale, scale);
+      context.getMatrices().translate(-windowWidth / 2.0F, -10.0F);
+      this.fluxvisuals$scaled = true;
    }
 
-   @Inject(method = "render(Lnet/minecraft/client/gui/DrawContext;ILnet/minecraft/scoreboard/Scoreboard;Lnet/minecraft/scoreboard/ScoreboardObjective;)V", at = @At("RETURN"))
-   private void fluxvisuals$tabSlidePop(DrawContext context, int x, Scoreboard scoreboard, ScoreboardObjective objective, CallbackInfo ci) {
-      if (fluxvisuals$translated) {
+   @Inject(
+      method = "render(Lnet/minecraft/client/gui/DrawContext;ILnet/minecraft/scoreboard/Scoreboard;Lnet/minecraft/scoreboard/ScoreboardObjective;)V",
+      at = @At("RETURN")
+   )
+   private void fluxvisuals$tabScaleTail(
+      DrawContext context, int windowWidth, Scoreboard scoreboard, ScoreboardObjective objective, CallbackInfo ci
+   ) {
+      if (this.fluxvisuals$scaled) {
          context.getMatrices().popMatrix();
-         fluxvisuals$translated = false;
+         this.fluxvisuals$scaled = false;
       }
    }
 }

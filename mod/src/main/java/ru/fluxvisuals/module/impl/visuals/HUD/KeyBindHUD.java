@@ -233,8 +233,7 @@ public class KeyBindHUD {
       if (name.contains("eat") || name.contains("food")) return Items.COOKED_BEEF;
       if (name.contains("inv")) return Items.CHEST;
       if (name.contains("blink")) return Items.ENDER_EYE;
-      if (name.contains("freecam")) return Items.COMPASS;
-      if (name.contains("xray") || name.contains("esp")) return Items.GLOWSTONE;
+            if (name.contains("xray") || name.contains("esp")) return Items.GLOWSTONE;
       if (name.contains("tracers")) return Items.REDSTONE;
       // Раньше здесь был null, из-за чего каждый кадр падал EventManager-хендлер
       // с NPE в getDefaultStack(), когда включался модуль без известного икон-мэппинга.

@@ -43,8 +43,8 @@ public class ShaderFog extends Module {
 
    public ShaderFog() {
       // Обращение к одному статическому полю инициализирует весь класс —
-      // так все SKY-пайплайны регистрируются в RenderPipelines при старте.
-      ClientPipelines.SKY_CAUSTIC_PIPELINE.toString();
+      // так все офскрин SKY-пайплайны регистрируются в RenderPipelines при старте.
+      ClientPipelines.SKY_CAUSTIC_OFFSCREEN_PIPELINE.toString();
       this.addSettings(new Setting[]{mode, speed, scale, intensity, alpha, color});
    }
 
@@ -78,8 +78,8 @@ public class ShaderFog extends Module {
 
       GpuTextureView screenTexture = mc.getFramebuffer().getColorAttachmentView();
       if (screenTexture != null) {
-         pipeline.render(screenTexture, m, (int) fw, (int) fh, yawRad, pitchRad, c,
-               time, alpha.get(), speed.get(), scale.get(), intensity.get(), fov);
+         pipeline.render(screenTexture, mc.getFramebuffer().getDepthAttachmentView(), m, (int) fw, (int) fh,
+               yawRad, pitchRad, c, time, alpha.get(), speed.get(), scale.get(), intensity.get(), fov);
       }
    }
 }

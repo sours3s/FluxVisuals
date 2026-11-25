@@ -16,7 +16,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.module.impl.visuals.BetterMinecraft;
 
 import java.util.ArrayList;
@@ -37,15 +36,9 @@ public abstract class BetterMinecraftTextFieldMixin {
    @Unique private String fluxvisuals$prevText = "";
    @Unique private final Map<Integer, Long> fluxvisuals$charTimestamps = new HashMap<>();
 
-   private static BetterMinecraft bmc() {
-      if (FluxVisualsClient.get == null || FluxVisualsClient.get.manager == null) return null;
-      return FluxVisualsClient.get.manager.get(BetterMinecraft.class);
-   }
-
    @Inject(method = "renderWidget", at = @At("HEAD"))
    private void fluxvisuals$onRenderHead(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-      BetterMinecraft mod = bmc();
-      if (mod == null || !mod.enable || !BetterMinecraft.chatCharAnim.get()) return;
+      if (!BetterMinecraft.chatAnimationsEnabled() || !BetterMinecraft.chatCharAnim.get()) return;
 
       String currentText = this.getText();
       if (!currentText.equals(fluxvisuals$prevText)) {
@@ -67,8 +60,7 @@ public abstract class BetterMinecraftTextFieldMixin {
       )
    )
    private void fluxvisuals$wrapDrawText(DrawContext context, TextRenderer textRenderer, OrderedText orderedText, int x, int y, int color, boolean shadow, Operation<Void> original) {
-      BetterMinecraft mod = bmc();
-      if (mod == null || !mod.enable || !BetterMinecraft.chatCharAnim.get()) {
+      if (!BetterMinecraft.chatAnimationsEnabled() || !BetterMinecraft.chatCharAnim.get()) {
          original.call(context, textRenderer, orderedText, x, y, color, shadow);
          return;
       }

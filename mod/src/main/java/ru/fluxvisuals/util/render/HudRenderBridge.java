@@ -9,7 +9,6 @@ import org.lwjgl.opengl.GL11;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.impl.EventScreen;
-import ru.fluxvisuals.event.render.EventRender2D;
 import ru.fluxvisuals.ui.draggable.DraggableManager;
 import ru.fluxvisuals.ui.fluxgui.util.render.FluxGlassPipeline;
 import ru.fluxvisuals.util.render.animation.AnimationSystem;
@@ -76,8 +75,6 @@ public final class HudRenderBridge {
                renderer.begin(width, height);
                rendererBegun = true;
                EventManager.call(new EventScreen(client, renderer, FontRegistry.INTER_MEDIUM, width, height, context));
-               // 2D post-render event (BetterMinecraft hotbar anim)
-               EventManager.call(new EventRender2D(context));
             } finally {
                if (rendererBegun) {
                   renderer.end();

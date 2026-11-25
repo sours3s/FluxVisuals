@@ -7,7 +7,6 @@ import java.util.Map;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import ru.fluxvisuals.module.impl.visuals.AspectRation;
-import ru.fluxvisuals.module.impl.visuals.CameraCustomer;
 import ru.fluxvisuals.module.impl.visuals.CustomWorld;
 import ru.fluxvisuals.module.impl.visuals.ESP;
 import ru.fluxvisuals.module.impl.visuals.Gamma;
@@ -24,14 +23,11 @@ import ru.fluxvisuals.module.impl.visuals.ProjectilePrediction;
 import ru.fluxvisuals.module.impl.visuals.SkinManager;
 import ru.fluxvisuals.module.impl.visuals.MenuSettingsModule;
 import ru.fluxvisuals.module.impl.visuals.SmoothCamera;
-import ru.fluxvisuals.module.impl.visuals.BetterWorld;
 import ru.fluxvisuals.module.impl.visuals.BlockOutline;
 import ru.fluxvisuals.module.impl.visuals.HitEffect;
 import ru.fluxvisuals.module.impl.visuals.ItemPhysics;
 import ru.fluxvisuals.module.impl.visuals.KillEffect;
-import ru.fluxvisuals.module.impl.visuals.ShaderHand;
-import ru.fluxvisuals.module.impl.visuals.GlassHand;
-import ru.fluxvisuals.module.impl.visuals.Freecam;
+import ru.fluxvisuals.module.impl.visuals.HandEffects;
 import ru.fluxvisuals.module.impl.visuals.Friends;
 import ru.fluxvisuals.module.impl.utils.LagDetector;
 import ru.fluxvisuals.module.impl.utils.SoundFX;
@@ -53,7 +49,6 @@ public class Manager {
       // Только легитные визуальные модули. Никаких combat/movement/player хаков.
       this.module.add(new Hud());
       this.module.add(new AspectRation());
-      this.module.add(new CameraCustomer());
       this.module.add(new CustomWorld());
       this.module.add(new ESP());
       this.module.add(new Gamma());
@@ -70,14 +65,11 @@ public class Manager {
       this.module.add(new SkinManager());
       this.module.add(new MenuSettingsModule());
       this.module.add(new SmoothCamera());
-      this.module.add(new BetterWorld());
       this.module.add(new BlockOutline());
       this.module.add(new HitEffect());
       this.module.add(new ItemPhysics());
       this.module.add(new KillEffect());
-      this.module.add(new ShaderHand());
-      this.module.add(new GlassHand());
-      this.module.add(new Freecam());
+      this.module.add(new HandEffects());
       this.module.add(new Friends());
       this.module.add(new ClientSound());
       this.module.add(new HitSound());
@@ -88,16 +80,13 @@ public class Manager {
 
       // === Новые модули (Etaps 2-4) ===
       this.module.add(new ru.fluxvisuals.module.impl.visuals.MaceHelper());
-      this.module.add(new ru.fluxvisuals.module.impl.visuals.ReachCircle());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.BetterPing());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.Zoom());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.Hitboxes());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.DynamicLights());
       this.module.add(new ru.fluxvisuals.module.impl.visuals.EntityCulling());
-      this.module.add(new ru.fluxvisuals.module.impl.visuals.CameraOverhaul());
 
       this.module.add(new ru.fluxvisuals.module.impl.visuals.MotionBlur());
-      this.module.add(new ru.fluxvisuals.module.impl.visuals.FirstPersonModel());
       this.module.add(new ru.fluxvisuals.module.impl.utils.HitDelayFix());
       this.module.add(new ru.fluxvisuals.module.impl.utils.AppleSkin());
       this.module.add(new ru.fluxvisuals.module.impl.utils.BetterF3());

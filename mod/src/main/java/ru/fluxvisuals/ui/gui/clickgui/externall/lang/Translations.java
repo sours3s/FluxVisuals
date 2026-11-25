@@ -86,7 +86,6 @@ final class Translations {
         m.put("Крафт Божьей ауры, простая закупка и простая продажа по биндам.", "God Aura crafting, simple buying and selling with keybinds.");
         m.put("Запрещает серверу свапать предметы", "Prevents the server from swapping your items");
         m.put("Отображает ники, мобов и предметы через стены", "Shows names, mobs, and items through walls");
-        m.put("Камера свободного палета", "Freecam");
         m.put("Китайская шляпа", "China Hat");
         m.put("Кастомный плащ клиента", "Custom client cape");
         m.put("Для себя", "For self");

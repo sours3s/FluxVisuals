@@ -23,7 +23,7 @@ public final class BbElement {
    private final Vec3 to;
    private final Vec3 origin;
    private final Vec3 rotation;
-   private final boolean visible;
+   private boolean visible;
    private final Map<String, Vec3> vertices;
    private final List<Face> faces;
 
@@ -66,6 +66,10 @@ public final class BbElement {
 
    public boolean visible() {
       return visible;
+   }
+
+   public void setVisible(boolean visible) {
+      this.visible = visible;
    }
 
    public Map<String, Vec3> vertices() {
