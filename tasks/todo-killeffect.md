@@ -53,15 +53,15 @@ Plan: `tasks/plan-killeffect.md`
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectScanRenderer.java`, `KillEffectOverlayRenderer.java`, `KillEffect.java`.
 
-- [ ] Task 8: Зум и тряска камеры
+- [x] Task 8: Зум и тряска камеры
   - Acceptance: временный FOV/сдвиг/угол; возврат состояния; без эффекта ванильное поведение.
   - Verification: `./gradlew.bat compileJava --no-daemon`; ручная проверка.
   - Files: `KillEffectCameraState.java`, `CameraMixin.java`, `GameRendererMixin.java`, `KillEffect.java`.
 
 ### Checkpoint: Screen and camera
 
-- [ ] HUD/ClickGUI не сломаны.
-- [ ] Камера возвращается в исходное состояние.
+- [x] HUD/ClickGUI не сломаны.
+- [x] Камера возвращается в исходное состояние.
 
 ## Phase 4: Finish
 

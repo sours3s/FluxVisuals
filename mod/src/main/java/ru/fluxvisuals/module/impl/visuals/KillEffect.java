@@ -32,6 +32,7 @@ import ru.fluxvisuals.module.api.setting.impl.HueSetting;
 import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectBeamRenderer;
+import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectCameraState;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectDarknessRenderer;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectOverlayRenderer;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectDeathMemoryTracker;
@@ -149,6 +150,7 @@ public class KillEffect extends Module {
       KillEffectSoulRenderer.tick();
       KillEffectDarknessRenderer.tick();
       KillEffectOverlayRenderer.tick();
+      KillEffectCameraState.tick();
       long now = System.currentTimeMillis();
       this.hiddenEntities.values().removeIf(expiresAt -> expiresAt <= now);
    }
@@ -285,8 +287,10 @@ public class KillEffect extends Module {
             this.particleSystem.spawnShards(center, Math.min(120, count), force,
                   this.shardSize.get(), life, color);
          }
-         case "Scan" -> KillEffectOverlayRenderer.spawn(color, this.duration.get(),
-               this.desaturate.get(), true);
+         case "Scan" -> {
+            KillEffectOverlayRenderer.spawn(color, this.duration.get(), this.desaturate.get(), true);
+            KillEffectCameraState.spawn(this.duration.get(), this.zoom.get(), this.shake.get());
+         }
          default -> {
             // Все кастомные режимы уже обработаны.
          }
@@ -354,6 +358,7 @@ public class KillEffect extends Module {
       KillEffectSoulRenderer.clear();
       KillEffectDarknessRenderer.clear();
       KillEffectOverlayRenderer.clear();
+      KillEffectCameraState.clear();
       this.hiddenEntities.clear();
       this.lastEffectId = -1;
       this.lastEffectAt = 0L;

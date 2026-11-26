@@ -1,5 +1,6 @@
 package ru.fluxvisuals.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
@@ -16,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.fluxvisuals.module.impl.visuals.AspectRation;
 import ru.fluxvisuals.module.impl.visuals.CustomFov;
+import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectCameraState;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
@@ -43,6 +45,13 @@ public abstract class GameRendererMixin {
       if (!Float.isNaN(custom)) {
          cir.setReturnValue(custom);
       }
+   }
+
+   /** Кратковременный зум Kill Effect поверх любого другого FOV. */
+   @ModifyReturnValue(method = "getFov(Lnet/minecraft/client/render/Camera;FZ)F", at = @At("RETURN"))
+   private float fluxvisuals$killEffectZoom(float original) {
+      float offset = KillEffectCameraState.fovOffset();
+      return offset == 0.0F ? original : original + offset;
    }
 
    /**

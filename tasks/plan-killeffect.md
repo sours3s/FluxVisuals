@@ -68,15 +68,15 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectScanRenderer.java`, новый `KillEffectOverlayRenderer.java`, `KillEffect.java`.
 
-- [ ] Task 8: Зум и тряска камеры
+- [x] Task 8: Зум и тряска камеры
   - Acceptance: при включённых настройках эффект кратковременно меняет FOV и/или позицию камеры/угол; после окончания значения возвращаются; без эффекта поведение ванильное.
   - Verification: `./gradlew.bat compileJava --no-daemon`; ручная проверка, что камера не «залипает».
   - Files: `KillEffectCameraState.java`, `CameraMixin.java`, `GameRendererMixin.java`, `KillEffect.java`.
 
 ### Checkpoint: Screen and camera
 
-- [ ] Экраниые эффекты не ломают HUD/ClickGUI.
-- [ ] Камера возвращается в исходное состояние.
+- [x] Экранные эффекты не ломают HUD/ClickGUI.
+- [x] Камера возвращается в исходное состояние.
 
 ### Phase 4: Finish
 

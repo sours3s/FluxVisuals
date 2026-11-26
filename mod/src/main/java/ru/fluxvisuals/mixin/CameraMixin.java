@@ -19,6 +19,7 @@ import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.player.EventRotation;
 import ru.fluxvisuals.event.render.CameraPositionEvent;
 import ru.fluxvisuals.module.impl.visuals.SmoothCamera;
+import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectCameraState;
 
 @Environment(EnvType.CLIENT)
 @Mixin({Camera.class})
@@ -128,8 +129,10 @@ public abstract class CameraMixin {
       CameraPositionEvent positionEvent = new CameraPositionEvent(this.getCameraPos(), tickProgress);
       EventManager.call(positionEvent);
       Vec3d position = positionEvent.getPosition();
-      if (position != null) {
-         ((CameraAccessor)this).invokeSetPos(position.x, position.y, position.z);
+      Vec3d shake = KillEffectCameraState.shakeOffset();
+      if (position != null || shake.lengthSquared() > 0.0) {
+         Vec3d target = (position == null ? this.getCameraPos() : position).add(shake);
+         ((CameraAccessor)this).invokeSetPos(target.x, target.y, target.z);
       }
       this.fluxvisuals$rotationEvent = null;
    }
