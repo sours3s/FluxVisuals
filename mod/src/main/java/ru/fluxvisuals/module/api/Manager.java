@@ -7,6 +7,7 @@ import java.util.Map;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import ru.fluxvisuals.module.impl.visuals.AspectRation;
+import ru.fluxvisuals.module.impl.visuals.CustomFov;
 import ru.fluxvisuals.module.impl.visuals.CustomWorld;
 import ru.fluxvisuals.module.impl.visuals.ESP;
 import ru.fluxvisuals.module.impl.visuals.Gamma;
@@ -49,6 +50,7 @@ public class Manager {
       // Только легитные визуальные модули. Никаких combat/movement/player хаков.
       this.module.add(new Hud());
       this.module.add(new AspectRation());
+      this.module.add(new CustomFov());
       this.module.add(new CustomWorld());
       this.module.add(new ESP());
       this.module.add(new Gamma());

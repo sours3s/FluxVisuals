@@ -42,6 +42,8 @@ public final class TooltipRegistrar {
       registerModule(ItemESP.class, "ESP для предметов на земле: название, раритет, дистанция, фильтр по ценности.");
       registerModule(NameTags.class, "Ники над игроками: здоровье, броня, дистанция, команда, кастомные префиксы.");
       registerModule(AspectRation.class, "Изменение соотношения сторон экрана (16:9, 4:3, 21:9 и кастомное).");
+      registerModule(CustomFov.class, "Ручной FOV: задаёт угол обзора и игнорирует множитель скорости, Speed 5 и зум.");
+      registerSetting(CustomFov.class, "FOV", "Угол обзора в градусах (30-170). Приоритетнее ванильного FOV и эффекта скорости.");
       registerModule(MenuSettingsModule.class, "Настройки главного меню: фон, анимации, кастомный текст, версия.");
       registerModule(Friends.class, "Система друзей: зелёный ESP (не сквозь стены), тэг [F], защита от френдли-файра.");
       registerModule(Cosmetic.class, "Косметика: китайская шляпа/нимб, анимированные крылья, след за игроком.");

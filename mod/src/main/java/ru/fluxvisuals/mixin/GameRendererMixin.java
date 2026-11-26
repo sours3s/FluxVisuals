@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.ProjectionMatrix3;
 import org.joml.Matrix4f;
@@ -14,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.fluxvisuals.module.impl.visuals.AspectRation;
+import ru.fluxvisuals.module.impl.visuals.CustomFov;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
@@ -23,6 +25,24 @@ public abstract class GameRendererMixin {
    @Inject(method = "tick", at = @At("HEAD"))
    private void onTick(CallbackInfo ci) {
       // Логика обновления каждый тик
+   }
+
+   /**
+    * Подменяем итоговый FOV до того, как он попадёт в проекцию мира и рук.
+    * Возврат на HEAD отсекает ванильный множитель от эффекта скорости,
+    * поэтому Custom FOV сохраняет выбранное значение даже при Speed 5.
+    */
+   @Inject(method = "getFov(Lnet/minecraft/client/render/Camera;FZ)F", at = @At("HEAD"), cancellable = true)
+   private void fluxvisuals$customFov(Camera camera, float tickDelta, boolean changingFov,
+         CallbackInfoReturnable<Float> cir) {
+      MinecraftClient client = MinecraftClient.getInstance();
+      if (client == null || client.world == null || client.player == null) {
+         return;
+      }
+      float custom = CustomFov.getCustomFov();
+      if (!Float.isNaN(custom)) {
+         cir.setReturnValue(custom);
+      }
    }
 
    /**
