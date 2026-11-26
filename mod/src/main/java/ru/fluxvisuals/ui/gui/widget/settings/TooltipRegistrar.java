@@ -90,11 +90,23 @@ public final class TooltipRegistrar {
 
       // KillEffect
       registerSetting(KillEffect.class, "Effect Type", "Тип эффекта: Beam, Sky Beam, Soul, Shatter, Darkness, Spike Abduction, Body Particles или Scan.");
-      registerSetting(KillEffect.class, "Mobs", "Показывать эффект для мобов, а не только игроков.");
-      registerSetting(KillEffect.class, "Particles", "Количество дополнительных частиц и осколков.");
-      registerSetting(KillEffect.class, "Radius", "Радиус разлёта частиц и ударной волны.");
-      registerSetting(KillEffect.class, "Sound", "Воспроизводить звук выбранного эффекта.");
+      registerSetting(KillEffect.class, "Players", "Показывать эффект при убийстве игроков.");
+      registerSetting(KillEffect.class, "Mobs", "Показывать эффект при убийстве мобов.");
+      registerSetting(KillEffect.class, "Color Mode", "Цвет эффекта: тема клиента или свой.");
+      registerSetting(KillEffect.class, "Color", "Свой цвет эффекта при Color Mode = Custom.");
+      registerSetting(KillEffect.class, "Duration", "Длительность эффекта в секундах.");
+      registerSetting(KillEffect.class, "Particles", "Количество частиц, осколков и сегментов эффекта.");
+      registerSetting(KillEffect.class, "Radius", "Радиус луча, разлёта осколков и ударной волны.");
+      registerSetting(KillEffect.class, "Speed", "Скорость анимации эффекта.");
+      registerSetting(KillEffect.class, "Beam Height", "Высота вертикального луча.");
+      registerSetting(KillEffect.class, "Beam Width", "Толщина вертикального луча.");
       registerSetting(KillEffect.class, "Shockwave", "Рисовать расширяющееся кольцо в точке гибели.");
+      registerSetting(KillEffect.class, "Sound", "Воспроизводить звук выбранного эффекта.");
+      registerSetting(KillEffect.class, "Totem", "Срабатывать также при использовании тотема бессмертия.");
+      registerSetting(KillEffect.class, "Hide Body", "Скрывать модель убитой сущности во время эффекта Body Particles.");
+      registerSetting(KillEffect.class, "Zoom", "Кратковременное приближение камеры в режиме Scan.");
+      registerSetting(KillEffect.class, "Shake", "Кратковременная тряска камеры в режиме Scan.");
+      registerSetting(KillEffect.class, "Desaturate", "Серый оверлей вместо обесцвечивания мира.");
 
       // JumpCircle
       registerSetting(JumpCircle.class, "Mode", "Pulse (пульсация), Spiral (спираль), Nova (вспышка), Blocks (подсветка блоков).");

@@ -22,6 +22,7 @@ import ru.fluxvisuals.module.api.Module;
 import ru.fluxvisuals.module.api.Theme;
 import ru.fluxvisuals.module.api.setting.Setting;
 import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
+import ru.fluxvisuals.module.api.setting.impl.HueSetting;
 import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectDeathMemoryTracker;
@@ -36,22 +37,47 @@ import ru.fluxvisuals.util.render.world.WorldRenderer;
 public class KillEffect extends Module {
    private static final long KILL_WINDOW_MS = 6500L;
    private static final int MIN_PARTICLES = 5;
-   private static final int MAX_PARTICLES = 120;
+   private static final int MAX_PARTICLES = 350;
 
    public final ModeSetting effectType = new ModeSetting("Effect Type", KillEffectModes.DEFAULT,
          KillEffectModes.ALL.toArray(new String[0]));
+   public final BooleanSetting players = new BooleanSetting("Players", true);
    public final BooleanSetting mobs = new BooleanSetting("Mobs", true);
+   public final ModeSetting colorMode = new ModeSetting("Color Mode", "Theme", "Theme", "Custom");
+   public final HueSetting color = new HueSetting("Color", 42.0F)
+         .hidden(() -> !this.colorMode.is("Custom"));
+   public final SliderSetting duration = new SliderSetting("Duration", 2.2F, 0.5F, 8.0F, 0.1F, false);
    public final SliderSetting particles = new SliderSetting("Particles", 45.0F, MIN_PARTICLES, MAX_PARTICLES, 1.0F, false);
-   public final SliderSetting radius = new SliderSetting("Radius", 2.0F, 0.5F, 6.0F, 0.1F, false);
+   public final SliderSetting radius = new SliderSetting("Radius", 5.0F, 0.5F, 20.0F, 0.5F, false);
+   public final SliderSetting speed = new SliderSetting("Speed", 1.0F, 0.1F, 5.0F, 0.1F, false)
+         .hidden(() -> this.effectType.is("Darkness") || this.effectType.is("Scan"));
+   public final SliderSetting beamHeight = new SliderSetting("Beam Height", 5.2F, 1.5F, 12.0F, 0.5F, false)
+         .hidden(() -> !this.effectType.is("Beam") && !this.effectType.is("Sky Beam")
+               && !this.effectType.is("Soul"));
+   public final SliderSetting beamWidth = new SliderSetting("Beam Width", 0.42F, 0.08F, 1.2F, 0.02F, false)
+         .hidden(() -> !this.effectType.is("Beam") && !this.effectType.is("Sky Beam")
+               && !this.effectType.is("Soul"));
+   public final BooleanSetting shockwave = new BooleanSetting("Shockwave", true)
+         .hidden(() -> this.effectType.is("Darkness"));
    public final BooleanSetting sound = new BooleanSetting("Sound", true);
-   public final BooleanSetting shockwave = new BooleanSetting("Shockwave", true);
+   public final BooleanSetting totem = new BooleanSetting("Totem", false);
+   public final BooleanSetting hideBody = new BooleanSetting("Hide Body", false)
+         .hidden(() -> !this.effectType.is("Body Particles"));
+   public final BooleanSetting zoom = new BooleanSetting("Zoom", false)
+         .hidden(() -> !this.effectType.is("Scan"));
+   public final BooleanSetting shake = new BooleanSetting("Shake", false)
+         .hidden(() -> !this.effectType.is("Scan"));
+   public final BooleanSetting desaturate = new BooleanSetting("Desaturate", true)
+         .hidden(() -> !this.effectType.is("Scan") && !this.effectType.is("Darkness"));
 
    private final KillEffectDeathMemoryTracker tracker;
    private final KillEffectSoundQueue soundQueue = new KillEffectSoundQueue();
    private final KillEffectParticleSystem particleSystem = new KillEffectParticleSystem();
 
    public KillEffect() {
-      this.addSettings(new Setting[]{this.effectType, this.mobs, this.particles, this.radius, this.sound, this.shockwave});
+      this.addSettings(new Setting[]{this.effectType, this.players, this.mobs, this.colorMode, this.color,
+            this.duration, this.particles, this.radius, this.speed, this.beamHeight, this.beamWidth,
+            this.shockwave, this.sound, this.totem, this.hideBody, this.zoom, this.shake, this.desaturate});
       this.tracker = new KillEffectDeathMemoryTracker(KILL_WINDOW_MS, this::playEffectFor);
    }
 
@@ -111,7 +137,11 @@ public class KillEffect extends Module {
       if (client == null || client.world == null || client.player == null || entity == client.player) {
          return;
       }
-      if (!this.mobs.get() && !(entity instanceof PlayerEntity)) {
+      if (entity instanceof PlayerEntity) {
+         if (!this.players.get()) {
+            return;
+         }
+      } else if (!this.mobs.get()) {
          return;
       }
       playEffectAt(entity.getEntityPos());
@@ -132,7 +162,7 @@ public class KillEffect extends Module {
       spawnParticles(client, ParticleTypes.END_ROD, center, Math.max(8, count / 2), radius, 0.12F);
       playSound("impact", 0.5F);
 
-      int color = Theme.VISUAL.accent();
+      int color = effectColor();
       this.particleSystem.setColor(color);
       this.particleSystem.spawnShards(center, Math.min(24, count / 2), radius * 0.35F, 0.07F, 800, color);
       if (this.shockwave.get()) {
@@ -163,6 +193,10 @@ public class KillEffect extends Module {
          double vz = random.nextDouble(-0.5, 0.5) * speed;
          client.world.addParticleClient(type, x, y, z, vx, vy, vz);
       }
+   }
+
+   private int effectColor() {
+      return this.colorMode.is("Custom") ? this.color.getRGBA(255) : Theme.VISUAL.accent();
    }
 
    private String mode() {

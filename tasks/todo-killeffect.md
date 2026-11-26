@@ -9,7 +9,7 @@ Plan: `tasks/plan-killeffect.md`
   - Verification: `./gradlew.bat test --no-daemon`.
   - Files: `KillEffectModes.java`, `KillEffect.java`, `KillEffectModesTest.java`, `TooltipRegistrar.java`.
 
-- [ ] Task 2: Настройки и состояние триггеров
+- [x] Task 2: Настройки и состояние триггеров
   - Acceptance: все настройки добавлены и скрываются по режиму.
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffect.java`, `TooltipRegistrar.java`.

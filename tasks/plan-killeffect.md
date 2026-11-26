@@ -24,7 +24,7 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Verification: `./gradlew.bat test --no-daemon`.
   - Files: `KillEffectModes.java`, `KillEffect.java`, `KillEffectModesTest.java`, `TooltipRegistrar.java`.
 
-- [ ] Task 2: Настройки и состояние триггеров
+- [x] Task 2: Настройки и состояние триггеров
   - Acceptance: добавлены настройки целей, цвета, длительности, частиц, радиуса, скорости, высоты/ширины луча, волны, звука, тотема, скрытия тела, зума/тряски/серого оверлея; нерелевантные настройки скрываются по режиму.
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffect.java`, `TooltipRegistrar.java`.
