@@ -36,15 +36,15 @@ Plan: `tasks/plan-killeffect.md`
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectSoulRenderer.java`, `KillEffect.java`.
 
-- [ ] Task 6: Darkness, Spike Abduction и частицы тела
+- [x] Task 6: Darkness, Spike Abduction и частицы тела
   - Acceptance: затемнение, похищение шипами, осколки с cap.
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectDarknessRenderer.java`, `KillEffectShardsRenderer.java`, `KillEffect.java`, `EntityCullingMixin.java`.
 
 ### Checkpoint: World effects
 
-- [ ] Compile/test проходят.
-- [ ] Нет unbounded growth частиц/волн.
+- [x] Compile/test проходят.
+- [x] Нет unbounded growth частиц/волн.
 
 ## Phase 3: Screen and camera
 

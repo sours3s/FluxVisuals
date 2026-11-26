@@ -51,15 +51,15 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectSoulRenderer.java`, `KillEffect.java`.
 
-- [ ] Task 6: Darkness, Spike Abduction и частицы тела
+- [x] Task 6: Darkness, Spike Abduction и частицы тела
   - Acceptance: `Darkness` затемняет область/экран; `Spike Abduction` поднимает цель шипами/линиями; `Body Particles` создаёт осколки с настройками количества, размера, силы и времени жизни; есть cap.
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectDarknessRenderer.java`, `KillEffectShardsRenderer.java`, `KillEffect.java`, `EntityCullingMixin.java`.
 
 ### Checkpoint: World effects
 
-- [ ] Все world-режимы compile/test проходят.
-- [ ] Нет unbounded growth частиц/волн.
+- [x] Все world-режимы compile/test проходят.
+- [x] Нет unbounded growth частиц/волн.
 
 ### Phase 3: Screen and camera
 

@@ -1,6 +1,8 @@
 package ru.fluxvisuals.module.impl.visuals;
 
 import com.google.gson.JsonObject;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -29,6 +31,7 @@ import ru.fluxvisuals.module.api.setting.impl.HueSetting;
 import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectBeamRenderer;
+import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectDarknessRenderer;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectDeathMemoryTracker;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectModes;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectParticleSystem;
@@ -74,6 +77,12 @@ public class KillEffect extends Module {
          .hidden(() -> !this.effectType.is("Scan"));
    public final BooleanSetting desaturate = new BooleanSetting("Desaturate", true)
          .hidden(() -> !this.effectType.is("Scan") && !this.effectType.is("Darkness"));
+   public final SliderSetting shardSize = new SliderSetting("Shard Size", 0.07F, 0.02F, 0.3F, 0.01F, false)
+         .hidden(() -> !this.effectType.is("Body Particles"));
+   public final SliderSetting shardForce = new SliderSetting("Shard Force", 0.7F, 0.1F, 3.0F, 0.1F, false)
+         .hidden(() -> !this.effectType.is("Body Particles"));
+   public final SliderSetting shardLife = new SliderSetting("Shard Life", 1.4F, 0.3F, 5.0F, 0.1F, false)
+         .hidden(() -> !this.effectType.is("Body Particles"));
 
    private final KillEffectDeathMemoryTracker tracker;
    private final KillEffectSoundQueue soundQueue = new KillEffectSoundQueue();
@@ -82,11 +91,13 @@ public class KillEffect extends Module {
    private long lastEffectAt;
    private int lastTotemId = -1;
    private long lastTotemAt;
+   private final Map<Integer, Long> hiddenEntities = new HashMap<>();
 
    public KillEffect() {
       this.addSettings(new Setting[]{this.effectType, this.players, this.mobs, this.colorMode, this.color,
             this.duration, this.particles, this.radius, this.speed, this.beamHeight, this.beamWidth,
-            this.shockwave, this.sound, this.totem, this.hideBody, this.zoom, this.shake, this.desaturate});
+            this.shockwave, this.sound, this.totem, this.hideBody, this.zoom, this.shake, this.desaturate,
+            this.shardSize, this.shardForce, this.shardLife});
       this.tracker = new KillEffectDeathMemoryTracker(KILL_WINDOW_MS, this::playEffectFor);
    }
 
@@ -134,6 +145,9 @@ public class KillEffect extends Module {
       KillEffectScanRenderer.tick();
       KillEffectBeamRenderer.tick();
       KillEffectSoulRenderer.tick();
+      KillEffectDarknessRenderer.tick();
+      long now = System.currentTimeMillis();
+      this.hiddenEntities.values().removeIf(expiresAt -> expiresAt <= now);
    }
 
    @EventInit
@@ -148,6 +162,7 @@ public class KillEffect extends Module {
       KillEffectScanRenderer.render(renderer);
       KillEffectBeamRenderer.render(renderer);
       KillEffectSoulRenderer.render(renderer);
+      KillEffectDarknessRenderer.render(renderer);
    }
 
    /** Прямой хук статуса тотема: отдельного события в event bus нет. */
@@ -176,6 +191,20 @@ public class KillEffect extends Module {
       effect.playEffectFor(living);
    }
 
+   /** Используется EntityCullingMixin, чтобы скрыть модель убитой сущности. */
+   public static boolean shouldHide(Entity entity) {
+      if (entity == null || mc == null || FluxVisualsClient.get == null || FluxVisualsClient.get.manager == null) {
+         return false;
+      }
+      Module module = FluxVisualsClient.get.manager.getModule(KillEffect.class);
+      if (!(module instanceof KillEffect effect) || !module.enable || !effect.hideBody.get()
+            || !effect.effectType.is("Body Particles")) {
+         return false;
+      }
+      Long expiresAt = effect.hiddenEntities.get(entity.getId());
+      return expiresAt != null && expiresAt > System.currentTimeMillis();
+   }
+
    private void playEffectFor(LivingEntity entity) {
       MinecraftClient client = mc;
       if (client == null || client.world == null || client.player == null || entity == client.player) {
@@ -196,6 +225,9 @@ public class KillEffect extends Module {
       this.lastEffectId = entity.getId();
       this.lastEffectAt = now;
       playEffectAt(entity.getEntityPos());
+      if (this.hideBody.get() && mode().equals("Body Particles")) {
+         this.hiddenEntities.put(entity.getId(), now + Math.round(this.duration.get() * 1000.0F));
+      }
    }
 
    private void playEffectAt(Vec3d pos) {
@@ -214,7 +246,13 @@ public class KillEffect extends Module {
 
       // Все режимы используют общие частицы-кирпичики; звук выбирается по режиму.
       spawnParticles(client, ParticleTypes.END_ROD, center, Math.max(8, count / 2), radius, 0.12F);
-      playSound(effect.equals("Sky Beam") ? "thunder" : "impact", effect.equals("Sky Beam") ? 1.0F : 0.5F);
+      String sound = switch (effect) {
+         case "Sky Beam" -> "thunder";
+         case "Shatter", "Darkness", "Spike Abduction", "Body Particles" -> "explode";
+         case "Soul" -> "levelup";
+         default -> "impact";
+      };
+      playSound(sound, sound.equals("thunder") || sound.equals("explode") ? 1.0F : 0.5F);
 
       switch (effect) {
          case "Beam", "Sky Beam" -> KillEffectBeamRenderer.spawn(pos, color, this.duration.get(),
@@ -223,13 +261,27 @@ public class KillEffect extends Module {
          case "Soul", "Shatter" -> KillEffectSoulRenderer.spawn(pos, color, this.duration.get(),
                this.beamHeight.get(), this.beamWidth.get(), radius, this.speed.get(), count,
                effect.equals("Soul"));
+         case "Darkness", "Spike Abduction" -> KillEffectDarknessRenderer.spawn(pos, color,
+               this.duration.get(), this.beamHeight.get(), this.beamWidth.get(), radius,
+               this.speed.get(), count, effect.equals("Spike Abduction"));
+         case "Body Particles" -> {
+            int life = Math.round(this.shardLife.get() * 1000.0F);
+            float force = this.shardForce.get() * Math.min(1.5F, radius / 5.0F);
+            this.particleSystem.setColor(color);
+            this.particleSystem.spawnBurst(center, count, force, radius * 0.5F, life,
+                  this.shardSize.get(), color);
+            this.particleSystem.spawnShards(center, Math.min(120, count), force,
+                  this.shardSize.get(), life, color);
+         }
          default -> {
-            // Остальные кастомные режимы подключаются в следующих шагах.
+            // Scan подключается на следующем шаге.
          }
       }
 
-      this.particleSystem.setColor(color);
-      this.particleSystem.spawnShards(center, Math.min(24, count / 2), radius * 0.35F, 0.07F, 800, color);
+      if (!effect.equals("Body Particles")) {
+         this.particleSystem.setColor(color);
+         this.particleSystem.spawnShards(center, Math.min(24, count / 2), radius * 0.35F, 0.07F, 800, color);
+      }
       if (this.shockwave.get()) {
          KillEffectScanRenderer.spawn(center, color, radius);
       }
@@ -282,6 +334,8 @@ public class KillEffect extends Module {
       KillEffectScanRenderer.clear();
       KillEffectBeamRenderer.clear();
       KillEffectSoulRenderer.clear();
+      KillEffectDarknessRenderer.clear();
+      this.hiddenEntities.clear();
       this.lastEffectId = -1;
       this.lastEffectAt = 0L;
       this.lastTotemId = -1;
