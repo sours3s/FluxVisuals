@@ -175,7 +175,7 @@ public final class TooltipManager {
       registerModule("Block Outline", "Красивая подсветка граней блока, на который смотрит игрок.");
       registerModule("Hit Effect", "Визуальный эффект при попадании по сущности: вспышка или частицы.");
       registerModule("Item Physics", "Заставляет выброшенные предметы плавно вращаться в воздухе.");
-      registerModule("Kill Effect", "Эффектный визуальный всплеск при убийстве сущности.");
+      registerModule("Kill Effect", "Пять типов эффекта при убийстве: молния, кровь, взрыв, сердце и дым.");
       registerModule("Hand Effects", "Эффекты руки: стекло, свечение, контуры и анимированные шейдеры.");
 
       // ===== Утилиты =====

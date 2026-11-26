@@ -24,7 +24,11 @@ public final class ChangelogPanel {
    private static final float HEADER_HEIGHT = 20f;
 
     private static final String[][] SECTIONS = {
-       {"v1.1.3", null},
+       {"v1.1.4", null},
+        {"added", "Kill Effect — пять типов: молния, кровь, взрыв, сердце и дым"},
+        {"added", "Kill Effect — настройки частиц, радиуса, звука и ударной волны"},
+        {"fixed", "Эффект срабатывает один раз и не зависит от дублей события смерти"},
+        {"v1.1.3", null},
         {"fixed", "Shader Fog снова работает после оптимизации: исправлен depth-test финального blit"},
         {"v1.1.2", null},
        {"added", "Custom FOV — ручной угол обзора от 30° до 170°"},
