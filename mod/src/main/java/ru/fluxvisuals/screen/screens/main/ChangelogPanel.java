@@ -24,6 +24,10 @@ public final class ChangelogPanel {
    private static final float HEADER_HEIGHT = 20f;
 
     private static final String[][] SECTIONS = {
+       {"v1.1.2", null},
+       {"added", "Custom FOV — ручной угол обзора от 30° до 170°"},
+       {"fixed", "Custom FOV не зависит от эффекта скорости, включая Speed 5"},
+       {"fixed", "Подсказки ClickGUI и список модулей в AI-помощнике обновлены"},
        {"v1.1.1", null},
        {"fixed", "Shader Fog — офскрин в 1/3 разрешения и LINEAR-blit"},
        {"fixed", "Item Physics — вращение, парение и анимация подбора предметов"},

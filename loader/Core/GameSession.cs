@@ -172,7 +172,7 @@ public class GameSession
 
         // Сначала проверяем GitHub (приоритет) - там всегда актуальная версия
         string remoteVersion = "";
-        string remoteFileName = "fluxvisuals-1.1.1.jar"; // fallback
+        string remoteFileName = "fluxvisuals-1.1.2.jar"; // fallback
         string remoteUrl = "";
         try
         {

@@ -30,7 +30,7 @@ public class CustomFov extends Module {
 
    /**
     * Возвращает выбранный FOV или {@link Float#NaN}, если модуль выключен.
-    * Значение clamp-ится на случай старого/бивого конфига.
+    * Значение ограничивается диапазоном на случай старого или повреждённого конфига.
     */
    public static float getCustomFov() {
       if (mc == null || FluxVisualsClient.get == null || FluxVisualsClient.get.manager == null) {
