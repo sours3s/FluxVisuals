@@ -17,6 +17,7 @@ import net.minecraft.util.math.Vec3d;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.event.EventInit;
 import ru.fluxvisuals.event.impl.EventChangeWorld;
+import ru.fluxvisuals.event.impl.EventScreen;
 import ru.fluxvisuals.event.impl.EntityDeathEvent;
 import ru.fluxvisuals.event.lifecycle.ClientTickEvent;
 import ru.fluxvisuals.event.player.AttackEvent;
@@ -32,6 +33,7 @@ import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectBeamRenderer;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectDarknessRenderer;
+import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectOverlayRenderer;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectDeathMemoryTracker;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectModes;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectParticleSystem;
@@ -146,6 +148,7 @@ public class KillEffect extends Module {
       KillEffectBeamRenderer.tick();
       KillEffectSoulRenderer.tick();
       KillEffectDarknessRenderer.tick();
+      KillEffectOverlayRenderer.tick();
       long now = System.currentTimeMillis();
       this.hiddenEntities.values().removeIf(expiresAt -> expiresAt <= now);
    }
@@ -153,6 +156,15 @@ public class KillEffect extends Module {
    @EventInit
    public void onChangeWorld(EventChangeWorld event) {
       reset();
+   }
+
+   @EventInit
+   public void onScreen(EventScreen event) {
+      if (mc == null || mc.currentScreen != null) {
+         return;
+      }
+      KillEffectOverlayRenderer.tick();
+      KillEffectOverlayRenderer.render(event.renderer(), event.viewportWidth(), event.viewportHeight());
    }
 
    @EventInit
@@ -273,9 +285,15 @@ public class KillEffect extends Module {
             this.particleSystem.spawnShards(center, Math.min(120, count), force,
                   this.shardSize.get(), life, color);
          }
+         case "Scan" -> KillEffectOverlayRenderer.spawn(color, this.duration.get(),
+               this.desaturate.get(), true);
          default -> {
-            // Scan подключается на следующем шаге.
+            // Все кастомные режимы уже обработаны.
          }
+      }
+
+      if (effect.equals("Darkness") && this.desaturate.get()) {
+         KillEffectOverlayRenderer.spawn(color, this.duration.get(), true, false);
       }
 
       if (!effect.equals("Body Particles")) {
@@ -335,6 +353,7 @@ public class KillEffect extends Module {
       KillEffectBeamRenderer.clear();
       KillEffectSoulRenderer.clear();
       KillEffectDarknessRenderer.clear();
+      KillEffectOverlayRenderer.clear();
       this.hiddenEntities.clear();
       this.lastEffectId = -1;
       this.lastEffectAt = 0L;

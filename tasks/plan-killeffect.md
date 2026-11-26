@@ -63,7 +63,7 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
 
 ### Phase 3: Screen and camera
 
-- [ ] Task 7: Scan-виньетка, ударная волна и серый оверлей
+- [x] Task 7: Scan-виньетка, ударная волна и серый оверлей
   - Acceptance: `Scan` рисует шипы/виньетку, ударную волну и полупрозрачный серый оверлей; на паузе просроченные эффекты не рисуются.
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectScanRenderer.java`, новый `KillEffectOverlayRenderer.java`, `KillEffect.java`.

@@ -48,7 +48,7 @@ Plan: `tasks/plan-killeffect.md`
 
 ## Phase 3: Screen and camera
 
-- [ ] Task 7: Scan-виньетка, ударная волна и серый оверлей
+- [x] Task 7: Scan-виньетка, ударная волна и серый оверлей
   - Acceptance: шипы/виньетка/волна/оверлей; на паузе просроченные эффекты не рисуются.
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectScanRenderer.java`, `KillEffectOverlayRenderer.java`, `KillEffect.java`.
