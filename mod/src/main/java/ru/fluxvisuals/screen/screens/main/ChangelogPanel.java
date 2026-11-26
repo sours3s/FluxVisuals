@@ -24,7 +24,9 @@ public final class ChangelogPanel {
    private static final float HEADER_HEIGHT = 20f;
 
     private static final String[][] SECTIONS = {
-       {"v1.1.2", null},
+       {"v1.1.3", null},
+        {"fixed", "Shader Fog снова работает после оптимизации: исправлен depth-test финального blit"},
+        {"v1.1.2", null},
        {"added", "Custom FOV — ручной угол обзора от 30° до 170°"},
        {"fixed", "Custom FOV не зависит от эффекта скорости, включая Speed 5"},
        {"fixed", "Подсказки ClickGUI и список модулей в AI-помощнике обновлены"},

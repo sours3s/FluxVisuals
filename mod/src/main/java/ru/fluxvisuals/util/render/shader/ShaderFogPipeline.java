@@ -35,7 +35,9 @@ import org.lwjgl.system.MemoryUtil;
  * стоимость фрагментного шейдера падает примерно в 9 раз.
  *
  * Итоговый blit сохраняет исходное поведение: EQUAL_DEPTH_TEST против depth-буфера
- * кадра и то же TRANSLUCENT-смешивание с альфой шейдера.
+ * кадра и то же TRANSLUCENT-смешивание с альфой шейдера. Для этого blit использует
+ * отдельный вершинный шейдер с z = 1.0: общий framebuffer_blit пишет z = 0.0 и
+ * отбрасывается depth-тестом, из-за чего туман переставал отображаться.
  */
 public class ShaderFogPipeline {
    private static final Vector4f COLOR_MODULATOR = new Vector4f(1f, 1f, 1f, 1f);
@@ -45,7 +47,7 @@ public class ShaderFogPipeline {
 
    private static final RenderPipeline BLIT_PIPELINE = RenderPipeline.builder()
          .withLocation(Identifier.of("fluxvisuals", "pipeline/shader_fog_blit"))
-         .withVertexShader(Identifier.of("fluxvisuals", "core/framebuffer_blit"))
+         .withVertexShader(ResourceProvider.getShaderIdentifier("shader_fog_blit"))
          .withFragmentShader(Identifier.of("fluxvisuals", "core/framebuffer_blit"))
          .withVertexFormat(VertexFormats.EMPTY, DrawMode.TRIANGLES)
          .withSampler("Sampler0")
