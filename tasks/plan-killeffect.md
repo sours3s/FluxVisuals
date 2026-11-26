@@ -46,7 +46,7 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectBeamRenderer.java`, `KillEffect.java`.
 
-- [ ] Task 5: Soul и Shatter
+- [x] Task 5: Soul и Shatter
   - Acceptance: `Soul` рисует восходящие спирали/кольца/луч; `Shatter` — кольца, осколки, вихрь и сферы; оба работают на мобах и игроках по настройкам целей.
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectSoulRenderer.java`, `KillEffect.java`.

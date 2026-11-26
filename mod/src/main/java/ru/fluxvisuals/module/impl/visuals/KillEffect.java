@@ -33,6 +33,7 @@ import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectDeathMemoryTracke
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectModes;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectParticleSystem;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectScanRenderer;
+import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectSoulRenderer;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectSoundQueue;
 import ru.fluxvisuals.util.render.world.WorldRenderer;
 
@@ -132,6 +133,7 @@ public class KillEffect extends Module {
       this.particleSystem.tick();
       KillEffectScanRenderer.tick();
       KillEffectBeamRenderer.tick();
+      KillEffectSoulRenderer.tick();
    }
 
    @EventInit
@@ -145,6 +147,7 @@ public class KillEffect extends Module {
       this.particleSystem.render(renderer);
       KillEffectScanRenderer.render(renderer);
       KillEffectBeamRenderer.render(renderer);
+      KillEffectSoulRenderer.render(renderer);
    }
 
    /** Прямой хук статуса тотема: отдельного события в event bus нет. */
@@ -217,6 +220,9 @@ public class KillEffect extends Module {
          case "Beam", "Sky Beam" -> KillEffectBeamRenderer.spawn(pos, color, this.duration.get(),
                this.beamHeight.get(), this.beamWidth.get(), radius, this.speed.get(), count,
                effect.equals("Sky Beam"));
+         case "Soul", "Shatter" -> KillEffectSoulRenderer.spawn(pos, color, this.duration.get(),
+               this.beamHeight.get(), this.beamWidth.get(), radius, this.speed.get(), count,
+               effect.equals("Soul"));
          default -> {
             // Остальные кастомные режимы подключаются в следующих шагах.
          }
@@ -275,6 +281,7 @@ public class KillEffect extends Module {
       this.particleSystem.clear();
       KillEffectScanRenderer.clear();
       KillEffectBeamRenderer.clear();
+      KillEffectSoulRenderer.clear();
       this.lastEffectId = -1;
       this.lastEffectAt = 0L;
       this.lastTotemId = -1;

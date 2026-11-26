@@ -31,7 +31,7 @@ Plan: `tasks/plan-killeffect.md`
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectBeamRenderer.java`, `KillEffect.java`.
 
-- [ ] Task 5: Soul и Shatter
+- [x] Task 5: Soul и Shatter
   - Acceptance: спирали/кольца/луч и осколки/вихрь/сферы.
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectSoulRenderer.java`, `KillEffect.java`.
