@@ -21,8 +21,8 @@ Plan: `tasks/plan-killeffect.md`
 
 ### Checkpoint: Foundation
 
-- [ ] Тесты и компиляция проходят.
-- [ ] В GUI нет ванильных типов.
+- [x] Тесты и компиляция проходят.
+- [x] В GUI нет ванильных типов.
 
 ## Phase 2: World effects
 
