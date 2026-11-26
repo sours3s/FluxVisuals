@@ -8,5 +8,7 @@ RUN dotnet publish bots/FluxVisualsBots.csproj -c Release -o /app/publish --no-r
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app/publish .
-EXPOSE 10000
-CMD ["sh", "-c", "dotnet FluxVisualsBots.dll --urls http://0.0.0.0:${PORT:-10000}"]
+COPY bots/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+EXPOSE 5001 5002
+CMD ["sh", "/app/entrypoint.sh"]
