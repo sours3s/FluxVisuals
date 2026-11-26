@@ -12,6 +12,8 @@ import ru.fluxvisuals.util.render.world.WorldRenderer;
 /** Легкая система частиц для эффектов гибели: искры и разлетающиеся осколки. */
 @Environment(EnvType.CLIENT)
 public final class KillEffectParticleSystem {
+   private static final int MAX_PARTICLES = 400;
+
    private final List<Particle> particles = new ArrayList<>();
    private int color = 0xFFFFFFFF;
    private long lastTick = System.currentTimeMillis();
@@ -40,7 +42,7 @@ public final class KillEffectParticleSystem {
                pitch * magnitude,
                Math.sin(angle) * magnitude
          );
-         this.particles.add(new Particle(pos, velocity, 0.0F, life, size, color, false));
+         addParticle(new Particle(pos, velocity, 0.0F, life, size, color, false));
       }
    }
 
@@ -59,8 +61,15 @@ public final class KillEffectParticleSystem {
                up * magnitude,
                Math.sin(angle) * magnitude
          );
-         this.particles.add(new Particle(pos, velocity, -12.0F, life, size * 0.45F, color, true));
+         addParticle(new Particle(pos, velocity, -12.0F, life, size * 0.45F, color, true));
       }
+   }
+
+   private void addParticle(Particle particle) {
+      if (this.particles.size() >= MAX_PARTICLES) {
+         this.particles.remove(0);
+      }
+      this.particles.add(particle);
    }
 
    public void tick() {

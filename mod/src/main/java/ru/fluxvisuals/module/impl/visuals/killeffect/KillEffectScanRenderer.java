@@ -14,15 +14,19 @@ import ru.fluxvisuals.util.render.world.WorldRenderer;
 public final class KillEffectScanRenderer {
    private static final long DURATION_MS = 850L;
    private static final int SEGMENTS = 48;
+   private static final int MAX_WAVES = 32;
    private static final List<Wave> WAVES = new ArrayList<>();
 
    private KillEffectScanRenderer() {}
 
-   public static void spawn(Vec3d pos, int color) {
+   public static void spawn(Vec3d pos, int color, float radius) {
       if (pos == null) {
          return;
       }
-      WAVES.add(new Wave(pos, color == 0 ? Theme.VISUAL.accent() : color));
+      if (WAVES.size() >= MAX_WAVES) {
+         WAVES.remove(0);
+      }
+      WAVES.add(new Wave(pos, color == 0 ? Theme.VISUAL.accent() : color, Math.max(0.25F, radius)));
    }
 
    public static void tick() {
@@ -36,9 +40,13 @@ public final class KillEffectScanRenderer {
       }
       long now = System.currentTimeMillis();
       for (Wave wave : WAVES) {
-         float progress = Math.max(0.0F, Math.min(1.0F, (float) (now - wave.startedAt) / DURATION_MS));
+         long elapsed = now - wave.startedAt;
+         if (elapsed >= DURATION_MS) {
+            continue;
+         }
+         float progress = Math.max(0.0F, (float) elapsed / DURATION_MS);
          float eased = KillEffectEasing.quintOut(progress);
-         float radius = 0.25F + eased * 2.6F;
+         float radius = wave.radius * (0.12F + eased * 1.3F);
          int alpha = Math.round(200.0F * (1.0F - KillEffectEasing.sineOut(progress)));
          int color = Renderer2D.ColorUtil.replAlpha(wave.color, Math.max(0, Math.min(255, alpha)));
          for (int i = 0; i < SEGMENTS; i++) {
@@ -55,9 +63,9 @@ public final class KillEffectScanRenderer {
       WAVES.clear();
    }
 
-   private record Wave(Vec3d pos, int color, long startedAt) {
-      private Wave(Vec3d pos, int color) {
-         this(pos, color, System.currentTimeMillis());
+   private record Wave(Vec3d pos, int color, float radius, long startedAt) {
+      private Wave(Vec3d pos, int color, float radius) {
+         this(pos, color, radius, System.currentTimeMillis());
       }
    }
 }
