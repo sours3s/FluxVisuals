@@ -39,6 +39,7 @@ public final class KillEffectSoulRenderer {
    }
 
    public static void render(WorldRenderer renderer) {
+      tick();
       if (renderer == null || EFFECTS.isEmpty()) {
          return;
       }

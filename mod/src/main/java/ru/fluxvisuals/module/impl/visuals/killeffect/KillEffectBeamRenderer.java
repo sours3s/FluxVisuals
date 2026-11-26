@@ -36,6 +36,7 @@ public final class KillEffectBeamRenderer {
    }
 
    public static void render(WorldRenderer renderer) {
+      tick();
       if (renderer == null || BEAMS.isEmpty()) {
          return;
       }

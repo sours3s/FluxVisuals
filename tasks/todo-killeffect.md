@@ -70,13 +70,13 @@ Plan: `tasks/plan-killeffect.md`
   - Verification: `git diff --check`.
   - Files: `TooltipRegistrar.java`, `ChangelogPanel.java`, `release_notes.md`, `gradle.properties`, серверные маркеры.
 
-- [ ] Task 10: Сборка и публикация
+- [x] Task 10: Сборка и публикация
   - Acceptance: `test obfuscateJar` проходит; артефакт проверен; публикация только после подтверждения.
   - Verification: SHA256; `gh release view`.
   - Files: `mod/build/release/fluxvisuals-1.1.5.jar`.
 
 ### Checkpoint: Complete
 
-- [ ] Все тесты проходят.
-- [ ] Обфускированный JAR собран.
+- [x] Все тесты проходят.
+- [x] Обфускированный JAR собран.
 - [ ] Пользователь подтвердил проверку в одиночном мире через loader `v1.0.14`.

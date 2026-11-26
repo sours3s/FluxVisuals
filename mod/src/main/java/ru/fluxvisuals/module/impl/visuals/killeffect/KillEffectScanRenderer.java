@@ -35,6 +35,7 @@ public final class KillEffectScanRenderer {
    }
 
    public static void render(WorldRenderer renderer) {
+      tick();
       if (renderer == null || WAVES.isEmpty()) {
          return;
       }

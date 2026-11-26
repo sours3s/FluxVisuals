@@ -85,15 +85,15 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Verification: `git diff --check`.
   - Files: `TooltipRegistrar.java`, `ChangelogPanel.java`, `release_notes.md`, `gradle.properties`, серверные маркеры.
 
-- [ ] Task 10: Сборка и публикация
+- [x] Task 10: Сборка и публикация
   - Acceptance: `./gradlew.bat test obfuscateJar` проходит; JAR проверен по `fabric.mod.json`; публикация выполняется только после отдельного подтверждения пользователя.
   - Verification: SHA256 артефакта; `gh release view`.
   - Files: `mod/build/release/fluxvisuals-1.1.5.jar`.
 
 ### Checkpoint: Complete
 
-- [ ] Все тесты проходят.
-- [ ] Обфускированный JAR собран.
+- [x] Все тесты проходят.
+- [x] Обфускированный JAR собран.
 - [ ] Пользователь подтвердил визуальную проверку в одиночном мире через loader `v1.0.14`.
 
 ## Risks and Mitigations

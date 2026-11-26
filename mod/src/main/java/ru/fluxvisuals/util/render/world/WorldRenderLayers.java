@@ -181,8 +181,11 @@ public final class WorldRenderLayers {
                   throw new IllegalArgumentException("Line width must be finite.");
             } else if (width < 0.0) {
                   throw new IllegalArgumentException("Line width cannot be negative.");
-            } else {
-                  return width == 0.0 ? 0.0 : width;
+            } else if (width == 0.0) {
+                  return 0.0;
             }
+            // Кэш линий хранит RenderLayer по ширине: без квантования анимированная
+            // толщина создавала бы новые слои каждый кадр.
+            return Math.round(width * 20.0) / 20.0;
       }
 }

@@ -36,6 +36,7 @@ public final class KillEffectDarknessRenderer {
    }
 
    public static void render(WorldRenderer renderer) {
+      tick();
       if (renderer == null || EFFECTS.isEmpty()) {
          return;
       }
@@ -53,7 +54,7 @@ public final class KillEffectDarknessRenderer {
          if (effect.spikeMode) {
             renderSpikes(renderer, effect, base, progress, reveal, outline);
          } else {
-            renderDarkness(renderer, effect, base, progress, reveal, outline);
+            renderDarkness(renderer, effect, base, reveal, outline);
          }
       }
    }
@@ -62,14 +63,12 @@ public final class KillEffectDarknessRenderer {
       EFFECTS.clear();
    }
 
-   private static void renderDarkness(WorldRenderer renderer, Darkness effect, Vec3d base, float progress,
+   private static void renderDarkness(WorldRenderer renderer, Darkness effect, Vec3d base,
          float reveal, int outline) {
       float currentRadius = effect.radius * (0.35F + reveal * 0.9F);
-      int dark = Renderer2D.ColorUtil.replAlpha(0xFF05070C, Math.round(150.0F * (1.0F - progress)));
-      Vec3d min = base.add(-currentRadius, -0.1, -currentRadius);
-      Vec3d max = base.add(currentRadius, effect.height, currentRadius);
-      renderer.drawCube(min, max, dark, false);
 
+      // Затемнение делается экранным оверлеем: доступный world-слой кубов аддитивный,
+      // поэтому тёмный куб только подсвечивал бы сцену вместо затемнения.
       for (int layer = 0; layer < 3; layer++) {
          float layerRadius = currentRadius * (0.5F + layer * 0.25F);
          float y = effect.height * (layer + 1) / 4.0F;

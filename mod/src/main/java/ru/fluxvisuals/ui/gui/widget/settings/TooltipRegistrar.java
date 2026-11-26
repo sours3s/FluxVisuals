@@ -106,7 +106,7 @@ public final class TooltipRegistrar {
       registerSetting(KillEffect.class, "Hide Body", "Скрывать модель убитой сущности во время эффекта Body Particles.");
       registerSetting(KillEffect.class, "Zoom", "Кратковременное приближение камеры в режиме Scan.");
       registerSetting(KillEffect.class, "Shake", "Кратковременная тряска камеры в режиме Scan.");
-      registerSetting(KillEffect.class, "Desaturate", "Серый оверлей вместо обесцвечивания мира.");
+      registerSetting(KillEffect.class, "Desaturate", "Полупрозрачный серый слой в Scan и тёмный слой в Darkness.");
       registerSetting(KillEffect.class, "Shard Size", "Размер осколков в режиме Body Particles.");
       registerSetting(KillEffect.class, "Shard Force", "Сила разлёта осколков в режиме Body Particles.");
       registerSetting(KillEffect.class, "Shard Life", "Время жизни осколков в режиме Body Particles.");

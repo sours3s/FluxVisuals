@@ -61,15 +61,12 @@ public class KillEffect extends Module {
    public final SliderSetting particles = new SliderSetting("Particles", 45.0F, MIN_PARTICLES, MAX_PARTICLES, 1.0F, false);
    public final SliderSetting radius = new SliderSetting("Radius", 5.0F, 0.5F, 20.0F, 0.5F, false);
    public final SliderSetting speed = new SliderSetting("Speed", 1.0F, 0.1F, 5.0F, 0.1F, false)
-         .hidden(() -> this.effectType.is("Darkness") || this.effectType.is("Scan"));
+         .hidden(() -> this.effectType.is("Scan"));
    public final SliderSetting beamHeight = new SliderSetting("Beam Height", 5.2F, 1.5F, 12.0F, 0.5F, false)
-         .hidden(() -> !this.effectType.is("Beam") && !this.effectType.is("Sky Beam")
-               && !this.effectType.is("Soul"));
+         .hidden(() -> !usesBeamSize());
    public final SliderSetting beamWidth = new SliderSetting("Beam Width", 0.42F, 0.08F, 1.2F, 0.02F, false)
-         .hidden(() -> !this.effectType.is("Beam") && !this.effectType.is("Sky Beam")
-               && !this.effectType.is("Soul"));
-   public final BooleanSetting shockwave = new BooleanSetting("Shockwave", true)
-         .hidden(() -> this.effectType.is("Darkness"));
+         .hidden(() -> !usesBeamSize());
+   public final BooleanSetting shockwave = new BooleanSetting("Shockwave", true);
    public final BooleanSetting sound = new BooleanSetting("Sound", true);
    public final BooleanSetting totem = new BooleanSetting("Totem", false);
    public final BooleanSetting hideBody = new BooleanSetting("Hide Body", false)
@@ -202,7 +199,7 @@ public class KillEffect extends Module {
       }
       effect.lastTotemId = living.getId();
       effect.lastTotemAt = now;
-      effect.playEffectFor(living);
+      effect.playEffectFor(living, false);
    }
 
    /** Используется EntityCullingMixin, чтобы скрыть модель убитой сущности. */
@@ -220,6 +217,11 @@ public class KillEffect extends Module {
    }
 
    private void playEffectFor(LivingEntity entity) {
+      playEffectFor(entity, true);
+   }
+
+   /** allowHideBody=false используется для тотема: сущность остаётся живой. */
+   private void playEffectFor(LivingEntity entity, boolean allowHideBody) {
       MinecraftClient client = mc;
       if (client == null || client.world == null || client.player == null || entity == client.player) {
          return;
@@ -239,7 +241,7 @@ public class KillEffect extends Module {
       this.lastEffectId = entity.getId();
       this.lastEffectAt = now;
       playEffectAt(entity.getEntityPos());
-      if (this.hideBody.get() && mode().equals("Body Particles")) {
+      if (allowHideBody && this.hideBody.get() && mode().equals("Body Particles")) {
          this.hiddenEntities.put(entity.getId(), now + Math.round(this.duration.get() * 1000.0F));
       }
    }
@@ -336,6 +338,12 @@ public class KillEffect extends Module {
 
    private int effectColor() {
       return this.colorMode.is("Custom") ? this.color.getRGBA(255) : Theme.VISUAL.accent();
+   }
+
+   private boolean usesBeamSize() {
+      String current = this.effectType.get();
+      return current.equals("Beam") || current.equals("Sky Beam") || current.equals("Soul")
+            || current.equals("Shatter") || current.equals("Darkness") || current.equals("Spike Abduction");
    }
 
    private String mode() {

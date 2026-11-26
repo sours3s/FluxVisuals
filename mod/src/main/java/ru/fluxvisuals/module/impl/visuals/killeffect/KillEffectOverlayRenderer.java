@@ -29,6 +29,7 @@ public final class KillEffectOverlayRenderer {
    }
 
    public static void render(Renderer2D r2, int width, int height) {
+      tick();
       if (r2 == null || OVERLAYS.isEmpty() || width <= 0 || height <= 0) {
          return;
       }
@@ -42,8 +43,9 @@ public final class KillEffectOverlayRenderer {
          float fade = 1.0F - KillEffectEasing.sineInOut(progress);
 
          if (overlay.desaturate) {
-            int gray = Renderer2D.ColorUtil.replAlpha(0xFFB8BCC4, Math.round(70.0F * fade));
-            r2.rect(0.0F, 0.0F, width, height, gray);
+            int tint = overlay.scan ? 0xFFB8BCC4 : 0xFF10131A;
+            int alpha = Math.round((overlay.scan ? 70 : 120) * fade);
+            r2.rect(0.0F, 0.0F, width, height, Renderer2D.ColorUtil.replAlpha(tint, alpha));
          }
 
          if (!overlay.scan) {
