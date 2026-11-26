@@ -28,6 +28,7 @@ import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
 import ru.fluxvisuals.module.api.setting.impl.HueSetting;
 import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
 import ru.fluxvisuals.module.api.setting.impl.SliderSetting;
+import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectBeamRenderer;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectDeathMemoryTracker;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectModes;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectParticleSystem;
@@ -130,6 +131,7 @@ public class KillEffect extends Module {
       this.soundQueue.tick();
       this.particleSystem.tick();
       KillEffectScanRenderer.tick();
+      KillEffectBeamRenderer.tick();
    }
 
    @EventInit
@@ -142,6 +144,7 @@ public class KillEffect extends Module {
       WorldRenderer renderer = event.worldRenderer();
       this.particleSystem.render(renderer);
       KillEffectScanRenderer.render(renderer);
+      KillEffectBeamRenderer.render(renderer);
    }
 
    /** Прямой хук статуса тотема: отдельного события в event bus нет. */
@@ -203,11 +206,22 @@ public class KillEffect extends Module {
       float radius = Math.max(0.25F, this.radius.get());
       Vec3d center = pos.add(0.0, 0.5, 0.0);
 
-      // Конкретные кастомные режимы подключаются в следующих шагах; пока общий мягкий всплеск.
-      spawnParticles(client, ParticleTypes.END_ROD, center, Math.max(8, count / 2), radius, 0.12F);
-      playSound("impact", 0.5F);
-
       int color = effectColor();
+      String effect = mode();
+
+      // Все режимы используют общие частицы-кирпичики; звук выбирается по режиму.
+      spawnParticles(client, ParticleTypes.END_ROD, center, Math.max(8, count / 2), radius, 0.12F);
+      playSound(effect.equals("Sky Beam") ? "thunder" : "impact", effect.equals("Sky Beam") ? 1.0F : 0.5F);
+
+      switch (effect) {
+         case "Beam", "Sky Beam" -> KillEffectBeamRenderer.spawn(pos, color, this.duration.get(),
+               this.beamHeight.get(), this.beamWidth.get(), radius, this.speed.get(), count,
+               effect.equals("Sky Beam"));
+         default -> {
+            // Остальные кастомные режимы подключаются в следующих шагах.
+         }
+      }
+
       this.particleSystem.setColor(color);
       this.particleSystem.spawnShards(center, Math.min(24, count / 2), radius * 0.35F, 0.07F, 800, color);
       if (this.shockwave.get()) {
@@ -260,6 +274,7 @@ public class KillEffect extends Module {
       this.soundQueue.clear();
       this.particleSystem.clear();
       KillEffectScanRenderer.clear();
+      KillEffectBeamRenderer.clear();
       this.lastEffectId = -1;
       this.lastEffectAt = 0L;
       this.lastTotemId = -1;

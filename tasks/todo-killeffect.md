@@ -26,7 +26,7 @@ Plan: `tasks/plan-killeffect.md`
 
 ## Phase 2: World effects
 
-- [ ] Task 4: Луч и небесный луч
+- [x] Task 4: Луч и небесный луч
   - Acceptance: `Beam` и `Sky Beam` разные, уважают настройки и TTL.
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectBeamRenderer.java`, `KillEffect.java`.

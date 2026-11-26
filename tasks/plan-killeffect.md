@@ -41,7 +41,7 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
 
 ### Phase 2: World effects
 
-- [ ] Task 4: Луч и небесный луч
+- [x] Task 4: Луч и небесный луч
   - Acceptance: режимы `Beam` и `Sky Beam` рисуют разные эффекты, уважают `Duration`, `Beam Height`, `Beam Width`, `Radius`, `Wave` и цвет; эффекты исчезают по TTL.
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffectBeamRenderer.java`, `KillEffect.java`.
