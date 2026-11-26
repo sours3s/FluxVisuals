@@ -14,7 +14,7 @@ Plan: `tasks/plan-killeffect.md`
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffect.java`, `TooltipRegistrar.java`.
 
-- [ ] Task 3: Надёжный trigger и тотем
+- [x] Task 3: Надёжный trigger и тотем
   - Acceptance: attack + death/tick fallback + `status == 35`; дубли подавляются; состояние очищается.
   - Verification: `./gradlew.bat test --no-daemon`; ручная проверка.
   - Files: `KillEffect.java`, `KillEffectDeathMemoryTracker.java`, `ClientPlayNetworkHandlerMixin.java`.

@@ -13,6 +13,7 @@ import ru.fluxvisuals.commands.CommandManager;
 import ru.fluxvisuals.module.impl.utils.LagDetector;
 import ru.fluxvisuals.module.impl.utils.SoundFX;
 import ru.fluxvisuals.module.impl.visuals.CustomWorld;
+import ru.fluxvisuals.module.impl.visuals.KillEffect;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayNetworkHandler.class)
@@ -28,6 +29,7 @@ public abstract class ClientPlayNetworkHandlerMixin {
    @Inject(method = "onEntityStatus", at = @At("HEAD"))
    private void onEntityStatus(EntityStatusS2CPacket packet, CallbackInfo ci) {
       SoundFX.handleEntityStatus(packet);
+      KillEffect.handleTotem(packet);
    }
 
    @Inject(method = "sendChatMessage", at = @At("HEAD"), cancellable = true)

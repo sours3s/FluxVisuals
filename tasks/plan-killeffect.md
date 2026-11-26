@@ -29,7 +29,7 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Verification: `./gradlew.bat compileJava --no-daemon`.
   - Files: `KillEffect.java`, `TooltipRegistrar.java`.
 
-- [ ] Task 3: Надёжный trigger и тотем
+- [x] Task 3: Надёжный trigger и тотем
   - Acceptance: атака + death status/tick fallback работают вместе; дубли подавляются; `status == 35` запускает выбранный эффект, если `Totem` включён; при смене мира/отключении состояние очищается.
   - Verification: `./gradlew.bat test --no-daemon`; ручная проверка в одиночном мире.
   - Files: `KillEffect.java`, `KillEffectDeathMemoryTracker.java`, `ClientPlayNetworkHandlerMixin.java`.

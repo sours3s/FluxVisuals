@@ -8,10 +8,13 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.Vec3d;
+import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.event.EventInit;
+import ru.fluxvisuals.event.impl.EventChangeWorld;
 import ru.fluxvisuals.event.impl.EntityDeathEvent;
 import ru.fluxvisuals.event.lifecycle.ClientTickEvent;
 import ru.fluxvisuals.event.player.AttackEvent;
@@ -73,6 +76,10 @@ public class KillEffect extends Module {
    private final KillEffectDeathMemoryTracker tracker;
    private final KillEffectSoundQueue soundQueue = new KillEffectSoundQueue();
    private final KillEffectParticleSystem particleSystem = new KillEffectParticleSystem();
+   private int lastEffectId = -1;
+   private long lastEffectAt;
+   private int lastTotemId = -1;
+   private long lastTotemAt;
 
    public KillEffect() {
       this.addSettings(new Setting[]{this.effectType, this.players, this.mobs, this.colorMode, this.color,
@@ -126,10 +133,41 @@ public class KillEffect extends Module {
    }
 
    @EventInit
+   public void onChangeWorld(EventChangeWorld event) {
+      reset();
+   }
+
+   @EventInit
    public void onRender(WorldRenderEvent event) {
       WorldRenderer renderer = event.worldRenderer();
       this.particleSystem.render(renderer);
       KillEffectScanRenderer.render(renderer);
+   }
+
+   /** Прямой хук статуса тотема: отдельного события в event bus нет. */
+   public static void handleTotem(EntityStatusS2CPacket packet) {
+      if (packet == null || packet.getStatus() != 35) {
+         return;
+      }
+      if (mc == null || mc.world == null || mc.player == null
+            || FluxVisualsClient.get == null || FluxVisualsClient.get.manager == null) {
+         return;
+      }
+      Module module = FluxVisualsClient.get.manager.getModule(KillEffect.class);
+      if (!(module instanceof KillEffect effect) || !module.enable || !effect.totem.get()) {
+         return;
+      }
+      if (!(packet.getEntity(mc.world) instanceof LivingEntity living) || living == mc.player) {
+         return;
+      }
+
+      long now = System.currentTimeMillis();
+      if (living.getId() == effect.lastTotemId && now - effect.lastTotemAt < 750L) {
+         return;
+      }
+      effect.lastTotemId = living.getId();
+      effect.lastTotemAt = now;
+      effect.playEffectFor(living);
    }
 
    private void playEffectFor(LivingEntity entity) {
@@ -144,6 +182,13 @@ public class KillEffect extends Module {
       } else if (!this.mobs.get()) {
          return;
       }
+
+      long now = System.currentTimeMillis();
+      if (entity.getId() == this.lastEffectId && now - this.lastEffectAt < 750L) {
+         return;
+      }
+      this.lastEffectId = entity.getId();
+      this.lastEffectAt = now;
       playEffectAt(entity.getEntityPos());
    }
 
@@ -215,5 +260,9 @@ public class KillEffect extends Module {
       this.soundQueue.clear();
       this.particleSystem.clear();
       KillEffectScanRenderer.clear();
+      this.lastEffectId = -1;
+      this.lastEffectAt = 0L;
+      this.lastTotemId = -1;
+      this.lastTotemAt = 0L;
    }
 }
