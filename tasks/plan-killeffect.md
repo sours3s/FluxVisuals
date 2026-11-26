@@ -80,7 +80,7 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
 
 ### Phase 4: Finish
 
-- [ ] Task 9: Документация и версия
+- [x] Task 9: Документация и версия
   - Acceptance: обновлены tooltip, changelog, release notes; `mod_version` бампится на `1.1.5`; маркеры сервера/лоадера обновлены.
   - Verification: `git diff --check`.
   - Files: `TooltipRegistrar.java`, `ChangelogPanel.java`, `release_notes.md`, `gradle.properties`, серверные маркеры.

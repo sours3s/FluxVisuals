@@ -65,7 +65,7 @@ Plan: `tasks/plan-killeffect.md`
 
 ## Phase 4: Finish
 
-- [ ] Task 9: Документация и версия
+- [x] Task 9: Документация и версия
   - Acceptance: tooltip/changelog/release notes обновлены; `mod_version=1.1.5`; маркеры обновлены.
   - Verification: `git diff --check`.
   - Files: `TooltipRegistrar.java`, `ChangelogPanel.java`, `release_notes.md`, `gradle.properties`, серверные маркеры.
