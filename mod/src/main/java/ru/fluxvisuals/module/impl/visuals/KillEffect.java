@@ -4,17 +4,12 @@ import com.google.gson.JsonObject;
 import java.util.concurrent.ThreadLocalRandom;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LightningEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import ru.fluxvisuals.event.EventInit;
 import ru.fluxvisuals.event.impl.EntityDeathEvent;
@@ -36,7 +31,7 @@ import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectScanRenderer;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectSoundQueue;
 import ru.fluxvisuals.util.render.world.WorldRenderer;
 
-@IModule(name = "Kill Effect", description = "Эффект при убийстве: молния, кровь, взрыв, сердце или дым", category = Category.Visuals, bind = -1)
+@IModule(name = "Kill Effect", description = "Кастомные эффекты при убийстве: луч, душа, осколки, тьма и другое", category = Category.Visuals, bind = -1)
 @Environment(EnvType.CLIENT)
 public class KillEffect extends Module {
    private static final long KILL_WINDOW_MS = 6500L;
@@ -128,43 +123,14 @@ public class KillEffect extends Module {
          return;
       }
 
-      String effect = mode();
+      normalizeMode();
       int count = Math.round(Math.max(MIN_PARTICLES, Math.min(MAX_PARTICLES, this.particles.get())));
       float radius = Math.max(0.25F, this.radius.get());
       Vec3d center = pos.add(0.0, 0.5, 0.0);
 
-      switch (effect) {
-         case "Lightning" -> {
-            LightningEntity lightning = new LightningEntity(EntityType.LIGHTNING_BOLT, client.world);
-            lightning.setPosition(pos.x, pos.y, pos.z);
-            lightning.setCosmetic(true);
-            client.world.addEntity(lightning);
-            spawnParticles(client, ParticleTypes.EXPLOSION, center, Math.min(count, 20), radius, 0.12F);
-            playSound("thunder", 2.0F);
-         }
-         case "Blood" -> {
-            BlockPos blockPos = BlockPos.ofFloored(pos.x, pos.y, pos.z);
-            client.world.syncWorldEvent(client.player, 2001, blockPos,
-                  Block.getRawIdFromState(Blocks.REDSTONE_BLOCK.getDefaultState()));
-            playSound("impact", 0.4F);
-         }
-         case "Explosion" -> {
-            spawnParticles(client, ParticleTypes.EXPLOSION, center, count, radius, 0.18F);
-            playSound("explode", 1.0F);
-         }
-         case "Heart" -> {
-            spawnParticles(client, ParticleTypes.HEART, center, Math.max(8, count / 2), radius * 0.6F, 0.08F);
-            playSound("levelup", 0.5F);
-         }
-         case "Smoke" -> {
-            spawnParticles(client, ParticleTypes.LARGE_SMOKE, center, count, radius, 0.06F);
-            playSound("extinguish", 1.0F);
-         }
-         default -> {
-            spawnParticles(client, ParticleTypes.EXPLOSION, center, count, radius, 0.18F);
-            playSound("explode", 1.0F);
-         }
-      }
+      // Конкретные кастомные режимы подключаются в следующих шагах; пока общий мягкий всплеск.
+      spawnParticles(client, ParticleTypes.END_ROD, center, Math.max(8, count / 2), radius, 0.12F);
+      playSound("impact", 0.5F);
 
       int color = Theme.VISUAL.accent();
       this.particleSystem.setColor(color);

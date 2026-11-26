@@ -20,7 +20,7 @@ public final class TooltipRegistrar {
       registerModule(BlockOutline.class, "Подсвечивает целевой блок контуром, заливкой или обоим вместе. Работает не сквозь стены.");
       registerModule(GlowCubes.class, "Светящиеся кубы вокруг игрока с анимацией появления/исчезновения и эффектом свечения.");
       registerModule(HitEffect.class, "Эффект волны при попадании по сущности. Рисует расширяющееся кольцо в точке попадания.");
-      registerModule(KillEffect.class, "Эффект при убийстве: молния, кровь, взрыв, сердце или дым, с настройками частиц и радиуса.");
+      registerModule(KillEffect.class, "Кастомные эффекты при убийстве: луч, душа, осколки, тьма, шипы и scan.");
       registerModule(JumpCircle.class, "Красивые кольца/эффекты при прыжке: Pulse, Spiral, Nova, Blocks (подсветка блоков).");
       registerModule(ESP.class, "Классический ESP для игроков: боксы, линии, скелет, здоровье, имя, дистанция, прицеливание.");
       registerModule(Particles.class, "Различные партикл-эффекты: тотем-частицы, критические удары, магия, дым и др.");
@@ -89,7 +89,7 @@ public final class TooltipRegistrar {
       registerSetting(HitEffect.class, "Segments", "Количество сегментов круга (качество).");
 
       // KillEffect
-      registerSetting(KillEffect.class, "Effect Type", "Тип эффекта: Lightning, Blood, Explosion, Heart или Smoke.");
+      registerSetting(KillEffect.class, "Effect Type", "Тип эффекта: Beam, Sky Beam, Soul, Shatter, Darkness, Spike Abduction, Body Particles или Scan.");
       registerSetting(KillEffect.class, "Mobs", "Показывать эффект для мобов, а не только игроков.");
       registerSetting(KillEffect.class, "Particles", "Количество дополнительных частиц и осколков.");
       registerSetting(KillEffect.class, "Radius", "Радиус разлёта частиц и ударной волны.");
