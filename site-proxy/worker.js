@@ -2,14 +2,14 @@
  * Бесплатный прокси FluxVisuals для адреса fluxvisuals.eu.org.
  *
  * Маршруты:
- *   /, /api/*, /css/*, /js/* ... → fluxvisuals-server.onrender.com (сайт, кабинет, Catal, API)
- *   /news, /api/news/*, /bot-status → fluxvisuals-news-bot.onrender.com (панель новостей)
+ *   /, /api/*, /css/*, /js/* ... → fluxvisuals-auth на Northflank (сайт, кабинет, Catal, API)
+ *   /news, /api/news/*, /bot-status → fluxvisuals-bots на Northflank (панель новостей)
  *
  * Сайт использует относительные пути (/api, /css, /js), поэтому за прокси
  * работает полностью: логин, регистрация, кабинет, скачивание и API.
  */
-const DEFAULT_ORIGIN = 'fluxvisuals-server.onrender.com';
-const NEWS_ORIGIN = 'fluxvisuals-news-bot.onrender.com';
+const DEFAULT_ORIGIN = 'p01--fluxvisuals-auth--7wqqdlfq28t5.code.run';
+const NEWS_ORIGIN = 'p01--fluxvisuals-bots--7wqqdlfq28t5.code.run';
 
 function targetFor(pathname, origin, newsOrigin) {
   if (

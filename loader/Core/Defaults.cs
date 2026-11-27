@@ -3,7 +3,7 @@ using System.Text;
 namespace FluxVisualsLoader.Core;
 
 /// <summary>Скрытые дефолтные URL (GitHub, сервер). Собираются из частей, чтобы не светить
-/// полные ссылки в бинарнике — поиск по бинарнику не находит github/onrender.</summary>
+/// полные ссылки в бинарнике — поиск по бинарнику не находит github/серверные адреса.</summary>
 public static class Defaults
 {
     public static string ModDownloadUrl => Build(
@@ -11,7 +11,7 @@ public static class Defaults
         "download/", "v1.1.5/", "fluxvisuals-", "1.1.5.jar");
 
     public static string AuthServerUrl => Build(
-        "https://flux", "visuals-se", "rver.onre", "nder.com");
+        "https://", "fluxvisuals", ".fvls.", "workers.dev");
 
     public static string UpdateCheckUrl => Build(
         "https://", "api.github", ".com/repos/", "sours3s/Flux", "Visuals/releases?per_page=30");

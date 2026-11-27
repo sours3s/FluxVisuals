@@ -3,19 +3,19 @@
   "rewrites": [
     {
       "source": "/news",
-      "destination": "https://fluxvisuals-news-bot.onrender.com/news"
+      "destination": "https://p01--fluxvisuals-bots--7wqqdlfq28t5.code.run/news"
     },
     {
       "source": "/api/news/:path*",
-      "destination": "https://fluxvisuals-news-bot.onrender.com/api/news/:path*"
+      "destination": "https://p01--fluxvisuals-bots--7wqqdlfq28t5.code.run/api/news/:path*"
     },
     {
       "source": "/bot-status",
-      "destination": "https://fluxvisuals-news-bot.onrender.com/bot-status"
+      "destination": "https://p01--fluxvisuals-bots--7wqqdlfq28t5.code.run/bot-status"
     },
     {
       "source": "/:path*",
-      "destination": "https://fluxvisuals-server.onrender.com/:path*"
+      "destination": "https://p01--fluxvisuals-auth--7wqqdlfq28t5.code.run/:path*"
     }
   ],
   "headers": [

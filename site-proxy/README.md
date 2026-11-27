@@ -8,25 +8,25 @@
 
 1. Cloudflare → Add a site `fluxvisuals.eu.org` → Free → получить два NS.
 2. <https://nic.eu.org/arf/> → зарегистрироваться → Request a new domain → `fluxvisuals.eu.org` + эти NS → ждать письма об одобрении.
-3. Cloudflare → DNS: CNAME `@` → `fluxvisuals-server.onrender.com`, **Proxied**.
-4. `npx wrangler deploy` из этой папки — Worker с маршрутом `fluxvisuals.eu.org/*`.
+3. `npx wrangler deploy` из этой папки — Worker с маршрутом `fluxvisuals.eu.org/*` и включённым `workers.dev`.
+4. Пока NS не делегированы, пользоваться коротким адресом `https://fluxvisuals.fvls.workers.dev`.
 
 `worker.js` проксирует:
 
-- `/`, `/api/*`, `/css/*`, `/js/*` → `fluxvisuals-server.onrender.com` (сайт, кабинет, Catal, API);
-- `/news`, `/api/news/*`, `/bot-status` → `fluxvisuals-news-bot.onrender.com` (панель новостей).
+- `/`, `/api/*`, `/css/*`, `/js/*` → `fluxvisuals-auth` на Northflank (сайт, кабинет, Catal, API);
+- `/news`, `/api/news/*`, `/bot-status` → `fluxvisuals-bots` на Northflank (панель новостей).
 
 Проверка после деплоя:
 
 ```text
-https://fluxvisuals.eu.org/                 → сайт FluxVisuals
-https://fluxvisuals.eu.org/api/mod/version  → JSON с версией
-https://fluxvisuals.eu.org/news             → панель новостей
+https://fluxvisuals.fvls.workers.dev/                 → сайт FluxVisuals
+https://fluxvisuals.fvls.workers.dev/api/mod/version  → JSON с версией
+https://fluxvisuals.fvls.workers.dev/news             → панель новостей
 ```
 
-## Если нужен адрес прямо сейчас
+## Временный адрес
 
-Пока EU.org рассматривает заявку, можно задеплоить тот же прокси на `fluxvisuals.vercel.app`: Vercel → импорт репозитория, Root Directory = `site-proxy`, Framework = Other, название проекта ровно `fluxvisuals`. В `vercel.json` уже прописаны те же маршруты. Имя свободно.
+Рабочий адрес на время ожидания EU.org: `https://fluxvisuals.fvls.workers.dev`. После одобрения домена и делегирования NS на Cloudflare (`davina`/`robert`) тот же Worker начнёт отвечать на `fluxvisuals.eu.org`; менять NS вручную до одобрения не нужно.
 
 ## Почему не двухбуквенная зона
 
@@ -34,6 +34,6 @@ https://fluxvisuals.eu.org/news             → панель новостей
 
 ## Важно
 
-- Лоадер ходит на `fluxvisuals-server.onrender.com` напрямую — exe и API менять не нужно.
-- Render Free засыпает через ~15 минут; UptimeRobot держите на исходных `onrender.com`-адресах.
-- EU.org одобряет заявки вручную, это может занять несколько дней.
+- Лоадер ходит на `https://fluxvisuals.fvls.workers.dev` — exe и API менять не нужно.
+- Все сервисы (сайт/API, БД, оба бота) находятся в одном проекте Northflank; `fluxvisuals.eu.org` остаётся конечным доменом.
+- EU.org одобряет заявки вручную, это может занять несколько дней. Пока в аккаунте `nic.eu.org` нет ни одного домена — зона в Cloudflare остаётся pending.

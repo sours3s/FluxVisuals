@@ -5,7 +5,9 @@
 - `news` — бот **FluxVisuals**, публикует новости через веб-панель `/news` или slash-команду `/news`;
 - `support` — бот **FluxVisuals Support**, тот же Catal, отвечает в указанных каналах.
 
-Токены ботов и общий секрет хранятся только в переменных окружения Render. В репозиторий и чат их писать нельзя.
+Токены ботов и общий секрет хранятся в secret group `fluxvisuals-core` проекта Northflank. В репозиторий и чат их писать нельзя.
+
+Текущий деплой: один сервис `fluxvisuals-bots` на Northflank запускает оба процесса через `bots/entrypoint.sh`; адреса `/ping`: `p01--fluxvisuals-bots--7wqqdlfq28t5.code.run` (news) и `p02--fluxvisuals-bots--7wqqdlfq28t5.code.run` (support). Ниже разделы про Render — старая инструкция на случай отката.
 
 ---
 

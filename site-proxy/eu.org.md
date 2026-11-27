@@ -2,6 +2,15 @@
 
 Всё бесплатно. Порядок важен: сначала получаем адреса nameserver'ов Cloudflare, потом подаём заявку в EU.org, потому что при регистрации нужно сразу указать NS.
 
+## Текущее состояние (2026-11-27)
+
+- Контакт `KD1269-FREE` активен, вход в панель <https://nic.eu.org/arf/en/> работает.
+- Заявка на `fluxvisuals.eu.org` уже подана: `20261122174718-arf-38181`, статус **pending** (ожидает ручной проверки EU.org). Повторная отправка формы возвращает `IGNORED: you already have a pending request ...` — заново подавать не нужно.
+- В заявке указаны NS Cloudflare `davina.ns.cloudflare.com` и `robert.ns.cloudflare.com`. Проверка SOA/NS прошла без ошибок.
+- Раздел **Domains** в EU.org пока пуст: pending-заявки в нём не отображаются.
+- Cloudflare показывает зону `Invalid nameservers` до делегирования домена — это ожидаемо. NS в Cloudflare менять не нужно.
+- Согласно регламенту EU.org, решение приходит письмом после ручной проверки, которая занимает несколько дней. Рабочий адрес до одобрения: `https://fluxvisuals.fvls.workers.dev`.
+
 ## 1. Cloudflare: зона и nameserver'ы
 
 1. Зарегистрируйтесь в Cloudflare → **Add a site** → `fluxvisuals.eu.org` → план **Free**.
@@ -29,13 +38,11 @@
 
 **DNS → Records:**
 
-| Type  | Name | Value                              | Proxy status      |
-|-------|------|------------------------------------|-------------------|
-| CNAME | `@`  | `fluxvisuals-server.onrender.com`  | Proxied (оранжевый) |
+Отдельная запись не нужна: маршрут Worker `fluxvisuals.eu.org/*` перехватывает запросы. Если интерфейс потребует запись, добавьте CNAME `@` → `p01--fluxvisuals-auth--7wqqdlfq28t5.code.run` с **Proxied**.
 
 **Worker:**
 
-В репозитории уже готовы `site-proxy/worker.js`, `site-proxy/wrangler.toml`. Worker проксирует сайт на `fluxvisuals-server.onrender.com`, а `/news`, `/api/news/*` и `/bot-status` — на `fluxvisuals-news-bot.onrender.com`.
+В репозитории уже готовы `site-proxy/worker.js`, `site-proxy/wrangler.toml`. Worker проксирует сайт и API на `fluxvisuals-auth` (Northflank), а `/news`, `/api/news/*` и `/bot-status` — на `fluxvisuals-bots` (Northflank). До одобрения домена работает короткий адрес `https://fluxvisuals.fvls.workers.dev`.
 
 Через терминал:
 
@@ -54,18 +61,18 @@ wrangler deploy
 
 ```text
 https://fluxvisuals.eu.org/                 → сайт FluxVisuals
-https://fluxvisuals.eu.org/api/mod/version  → {"version":"1.1.0",...}
+https://fluxvisuals.eu.org/api/mod/version  → {"version":"1.1.5",...}
 https://fluxvisuals.eu.org/news             → панель публикации новостей
 ```
 
-SSL-сертификат Cloudflare выпускает автоматически. Render ничего настраивать не нужно: все запросы доходят через Worker.
+SSL-сертификат Cloudflare выпускает автоматически. В Northflank ничего дополнительно настраивать не нужно: все запросы доходят через Worker.
 
 ## Запасной вариант без Worker
 
-Можно не использовать Worker, а добавить `fluxvisuals.eu.org` в Render → Settings → Custom Domains сервиса `fluxvisuals`, а в Cloudflare поставить CNAME с **DNS only** (серое облако). Тогда сайт и API будут работать, но `/news` — нет, потому что это отдельный Render-сервис. Поэтому лучше вариант с Worker.
+Можно повесить `fluxvisuals.eu.org` как Custom Domain на сервис `fluxvisuals-auth` в Northflank, но тогда `/news`, `/api/news/*` и `/bot-status` не попадут на сервис ботов. Поэтому нужен Worker.
 
 ## Важно
 
-- Лоадер продолжает обращаться к `fluxvisuals-server.onrender.com` напрямую — exe менять не нужно.
-- Пока заявка не одобрена, строка `route` в `wrangler.toml` может оставаться — деплой просто не привяжется к зоне. Можно временно закомментировать её и пользоваться `*.workers.dev`.
-- UptimeRobot лучше ставить на исходные `onrender.com`-адреса, а не на новый домен.
+- Лоадер обращается к `https://fluxvisuals.fvls.workers.dev`; после одобрения домена адрес заменяется на `https://fluxvisuals.eu.org`.
+- Пока заявка не одобрена, строка `route` в `wrangler.toml` может оставаться — деплой просто не привяжется к зоне. Включённый `workers_dev = true` даёт рабочий адрес `fluxvisuals.fvls.workers.dev`.
+- UptimeRobot лучше ставить на рабочий `workers.dev`-адрес, а после одобрения — на `fluxvisuals.eu.org`.

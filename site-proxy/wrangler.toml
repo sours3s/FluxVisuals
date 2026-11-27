@@ -2,11 +2,14 @@ name = "fluxvisuals"
 main = "worker.js"
 compatibility_date = "2026-11-22"
 
+# Временный рабочий адрес: fluxvisuals.fvls.workers.dev
+workers_dev = true
+
 # После одобрения fluxvisuals.eu.org Worker будет обслуживать весь адрес.
 # Пока домен не одобрен — эту строку можно закомментировать и пользоваться workers.dev.
 route = { pattern = "fluxvisuals.eu.org/*", zone_name = "fluxvisuals.eu.org" }
 
-# Адрес Render-сервера. Менять не нужно, если сервис называется fluxvisuals-server.
+# origins сервисов Northflank (auth и боты в одном проекте).
 [vars]
-ORIGIN = "fluxvisuals-server.onrender.com"
-NEWS_ORIGIN = "fluxvisuals-news-bot.onrender.com"
+ORIGIN = "p01--fluxvisuals-auth--7wqqdlfq28t5.code.run"
+NEWS_ORIGIN = "p01--fluxvisuals-bots--7wqqdlfq28t5.code.run"

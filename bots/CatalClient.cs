@@ -27,7 +27,7 @@ public sealed class CatalClient
     public CatalClient()
     {
         _baseUrl = (Environment.GetEnvironmentVariable("AUTH_SERVER_URL")
-            ?? "https://fluxvisuals-server.onrender.com").TrimEnd('/');
+            ?? "https://fluxvisuals.fvls.workers.dev").TrimEnd('/');
         _secret = Environment.GetEnvironmentVariable("FLUXVISUALS_BOT_SECRET") ?? "";
     }
 
