@@ -13,6 +13,11 @@ public static class Defaults
     public static string AuthServerUrl => Build(
         "https://", "fluxvisuals", ".fvls.", "workers.dev");
 
+    /// <summary>Старый адрес из конфигов, оставшихся после Render.</summary>
+    public static bool IsLegacyAuthServerUrl(string? url) =>
+        !string.IsNullOrWhiteSpace(url) &&
+        url.Contains(Build("fluxvisuals", "-server", ".onrender", ".com"), StringComparison.OrdinalIgnoreCase);
+
     public static string UpdateCheckUrl => Build(
         "https://", "api.github", ".com/repos/", "sours3s/Flux", "Visuals/releases?per_page=30");
 

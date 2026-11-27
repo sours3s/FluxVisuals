@@ -86,6 +86,11 @@ public class AppConfig
         cfg ??= new AppConfig();
         if (string.IsNullOrWhiteSpace(cfg.CurseforgeKey)) cfg.CurseforgeKey = Defaults.CurseforgeApiKey;
 
+        // После переноса с Render в сохранённом конфиге мог остаться старый адрес;
+        // такой конфиг надо принудительно перевести на Worker.
+        if (string.IsNullOrWhiteSpace(cfg.AuthServerUrl) || Defaults.IsLegacyAuthServerUrl(cfg.AuthServerUrl))
+            cfg.AuthServerUrl = Defaults.AuthServerUrl;
+
         // Авторитетный конфиг лежит в папке игры (сохраняется вместе с игрой).
         // Auth-поля переносим из exe-конфига, чтобы не разлогинило при расхождении.
         try
