@@ -38,7 +38,12 @@
 
 **DNS → Records:**
 
-Отдельная запись не нужна: маршрут Worker `fluxvisuals.eu.org/*` перехватывает запросы. Если интерфейс потребует запись, добавьте CNAME `@` → `p01--fluxvisuals-auth--7wqqdlfq28t5.code.run` с **Proxied**.
+Основной трафик забирает маршрут Worker `fluxvisuals.eu.org/*`. Для надёжности обе записи зоны уже переведены с Render на Northflank и остаются **Proxied**:
+
+| Type  | Name                    | Content                                          | Proxy status |
+|-------|-------------------------|--------------------------------------------------|--------------|
+| CNAME | `fluxvisuals.eu.org`    | `p01--fluxvisuals-auth--7wqqdlfq28t5.code.run`   | Proxied      |
+| CNAME | `www.fluxvisuals.eu.org`| `p01--fluxvisuals-auth--7wqqdlfq28t5.code.run`   | Proxied      |
 
 **Worker:**
 
