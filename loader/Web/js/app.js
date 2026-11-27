@@ -34,6 +34,14 @@
   let authenticated = false;
 
   // ---------- Оформление: акцент из настроек ----------
+  // C# хранит ARGB как Int32 (со знаком). Беззнаковое число ломает десериализацию.
+  const toArgbInt = (value, def) => {
+    const rgb = typeof value === 'number'
+      ? value & 0xffffff
+      : parseInt(String(value ?? '').replace('#', ''), 16);
+    return ((Number.isFinite(rgb) ? rgb : def) | 0xff000000) | 0;
+  };
+
   function applyAccent(cfg) {
     const hex = (v, def) => '#' + (((v ?? def) & 0xffffff) >>> 0).toString(16).padStart(6, '0');
     const root = document.documentElement.style;
@@ -994,7 +1002,8 @@
     const cfg = Object.assign({}, state.config || {});
     cfg.mcNickname = ($('#homeNick')?.value || '').trim() || 'Player';
     cfg.isAdmin = state.isAdmin;
-    cfg.accent = (parseInt($('#setAccent').value.replace('#', ''), 16) | 0xff000000) >>> 0;
+    cfg.accent = toArgbInt($('#setAccent').value, 0xa855f7);
+    cfg.accentSecond = toArgbInt(cfg.accentSecond, 0xec4899);
     cfg.ramMb = parseInt($('#setRam').value) || 4096;
     cfg.version = state.config?.version || '1.21.11';
     cfg.modules = cfg.modules || {};

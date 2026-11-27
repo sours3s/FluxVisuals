@@ -21,8 +21,11 @@ public class AppConfig
     [JsonPropertyName("clientName")] public string ClientName { get; set; } = "FluxVisuals";
     /// <summary>Никнейм Minecraft, с которым пользователь заходит на сервера (отдельно от ника аккаунта).</summary>
     [JsonPropertyName("mcNickname")] public string McNickname { get; set; } = "";
-    [JsonPropertyName("accent")] public int Accent { get; set; } = unchecked((int)0xFFA855F7);
-    [JsonPropertyName("accentSecond")] public int AccentSecond { get; set; } = unchecked((int)0xFFEC4899);
+    [JsonPropertyName("accent"), JsonConverter(typeof(Int32ColorConverter))]
+    public int Accent { get; set; } = unchecked((int)0xFFA855F7);
+
+    [JsonPropertyName("accentSecond"), JsonConverter(typeof(Int32ColorConverter))]
+    public int AccentSecond { get; set; } = unchecked((int)0xFFEC4899);
     [JsonPropertyName("modules")] public Dictionary<string, bool> Modules { get; set; } = new();
     [JsonPropertyName("modDownloadUrl")] public string ModDownloadUrl { get; set; } = Defaults.ModDownloadUrl;
     [JsonPropertyName("modVersion")] public string ModVersion { get; set; } = "";
