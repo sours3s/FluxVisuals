@@ -265,3 +265,18 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
 - [x] Task 37: Регистрация, конфиг и финальная сборка
   - Acceptance: модуль уже зарегистрирован в `Manager`, оба mixin уже в конфиге, нейминг под `fluxvisuals`, подсказки приведены к донорскому описанию, релиз и бамп версий не публиковать.
   - Verification: `compileJava` и `test obfuscateJar` — `BUILD SUCCESSFUL` с `-PgrunteonXmx=768m`; `git diff --check` чистый; упоминаний источника в портированных файлах нет.
+
+### Phase 13: Порт MotionBlur
+
+- [x] Task 38: Модуль `MotionBlur` и настройки
+  - Acceptance: точные настройки донора, их порядок/значения/видимость и полная логика модуля в целевом API.
+  - Verification: `compileJava`.
+
+- [x] Task 39: Рендер и шейдеры размытия
+  - Acceptance: перенос всех необходимых классов, шейдеров, pipeline/uniform и хуков отрисовки с сохранением формул и параметров донора.
+  - Verification: `compileJava`.
+
+- [x] Task 40: Регистрация, конфиг и финальная сборка
+  - Acceptance: модуль и обработчики зарегистрированы, mixin-конфиг и ассеты обновлены, нейминг под `fluxvisuals`, релиз и бамп версий не публиковать.
+  - Verification: `compileJava`, `test obfuscateJar`, `git diff --check`.
+  - Status: модуль портирован на 1.21.11 через `PostEffectProcessor`, активные шейдеры и pipeline лежат в `assets/minecraft`, старый HUD-оверлей и мёртвый pipeline удалены; сборки зелёные, релиз и бамп версий не делались.

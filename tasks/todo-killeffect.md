@@ -210,3 +210,10 @@ Plan: `tasks/plan-killeffect.md`
   - Acceptance: регистрация и mixin-конфиг без изменений, подсказки обновлены, нейминг под `fluxvisuals`, релиз не публиковать.
   - Files: `TooltipRegistrar.java`, `TooltipManager.java`.
   - Status: `compileJava` и `test obfuscateJar` зелёные; `git diff --check` чистый; релиз и бамп версий не делались.
+
+## Phase 13: Порт MotionBlur
+
+- [x] Task 38: Модуль `MotionBlur` и настройки
+- [x] Task 39: Рендер и шейдеры размытия
+- [x] Task 40: Регистрация, конфиг и финальная сборка
+  - Status: `compileJava` и `test obfuscateJar` зелёные; `git diff --check` чистый; релиз и бамп версий не делались.

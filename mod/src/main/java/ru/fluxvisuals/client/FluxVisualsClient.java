@@ -136,10 +136,6 @@ public class FluxVisualsClient implements ClientModInitializer {
       try {
          EventManager.register(new ru.fluxvisuals.module.impl.visuals.DynamicLightsWorldRenderer());
       } catch (Exception ignored) {}
-      // Register Motion Blur renderer
-      try {
-         EventManager.register(new ru.fluxvisuals.module.impl.visuals.MotionBlurRenderer());
-      } catch (Exception ignored) {}
       EventManager.register(this);
 
       // Register all tooltips for ClickGUI

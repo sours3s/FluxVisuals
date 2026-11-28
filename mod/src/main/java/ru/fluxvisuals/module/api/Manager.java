@@ -96,9 +96,6 @@ public class Manager {
       this.module.add(new ru.fluxvisuals.module.impl.visuals.ShaderFog());
       this.module.add(ru.fluxvisuals.module.impl.visuals.BetterMinecraft.INSTANCE);
 
-      // Вспомогательные рендереры, не являющиеся модулями, — регистрируем их обработчики событий.
-      ru.fluxvisuals.event.EventManager.register(new ru.fluxvisuals.module.impl.visuals.MotionBlurRenderer());
-
       this.module.sort(java.util.Comparator.comparing(m -> m.name));
 
       // Build caches

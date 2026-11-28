@@ -1,5 +1,6 @@
 package ru.fluxvisuals.mixin;
 
+import java.util.concurrent.CompletableFuture;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -11,6 +12,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.impl.EventChangeWorld;
@@ -34,6 +36,32 @@ public abstract class MinecraftClientMixin {
    private void initRenderer(CallbackInfo ci) {
       if (FluxVisualsClient.isModInitialized()) {
          FluxVisualsClient.ensureRendererInitialized();
+      }
+   }
+
+   @Inject(method = { "tick" }, at = { @At("HEAD") })
+   private void fluxvisuals$motionBlurTick(CallbackInfo ci) {
+      ru.fluxvisuals.module.impl.visuals.MotionBlur.tick();
+   }
+
+   @Inject(
+      method = "reloadResources(ZLnet/minecraft/client/MinecraftClient$LoadingContext;)Ljava/util/concurrent/CompletableFuture;",
+      at = @At("HEAD")
+   )
+   private void fluxvisuals$onResourceReloadStart(CallbackInfoReturnable<CompletableFuture<Void>> cir) {
+      ru.fluxvisuals.module.impl.visuals.MotionBlur.onReloadStart();
+   }
+
+   @Inject(
+      method = "reloadResources(ZLnet/minecraft/client/MinecraftClient$LoadingContext;)Ljava/util/concurrent/CompletableFuture;",
+      at = @At("RETURN")
+   )
+   private void fluxvisuals$onResourceReloadReturn(CallbackInfoReturnable<CompletableFuture<Void>> cir) {
+      CompletableFuture<Void> future = cir.getReturnValue();
+      if (future != null) {
+         future.whenComplete((value, throwable) -> ru.fluxvisuals.module.impl.visuals.MotionBlur.onReloadComplete());
+      } else {
+         ru.fluxvisuals.module.impl.visuals.MotionBlur.onReloadComplete();
       }
    }
 

@@ -1,0 +1,43 @@
+{
+  "targets": {
+    "motion_blur": {}
+  },
+  "passes": [
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "minecraft:core/motion_blur",
+      "inputs": [
+        { "sampler_name": "Main", "target": "minecraft:main" },
+        { "sampler_name": "MainDepth", "target": "minecraft:main", "use_depth_buffer": true }
+      ],
+      "uniforms": {
+        "MotionBlurUniforms": [
+          { "name": "MvInverse", "type": "matrix4x4", "value": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+          { "name": "ProjInverse", "type": "matrix4x4", "value": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+          { "name": "PrevModelView", "type": "matrix4x4", "value": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+          { "name": "PrevProjection", "type": "matrix4x4", "value": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+          { "name": "CameraPos", "type": "vec3", "value": [ 0.0, 0.0, 0.0 ] },
+          { "name": "PrevCameraPos", "type": "vec3", "value": [ 0.0, 0.0, 0.0 ] },
+          { "name": "Strength", "type": "float", "value": 1.0 },
+          { "name": "Samples", "type": "int", "value": 32 },
+          { "name": "Centered", "type": "int", "value": 0 },
+          { "name": "UseDepth", "type": "int", "value": 1 }
+        ]
+      },
+      "output": "motion_blur"
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "minecraft:post/blit",
+      "inputs": [
+        { "sampler_name": "In", "target": "motion_blur" }
+      ],
+      "uniforms": {
+        "BlitConfig": [
+          { "name": "ColorModulate", "type": "vec4", "value": [ 1.0, 1.0, 1.0, 1.0 ] }
+        ]
+      },
+      "output": "minecraft:main"
+    }
+  ]
+}

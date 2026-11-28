@@ -34,6 +34,7 @@ import ru.fluxvisuals.event.EventManager;
 import ru.fluxvisuals.event.render.EventRender3D;
 import ru.fluxvisuals.event.render.WorldRenderEvent;
 import ru.fluxvisuals.module.impl.visuals.DynamicLights;
+import ru.fluxvisuals.module.impl.visuals.MotionBlur;
 import ru.fluxvisuals.module.impl.visuals.ShaderFog;
 import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectScanRenderer;
 import ru.fluxvisuals.util.render.backends.gl.GlState;
@@ -57,6 +58,7 @@ public class WorldRendererMixin {
          Vector4f fogColor,
          boolean shouldRenderSky,
          CallbackInfo ci) {
+      MotionBlur.captureFrame(allocator, positionMatrix, projectionMatrix, camera);
       EntityFramebufferCaptureManager.getInstance().beginFrame((WorldRenderer) (Object) this, tickCounter, camera);
    }
 
@@ -79,6 +81,7 @@ public class WorldRendererMixin {
       EventManager.call(new EventRender3D(stack, tickCounter.getTickProgress(true)));
       EntityFramebufferCaptureManager.getInstance().endFrame();
       MinecraftClient client = MinecraftClient.getInstance();
+      MotionBlur.renderWorld(client != null ? client.getFramebuffer() : null, allocator);
       if (client != null) {
          GameRenderer gameRenderer = client.gameRenderer;
          if (gameRenderer != null && camera != null) {

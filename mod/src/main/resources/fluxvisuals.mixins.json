@@ -78,7 +78,9 @@
     "accessor.AbstractTextureAccessor",
     "accessor.BossBarHudAccessor",
     "accessor.ItemCooldownManagerAccessor",
-    "accessor.ItemCooldownManagerEntryAccessor"
+    "accessor.ItemCooldownManagerEntryAccessor",
+    "accessor.PostEffectPassAccessor",
+    "accessor.PostEffectProcessorAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
