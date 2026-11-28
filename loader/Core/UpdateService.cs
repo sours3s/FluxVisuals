@@ -9,21 +9,6 @@ namespace FluxVisualsLoader.Core;
 /// <summary>Автообновление лоадера: проверка GitHub Releases, скачивание и замена exe.</summary>
 public static class UpdateService
 {
-    /// <summary>URL проверки обновлений собирается из частей, чтобы не светить ссылку в бинарнике.</summary>
-    public static string DefaultUpdateCheckUrl => Defaults.UpdateCheckUrl;
-
-    private static readonly HttpClient Http = new()
-    {
-        // Короткий таймаут: если GitHub недоступен — просто запускаемся со старой версией.
-        Timeout = TimeSpan.FromSeconds(15)
-    };
-
-    static UpdateService()
-    {
-        Http.DefaultRequestHeaders.UserAgent.ParseAdd("FluxVisualsLoader/1.0");
-        Http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-    }
-
     public static Version CurrentVersion =>
         Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
 
@@ -38,51 +23,22 @@ public static class UpdateService
         }
     }
 
-    /// <summary>Находит последний релиз с ассетом FluxVisualsLoader.exe и сравнивает с текущей версией.
-    /// Возвращает null, если обновлений нет (или не удалось проверить).</summary>
-    public static async Task<UpdateInfo?> CheckAsync(string updateCheckUrl, CancellationToken ct = default)
+    /// <summary>Версия и ссылка на лоадер берутся из админ-панели (/api/mod/version).
+    /// Возвращает null, если обновлений нет или сервер недоступен.</summary>
+    public static async Task<UpdateInfo?> CheckAsync(string authServerUrl, CancellationToken ct = default)
     {
         try
         {
-            using var resp = await Http.GetAsync(updateCheckUrl, ct);
-            if (!resp.IsSuccessStatusCode) return null;
-            string json = await resp.Content.ReadAsStringAsync(ct);
-            using var doc = JsonDocument.Parse(json);
-
-            Version? best = null;
-            string? bestUrl = null;
-            string? bestTag = null;
-
-            foreach (var rel in doc.RootElement.EnumerateArray())
+            var info = await AuthService.GetModVersionAsync(authServerUrl);
+            if (info == null || string.IsNullOrWhiteSpace(info.LoaderDownloadUrl) ||
+                string.IsNullOrWhiteSpace(info.LoaderVersion) ||
+                !Version.TryParse(info.LoaderVersion, out var version))
             {
-                // Тег релиза: v1.0.1.loader (или v1.0.0.0.loader). Версия — первая цифровая часть.
-                string tag = rel.TryGetProperty("tag_name", out var t) ? t.GetString() ?? "" : "";
-                var m = Regex.Match(tag, @"v?(\d+(?:\.\d+){1,3})");
-                if (!m.Success || !Version.TryParse(m.Groups[1].Value, out var ver)) continue;
-
-                // Интересует только релиз, где лежит FluxVisualsLoader.exe.
-                if (!rel.TryGetProperty("assets", out var assets)) continue;
-                string? url = null;
-                foreach (var a in assets.EnumerateArray())
-                {
-                    string name = a.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
-                    if (!name.Equals("FluxVisualsLoader.exe", StringComparison.OrdinalIgnoreCase)) continue;
-                    url = a.TryGetProperty("browser_download_url", out var u) ? u.GetString() : null;
-                    break;
-                }
-                if (url == null) continue;
-
-                if (best == null || ver > best)
-                {
-                    best = ver;
-                    bestUrl = url;
-                    bestTag = tag;
-                }
+                return null;
             }
 
-            if (best == null || bestUrl == null) return null;
-            if (best <= CurrentVersion) return null; // уже последняя версия
-            return new UpdateInfo(best, bestTag ?? "", bestUrl);
+            if (version <= CurrentVersion) return null;
+            return new UpdateInfo(version, info.LoaderVersion, info.LoaderDownloadUrl);
         }
         catch (Exception ex)
         {

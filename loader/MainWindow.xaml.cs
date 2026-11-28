@@ -74,8 +74,8 @@ public partial class MainWindow : Window
         _ = _backend.Handle(json);
     }
 
-    /// <summary>Проверяет наличие новой версии лоадера и, если она есть, показывает окно обновления.
-    /// Ошибки сети/доступа к GitHub не блокируют запуск — продолжаем со старой версией.</summary>
+    /// <summary>Проверяет версию лоадера по ссылке из админ-панели и показывает окно обновления.
+    /// Ошибки сети не блокируют запуск — продолжаем со старой версией.</summary>
     private async void CheckForUpdate()
     {
         try
@@ -83,7 +83,7 @@ public partial class MainWindow : Window
             var cfg = Core.AppConfig.Load();
             if (!cfg.UpdateCheckEnabled) return;
 
-            var update = await Core.UpdateService.CheckAsync(cfg.UpdateCheckUrl);
+            var update = await Core.UpdateService.CheckAsync(cfg.AuthServerUrl);
             if (update == null) return;
 
             string newExe = Path.Combine(Core.UpdateService.UpdateDir, "FluxVisualsLoader.update.exe");

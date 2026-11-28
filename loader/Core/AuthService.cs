@@ -163,11 +163,21 @@ public static class AuthService
             var json = await WithRetryAsync(() => _http.GetStringAsync(url));
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
+            string downloadUrl = root.TryGetProperty("downloadUrl", out var du) ? du.GetString() ?? "" : "";
+            string version = root.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
+            if (string.IsNullOrWhiteSpace(version)) version = Defaults.VersionFromUrl(downloadUrl);
+            string fileName = root.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? "" : "";
+            string loaderUrl = root.TryGetProperty("loaderDownloadUrl", out var lu) ? lu.GetString() ?? "" : "";
+            string loaderVersion = root.TryGetProperty("loaderVersion", out var lv) ? lv.GetString() ?? "" : "";
+            if (string.IsNullOrWhiteSpace(loaderVersion)) loaderVersion = Defaults.VersionFromUrl(loaderUrl);
+
             return new ModVersionInfo
             {
-                DownloadUrl = root.GetProperty("downloadUrl").GetString() ?? "",
-                Version = root.GetProperty("version").GetString() ?? "",
-                FileName = root.GetProperty("fileName").GetString() ?? ""
+                DownloadUrl = downloadUrl,
+                Version = version,
+                FileName = fileName,
+                LoaderDownloadUrl = loaderUrl,
+                LoaderVersion = loaderVersion
             };
         }
         catch
@@ -235,4 +245,6 @@ public record ModVersionInfo
     public string DownloadUrl { get; init; } = "";
     public string Version { get; init; } = "";
     public string FileName { get; init; } = "";
+    public string LoaderDownloadUrl { get; init; } = "";
+    public string LoaderVersion { get; init; } = "";
 }

@@ -170,72 +170,19 @@ public class GameSession
         // ---- Мод (скачивание с удалённого хоста + автообновление) ----
         _progress("mod", 76, "Мод FluxVisuals...");
 
-        // Сначала проверяем GitHub (приоритет) - там всегда актуальная версия
-        string remoteVersion = "";
-        string remoteFileName = "fluxvisuals-1.1.5.jar"; // fallback
-        string remoteUrl = "";
-        try
-        {
-            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("FluxVisualsLoader/1.0");
-            httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-            var githubUrl = "https://api.github.com/repos/sours3s/FluxVisuals/releases/latest";
-            var response = await httpClient.GetStringAsync(githubUrl);
-            using var ghDoc = JsonDocument.Parse(response);
-            var ghRoot = ghDoc.RootElement;
-            var tagName = ghRoot.GetProperty("tag_name").GetString() ?? "";
-            if (tagName.StartsWith("v"))
-            {
-                remoteVersion = tagName.Substring(1); // Remove 'v' prefix
-                // Find the .jar asset
-                foreach (var asset in ghRoot.GetProperty("assets").EnumerateArray())
-                {
-                    var name = asset.GetProperty("name").GetString() ?? "";
-                    if (name.EndsWith(".jar"))
-                    {
-                        remoteFileName = name;
-                        remoteUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
-                        if (!string.IsNullOrWhiteSpace(remoteUrl))
-                        {
-                            _cfg.ModDownloadUrl = remoteUrl;
-                            _cfg.Save();
-                            LauncherLog.Info($"Updated mod URL from GitHub: {remoteUrl}");
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            LauncherLog.Warn($"Mod version check from GitHub failed: {ex.Message}");
-        }
+        // Единственный источник — ссылка из админ-панели. Лоадер качает строго её.
+        var modInfo = await AuthService.GetModVersionAsync(_cfg.AuthServerUrl);
+        if (modInfo == null || string.IsNullOrWhiteSpace(modInfo.DownloadUrl))
+            throw new Exception("Не удалось получить URL мода из админ-панели. Проверьте соединение с сервером.");
 
-        // Fallback: проверяем AuthServer если GitHub недоступен
-        if (string.IsNullOrEmpty(remoteVersion))
-        {
-            try
-            {
-                using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
-                var modInfoUrl = _cfg.AuthServerUrl.TrimEnd('/') + "/api/mod/version";
-                var response = await httpClient.GetStringAsync(modInfoUrl);
-                using var modDoc = JsonDocument.Parse(response);
-                var modRoot = modDoc.RootElement;
-                remoteUrl = modRoot.GetProperty("downloadUrl").GetString() ?? "";
-                remoteVersion = modRoot.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
-                remoteFileName = modRoot.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? "" : remoteFileName;
-                if (!string.IsNullOrWhiteSpace(remoteUrl))
-                {
-                    _cfg.ModDownloadUrl = remoteUrl;
-                    _cfg.Save();
-                    LauncherLog.Info($"Updated mod URL from AuthServer: {remoteUrl}");
-                }
-            }
-            catch (Exception ex)
-            {
-                LauncherLog.Warn($"Mod version check from AuthServer failed: {ex.Message}");
-            }
-        }
+        string remoteUrl = modInfo.DownloadUrl;
+        string remoteVersion = modInfo.Version;
+        string remoteFileName = modInfo.FileName;
+        if (string.IsNullOrWhiteSpace(remoteFileName))
+            remoteFileName = Path.GetFileName(new Uri(remoteUrl).AbsolutePath);
+        _cfg.ModDownloadUrl = remoteUrl;
+        _cfg.Save();
+        LauncherLog.Info($"Mod URL from admin panel: {remoteUrl} (version {remoteVersion})");
 
         string modDst = Path.Combine(modsDir, remoteFileName);
 
@@ -256,11 +203,7 @@ public class GameSession
             LauncherLog.Warn($"Could not clean old mods: {ex.Message}");
         }
 
-        string modUrl = _cfg.ModDownloadUrl;
-        if (string.IsNullOrWhiteSpace(modUrl))
-        {
-            throw new Exception("Не задан URL для скачивания мода (ModDownloadUrl в config.json).");
-        }
+        string modUrl = remoteUrl;
 
         // Автообновление мода: если версия на сервере изменилась — удаляем старый jar и качаем заново
         // (иначе Downloader пропустит скачивание, так как файл уже существует).

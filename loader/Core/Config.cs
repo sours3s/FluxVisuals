@@ -27,7 +27,8 @@ public class AppConfig
     [JsonPropertyName("accentSecond"), JsonConverter(typeof(Int32ColorConverter))]
     public int AccentSecond { get; set; } = unchecked((int)0xFFEC4899);
     [JsonPropertyName("modules")] public Dictionary<string, bool> Modules { get; set; } = new();
-    [JsonPropertyName("modDownloadUrl")] public string ModDownloadUrl { get; set; } = Defaults.ModDownloadUrl;
+    /// <summary>Заполняется из админ-панели; локальное значение не является источником версии.</summary>
+    [JsonPropertyName("modDownloadUrl")] public string ModDownloadUrl { get; set; } = "";
     [JsonPropertyName("modVersion")] public string ModVersion { get; set; } = "";
     /// <summary>Иконки установленных файлов: fileName -> URL иконки (для «Моих файлов»).</summary>
     [JsonPropertyName("modIcons")] public Dictionary<string, string> ModIcons { get; set; } = new();
@@ -43,7 +44,6 @@ public class AppConfig
     [JsonPropertyName("modMetaTried")] public HashSet<string> ModMetaTried { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     [JsonPropertyName("authServerUrl")] public string AuthServerUrl { get; set; } = Defaults.AuthServerUrl;
     [JsonPropertyName("authToken")] public string AuthToken { get; set; } = "";
-    [JsonPropertyName("updateCheckUrl")] public string UpdateCheckUrl { get; set; } = UpdateService.DefaultUpdateCheckUrl;
     [JsonPropertyName("updateCheckEnabled")] public bool UpdateCheckEnabled { get; set; } = true;
 
     /// <summary>config.json лежит в %LOCALAPPDATA%\FluxVisuals — стабильное место,
