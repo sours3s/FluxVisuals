@@ -1,74 +1,82 @@
 {
-  "gui_open": {
-    "category": "master",
-    "sounds": [
-      "fluxvisuals:gui_open"
-    ]
-  },
-  "gui_close": {
-    "category": "master",
-    "sounds": [
-      "fluxvisuals:gui_close"
-    ]
-  },
-  "sixseven": {
-    "category": "master",
-    "sounds": [
-      "fluxvisuals:sixseven"
-    ]
-  },
-  "ios_type": {
-    "category": "master",
-    "sounds": [
-      "fluxvisuals:ios_type"
-    ]
-  },
-  "disable": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:disable" ]
-  },
-  "disable1": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:disable1" ]
-  },
-  "disable2": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:disable2" ]
-  },
-  "enable": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:enable" ]
-  },
-  "enable1": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:enable1" ]
-  },
-  "enable2": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:enable2" ]
-  },
-  "kill2": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:kill2" ]
-  },
-  "nya": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:nya" ]
-  },
-  "skeet": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:skeet" ]
-  },
-  "uwu": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:uwu" ]
-  },
-  "welcome": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:welcome" ]
-  },
-  "bell": {
-    "category": "master",
-    "sounds": [ "fluxvisuals:bell" ]
-  }
+   "gui_open": {
+     "category": "master",
+     "sounds": [
+       "fluxvisuals:gui_open"
+     ]
+   },
+   "gui_close": {
+     "category": "master",
+     "sounds": [
+       "fluxvisuals:gui_close"
+     ]
+   },
+   "sixseven": {
+     "category": "master",
+     "sounds": [
+       "fluxvisuals:sixseven"
+     ]
+   },
+   "ios_type": {
+     "category": "master",
+     "sounds": [
+       "fluxvisuals:ios_type"
+     ]
+   },
+   "disable": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:disable" ]
+   },
+   "disable1": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:disable1" ]
+   },
+   "disable2": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:disable2" ]
+   },
+   "enable": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:enable" ]
+   },
+   "enable1": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:enable1" ]
+   },
+   "enable2": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:enable2" ]
+   },
+   "kill2": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:kill2" ]
+   },
+   "kill_impact": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:kill_impact" ]
+   },
+   "kill_crystal": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:kill_crystal" ]
+   },
+   "nya": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:nya" ]
+   },
+   "skeet": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:skeet" ]
+   },
+   "uwu": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:uwu" ]
+   },
+   "welcome": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:welcome" ]
+   },
+   "bell": {
+     "category": "master",
+     "sounds": [ "fluxvisuals:bell" ]
+   }
 }

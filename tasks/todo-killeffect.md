@@ -79,4 +79,38 @@ Plan: `tasks/plan-killeffect.md`
 
 - [x] Все тесты проходят.
 - [x] Обфускированный JAR собран.
-- [ ] Пользователь подтвердил проверку в одиночном мире через loader `v1.0.14`.
+- [ ] Пользователь подтвердил проверку в одиночном мире через loader `v1.0.16`.
+
+## Phase 5: 1:1 visual port
+
+- [x] Task 11: Точный Beam/Soul/Shatter
+- [x] Task 12: Точный Darkness/Spike/Scan и ассеты
+- [x] Task 13: Точные частицы тела и звуки
+- [ ] Task 14: Версия 1.1.6, сборка и публикация
+- [ ] Отступление: полный framebuffer-pass `killdistortion` — после визуальной проверки
+
+## Phase 6: Возврат к эталонной логике вместо кубиков и линий
+
+- [x] Task 15: Beam и Sky Beam по эталонной геометрии
+  - Acceptance: 40 срезов × 3 glow-слоя, 10 нижних слоёв, цилиндры 64 блока, наземное кольцо, 28 частиц.
+  - Verification: `compileJava`; нет `drawCube` в рендере луча.
+  - Files: `KillEffectBeamRenderer.java`, `KillEffectGlow.java`.
+
+- [x] Task 16: Soul и Shatter с рендером сущности-призрака
+  - Acceptance: `OtherClientPlayerEntity` с параметрами цели и прозрачностью; пользовательский силуэт удалён; призрак удаляется вместе с эффектом.
+  - Verification: `compileJava`.
+  - Files: `KillEffectSoulRenderer.java`, `KillEffect.java`.
+
+- [x] Task 17: Darkness, Spike и Body Particles без кубов
+  - Acceptance: 12 → 6 ванильных частиц, исправленная альфа цилиндров, частица-след шипа, `Kind.CUBE` и `spawnVanillaParticles` удалены.
+  - Verification: поиск по `CUBE` и `spawnVanillaParticles` — 0 совпадений.
+  - Files: `KillEffectDarknessRenderer.java`, `KillEffectParticleSystem.java`.
+
+- [x] Task 18: Локальная сборка без бампа версии
+  - Acceptance: `test obfuscateJar` зелёный; `mod_version=1.1.5`; релиз не публиковался.
+  - Verification: SHA256 `2AC0076205830F9A4311239DC37108E23873FF57A62FD37E52D0F1504B46A536`.
+  - Files: `mod/build/release/fluxvisuals-1.1.5.jar`.
+
+- [ ] Task 19: Визуальная проверка и публикация
+  - Acceptance: пользователь проверяет 8 режимов через loader `v1.0.16`, затем отдельно подтверждает `1.1.6` и публикацию.
+  - Status: локальный артефакт готов; публикация запрещена без подтверждения.

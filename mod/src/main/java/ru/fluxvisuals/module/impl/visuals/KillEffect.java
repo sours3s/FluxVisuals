@@ -3,7 +3,6 @@ package ru.fluxvisuals.module.impl.visuals;
 import com.google.gson.JsonObject;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -11,8 +10,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.Vec3d;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.event.EventInit;
@@ -240,17 +237,18 @@ public class KillEffect extends Module {
       }
       this.lastEffectId = entity.getId();
       this.lastEffectAt = now;
-      playEffectAt(entity.getEntityPos());
+      playEffectAt(entity);
       if (allowHideBody && this.hideBody.get() && mode().equals("Body Particles")) {
          this.hiddenEntities.put(entity.getId(), now + Math.round(this.duration.get() * 1000.0F));
       }
    }
 
-   private void playEffectAt(Vec3d pos) {
+   private void playEffectAt(LivingEntity entity) {
       MinecraftClient client = mc;
-      if (client == null || client.world == null || client.player == null || pos == null) {
+      if (client == null || client.world == null || client.player == null || entity == null) {
          return;
       }
+      Vec3d pos = entity.getEntityPos();
 
       normalizeMode();
       int count = Math.round(Math.max(MIN_PARTICLES, Math.min(MAX_PARTICLES, this.particles.get())));
@@ -260,21 +258,21 @@ public class KillEffect extends Module {
       int color = effectColor();
       String effect = mode();
 
-      // Все режимы используют общие частицы-кирпичики; звук выбирается по режиму.
-      spawnParticles(client, ParticleTypes.END_ROD, center, Math.max(8, count / 2), radius, 0.12F);
+      // Звуки и частицы берутся из эталонных реализаций соответствующих режимов.
       String sound = switch (effect) {
          case "Sky Beam" -> "thunder";
-         case "Shatter", "Darkness", "Spike Abduction", "Body Particles" -> "explode";
-         case "Soul" -> "levelup";
-         default -> "impact";
+         case "Shatter" -> "kill_crystal";
+         case "Soul" -> "kill2";
+         case "Darkness", "Spike Abduction", "Body Particles" -> "kill_impact";
+         default -> "kill_impact";
       };
-      playSound(sound, sound.equals("thunder") || sound.equals("explode") ? 1.0F : 0.5F);
+      playSound(sound, sound.equals("thunder") ? 1.0F : 0.7F);
 
       switch (effect) {
          case "Beam", "Sky Beam" -> KillEffectBeamRenderer.spawn(pos, color, this.duration.get(),
                this.beamHeight.get(), this.beamWidth.get(), radius, this.speed.get(), count,
                effect.equals("Sky Beam"));
-         case "Soul", "Shatter" -> KillEffectSoulRenderer.spawn(pos, color, this.duration.get(),
+         case "Soul", "Shatter" -> KillEffectSoulRenderer.spawn(entity, pos, color, this.duration.get(),
                this.beamHeight.get(), this.beamWidth.get(), radius, this.speed.get(), count,
                effect.equals("Soul"));
          case "Darkness", "Spike Abduction" -> KillEffectDarknessRenderer.spawn(pos, color,
@@ -302,10 +300,6 @@ public class KillEffect extends Module {
          KillEffectOverlayRenderer.spawn(color, this.duration.get(), true, false);
       }
 
-      if (!effect.equals("Body Particles")) {
-         this.particleSystem.setColor(color);
-         this.particleSystem.spawnShards(center, Math.min(24, count / 2), radius * 0.35F, 0.07F, 800, color);
-      }
       if (this.shockwave.get()) {
          KillEffectScanRenderer.spawn(center, color, radius);
       }
@@ -314,25 +308,6 @@ public class KillEffect extends Module {
    private void playSound(String name, float volume) {
       if (this.sound.get()) {
          this.soundQueue.schedule(name, volume, 0L);
-      }
-   }
-
-   private static void spawnParticles(MinecraftClient client, ParticleEffect type, Vec3d pos, int count,
-         float radius, float speed) {
-      if (client == null || client.world == null || type == null || pos == null || count <= 0) {
-         return;
-      }
-      ThreadLocalRandom random = ThreadLocalRandom.current();
-      for (int i = 0; i < count; i++) {
-         double angle = random.nextDouble(0.0, Math.PI * 2.0);
-         double distance = random.nextDouble(0.0, radius);
-         double x = pos.x + Math.cos(angle) * distance;
-         double y = pos.y + random.nextDouble(0.0, Math.min(radius, 2.0));
-         double z = pos.z + Math.sin(angle) * distance;
-         double vx = random.nextDouble(-0.5, 0.5) * speed;
-         double vy = random.nextDouble(0.0, 1.0) * speed;
-         double vz = random.nextDouble(-0.5, 0.5) * speed;
-         client.world.addParticleClient(type, x, y, z, vx, vy, vz);
       }
    }
 
