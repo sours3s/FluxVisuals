@@ -280,3 +280,30 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Acceptance: модуль и обработчики зарегистрированы, mixin-конфиг и ассеты обновлены, нейминг под `fluxvisuals`, релиз и бамп версий не публиковать.
   - Verification: `compileJava`, `test obfuscateJar`, `git diff --check`.
   - Status: модуль портирован на 1.21.11 через `PostEffectProcessor`, активные шейдеры и pipeline лежат в `assets/minecraft`, старый HUD-оверлей и мёртвый pipeline удалены; сборки зелёные, релиз и бамп версий не делались.
+
+### Phase 14: Полный порт NameTags
+
+- [ ] Task 41: Шейдерные ресурсы донора
+  - Acceptance: в `assets/minecraft/shaders/core` перенесены все шейдеры, реально используемые стеком NameTags (`text`, `text_blur`, `texture`, `rect`, `liquidglass_rect`, `circle`, `svg` и их зависимости); конфиги и исходники соответствуют донорским формулам; активные шейдеры MotionBlur и ClickGUI не перезаписаны.
+  - Verification: `processResources`, `compileJava`; `git diff --check`.
+  - Files: `mod/src/main/resources/assets/minecraft/shaders/core/*`.
+
+- [ ] Task 42: Шейдерный Java-стек донора
+  - Acceptance: под `ru.fluxvisuals.render.nametags` портированы `ShaderCache`-эквивалент, `TextShader`, `ShapeShader`, `SvgShader`, `RoundedTextureShader`, `RotationBuffer`, `MathUtil`; формулы, uniform'ы, vertex format'ы и порядок отрисовки сохранены, API адаптировано под 1.21.11.
+  - Verification: `compileJava`.
+
+- [ ] Task 43: Данные, анимации и иконки NameTags
+  - Acceptance: портированы `GlyphQuad`, `NameTagEntry`, `NameTagAnimations`, `AnimatedInt`, `DistanceScale`, `ItemIconCache`, `ItemIcons`, палитра/тема и текстовые утилиты; геометрия плашки, размеры, отступы и анимации соответствуют донору; в коде нет упоминаний источника и сторонних клиентов.
+  - Verification: `compileJava`.
+
+- [ ] Task 44: NameTagCache с безопасной видимостью
+  - Acceptance: портированы компоновка и отрисовка плашки, но `disableDepthTest`/`glDepthFunc(519)` исключены, depth test остаётся включённым, а список кандидатов дополнительно фильтруется по прямой видимости; `FramebufferSwap` не переносится; ничего не рисуется сквозь стены или блоки.
+  - Verification: `compileJava`; поиск по портированному коду не находит выключения depth test и сквозьстенных хуков.
+
+- [ ] Task 45: Модуль NameTags и рендер-интеграция
+  - Acceptance: точные настройки донора (имена, порядок, значения, диапазоны, шаги, видимость), отбор только игроков по друзьям/врагам, префикс, HP, броня, руки, иконки, упрощение вдали; рендер идёт через `EventRender3D` с камерой и матрицей мира; настройка `Ванильные неймтеги` управляет подавлением ванильного лейбла.
+  - Verification: `compileJava`; `git diff --check`.
+
+- [ ] Task 46: Регистрация, mixin-конфиг и финальная сборка
+  - Acceptance: модуль зарегистрирован, mixin-конфиг и подсказки обновлены, `Protect`, `StreamBypass`, обход HP, `VoicechatBridge` и сквозьстенные хуки не переносятся; релиз и бамп версий не публиковать.
+  - Verification: `compileJava`, `test obfuscateJar`, `git diff --check`; в портированных файлах нет упоминаний источника и сторонних clients.

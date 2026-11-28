@@ -217,3 +217,13 @@ Plan: `tasks/plan-killeffect.md`
 - [x] Task 39: Рендер и шейдеры размытия
 - [x] Task 40: Регистрация, конфиг и финальная сборка
   - Status: `compileJava` и `test obfuscateJar` зелёные; `git diff --check` чистый; релиз и бамп версий не делались.
+
+## Phase 14: Полный порт NameTags
+
+- [ ] Task 41: Шейдерные ресурсы донора
+- [ ] Task 42: Шейдерный Java-стек донора
+- [ ] Task 43: Данные, анимации и иконки NameTags
+- [ ] Task 44: NameTagCache с безопасной видимостью
+- [ ] Task 45: Модуль NameTags и рендер-интеграция
+- [ ] Task 46: Регистрация, mixin-конфиг и финальная сборка
+  - Verification: `compileJava`, `test obfuscateJar`, `git diff --check`; релиз и бамп версий не делать.
