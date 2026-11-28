@@ -2,68 +2,63 @@ package ru.fluxvisuals.module.impl.visuals.killeffect;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.util.math.Vec3d;
 
-/** Кратковременное состояние камеры для зума и тряски в режиме Scan. */
+/**
+ * Камера эталонной реализации: 650 мс, зум множителем FOV и поворот по Z.
+ * Источник: эталонная реализация Kill Effect, зум и поворот камеры.
+ */
 @Environment(EnvType.CLIENT)
 public final class KillEffectCameraState {
+   private static final long CAMERA_MS = 650L;
    private static long startedAt;
-   private static long durationMs;
    private static boolean zoom;
    private static boolean shake;
 
    private KillEffectCameraState() {}
 
-   public static void spawn(float durationSeconds, boolean enableZoom, boolean enableShake) {
+   public static void spawn(boolean enableZoom, boolean enableShake) {
       if (!enableZoom && !enableShake) {
          return;
       }
       startedAt = System.currentTimeMillis();
-      durationMs = Math.max(300L, Math.round(durationSeconds * 1000.0F));
       zoom = enableZoom;
       shake = enableShake;
    }
 
    public static void tick() {
-      if (isExpired()) {
+      if (progress() >= 1.0F) {
          clear();
       }
    }
 
-   public static float fovOffset() {
-      if (!active() || !zoom || isExpired()) {
-         return 0.0F;
+   public static float fovScale() {
+      if (!zoom || progress() >= 1.0F) {
+         return 1.0F;
       }
-      float progress = KillEffectEasing.clamp((float) (System.currentTimeMillis() - startedAt) / durationMs);
-      float pulse = (float) Math.sin(progress * Math.PI);
-      return -9.0F * pulse * (1.0F - progress * 0.35F);
+      float envelope = (float) Math.sin(progress() * Math.PI);
+      return Math.max(0.5F, Math.min(1.0F, 1.0F - 15.0F * envelope / 70.0F));
    }
 
-   public static Vec3d shakeOffset() {
-      if (!active() || !shake || isExpired()) {
-         return Vec3d.ZERO;
+   public static float shakeDegrees() {
+      if (!shake || progress() >= 1.0F) {
+         return 0.0F;
       }
-      float progress = KillEffectEasing.clamp((float) (System.currentTimeMillis() - startedAt) / durationMs);
-      float strength = 0.09F * (1.0F - progress);
-      long time = System.currentTimeMillis();
-      double x = Math.sin(time * 0.071) * strength;
-      double y = Math.sin(time * 0.093 + 1.7) * strength * 0.6;
-      double z = Math.cos(time * 0.083 + 0.9) * strength;
-      return new Vec3d(x, y, z);
+      float progress = progress();
+      float seconds = (float) (System.currentTimeMillis() - startedAt) / 1000.0F;
+      float wave = (float) (Math.sin(seconds * 26.0) * 0.65 + Math.sin(seconds * 16.5) * 0.35);
+      return wave * 0.8F * 2.5F * (1.0F - progress) * (1.0F - progress);
    }
 
    public static void clear() {
       startedAt = 0L;
-      durationMs = 0L;
       zoom = false;
       shake = false;
    }
 
-   private static boolean active() {
-      return durationMs > 0L;
-   }
-
-   private static boolean isExpired() {
-      return !active() || System.currentTimeMillis() - startedAt >= durationMs;
+   private static float progress() {
+      if (startedAt <= 0L) {
+         return 1.0F;
+      }
+      return KillEffectEasing.clamp((float) (System.currentTimeMillis() - startedAt) / CAMERA_MS);
    }
 }

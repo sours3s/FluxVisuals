@@ -68,6 +68,8 @@ public final class KillEffectSoundQueue {
          case "explode" -> new Resolved(SoundEvents.ENTITY_DRAGON_FIREBALL_EXPLODE, 1.0F);
          case "levelup" -> new Resolved(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0F);
          case "extinguish" -> new Resolved(SoundEvents.BLOCK_FIRE_EXTINGUISH, 1.0F);
+         case "spike_teleport" -> new Resolved(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 0.62F);
+         case "spike_wind" -> new Resolved(SoundEvents.ENTITY_BREEZE_WIND_BURST.comp_349(), 0.55F);
          case "kill", "kill_impact", "fluxvisuals:kill_impact" ->
                new Resolved(SoundEvent.of(KILL_IMPACT), 1.0F);
          case "kill2", "fluxvisuals:kill2" -> new Resolved(SoundEvent.of(KILL_SOUL), 1.0F);

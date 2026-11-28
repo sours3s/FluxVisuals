@@ -57,13 +57,15 @@ public class KillEffect extends Module {
    public final SliderSetting duration = new SliderSetting("Duration", 2.2F, 0.5F, 8.0F, 0.1F, false);
    public final SliderSetting particles = new SliderSetting("Particles", 45.0F, MIN_PARTICLES, MAX_PARTICLES, 1.0F, false);
    public final SliderSetting radius = new SliderSetting("Radius", 5.0F, 0.5F, 20.0F, 0.5F, false);
+   public final SliderSetting waveRadius = new SliderSetting("Wave Radius", 10.0F, 5.0F, 20.0F, 0.5F, false)
+          .hidden(() -> !this.effectType.is("Beam") && !this.effectType.is("Sky Beam"));
    public final SliderSetting speed = new SliderSetting("Speed", 1.0F, 0.1F, 5.0F, 0.1F, false)
          .hidden(() -> this.effectType.is("Scan"));
    public final SliderSetting beamHeight = new SliderSetting("Beam Height", 5.2F, 1.5F, 12.0F, 0.5F, false)
          .hidden(() -> !usesBeamSize());
    public final SliderSetting beamWidth = new SliderSetting("Beam Width", 0.42F, 0.08F, 1.2F, 0.02F, false)
          .hidden(() -> !usesBeamSize());
-   public final BooleanSetting shockwave = new BooleanSetting("Shockwave", true);
+
    public final BooleanSetting sound = new BooleanSetting("Sound", true);
    public final BooleanSetting totem = new BooleanSetting("Totem", false);
    public final BooleanSetting hideBody = new BooleanSetting("Hide Body", false)
@@ -92,8 +94,8 @@ public class KillEffect extends Module {
 
    public KillEffect() {
       this.addSettings(new Setting[]{this.effectType, this.players, this.mobs, this.colorMode, this.color,
-            this.duration, this.particles, this.radius, this.speed, this.beamHeight, this.beamWidth,
-            this.shockwave, this.sound, this.totem, this.hideBody, this.zoom, this.shake, this.desaturate,
+            this.duration, this.particles, this.radius, this.waveRadius, this.speed, this.beamHeight, this.beamWidth,
+            this.sound, this.totem, this.hideBody, this.zoom, this.shake, this.desaturate,
             this.shardSize, this.shardForce, this.shardLife});
       this.tracker = new KillEffectDeathMemoryTracker(KILL_WINDOW_MS, this::playEffectFor);
    }
@@ -249,6 +251,7 @@ public class KillEffect extends Module {
          return;
       }
       Vec3d pos = entity.getEntityPos();
+      Vec3d eye = entity.getEyePos();
 
       normalizeMode();
       int count = Math.round(Math.max(MIN_PARTICLES, Math.min(MAX_PARTICLES, this.particles.get())));
@@ -258,24 +261,19 @@ public class KillEffect extends Module {
       int color = effectColor();
       String effect = mode();
 
-      // Звуки и частицы берутся из эталонных реализаций соответствующих режимов.
-      String sound = switch (effect) {
-         case "Sky Beam" -> "thunder";
-         case "Shatter" -> "kill_crystal";
-         case "Soul" -> "kill2";
-         case "Darkness", "Spike Abduction", "Body Particles" -> "kill_impact";
-         default -> "kill_impact";
-      };
-      playSound(sound, sound.equals("thunder") ? 1.0F : 0.7F);
+      scheduleReferenceSounds(effect);
 
       switch (effect) {
-         case "Beam", "Sky Beam" -> KillEffectBeamRenderer.spawn(pos, color, this.duration.get(),
-               this.beamHeight.get(), this.beamWidth.get(), radius, this.speed.get(), count,
-               effect.equals("Sky Beam"));
+         case "Beam", "Sky Beam" -> {
+            KillEffectBeamRenderer.spawn(pos, color, this.duration.get(),
+                  this.beamHeight.get(), this.beamWidth.get(), radius, this.speed.get(), count,
+                  effect.equals("Sky Beam"));
+            KillEffectScanRenderer.spawn(pos, color, this.waveRadius.get(), 1750L);
+         }
          case "Soul", "Shatter" -> KillEffectSoulRenderer.spawn(entity, pos, color, this.duration.get(),
                this.beamHeight.get(), this.beamWidth.get(), radius, this.speed.get(), count,
                effect.equals("Soul"));
-         case "Darkness", "Spike Abduction" -> KillEffectDarknessRenderer.spawn(pos, color,
+         case "Darkness", "Spike Abduction" -> KillEffectDarknessRenderer.spawn(entity, pos, color,
                this.duration.get(), this.beamHeight.get(), this.beamWidth.get(), radius,
                this.speed.get(), count, effect.equals("Spike Abduction"));
          case "Body Particles" -> {
@@ -289,7 +287,8 @@ public class KillEffect extends Module {
          }
          case "Scan" -> {
             KillEffectOverlayRenderer.spawn(color, this.duration.get(), this.desaturate.get(), true);
-            KillEffectCameraState.spawn(this.duration.get(), this.zoom.get(), this.shake.get());
+            KillEffectCameraState.spawn(this.zoom.get(), this.shake.get());
+            KillEffectScanRenderer.spawn(eye, color, radius);
          }
          default -> {
             // Все кастомные режимы уже обработаны.
@@ -299,15 +298,32 @@ public class KillEffect extends Module {
       if (effect.equals("Darkness") && this.desaturate.get()) {
          KillEffectOverlayRenderer.spawn(color, this.duration.get(), true, false);
       }
-
-      if (this.shockwave.get()) {
-         KillEffectScanRenderer.spawn(center, color, radius);
-      }
    }
 
-   private void playSound(String name, float volume) {
-      if (this.sound.get()) {
-         this.soundQueue.schedule(name, volume, 0L);
+   /** Звуки эталонных реализаций: состав, громкость, высота и задержки. */
+   private void scheduleReferenceSounds(String effect) {
+      if (!this.sound.get()) {
+         return;
+      }
+      switch (effect) {
+         case "Beam" -> {
+            this.soundQueue.schedule("impact", 0.8F, 0L);
+            this.soundQueue.schedule("pickup", 0.8F, 0L);
+         }
+         case "Sky Beam" -> this.soundQueue.schedule("thunder", 1.0F, 0L);
+         case "Spike Abduction" -> {
+            this.soundQueue.schedule("spike_teleport", 1.7F, 0L);
+            this.soundQueue.schedule("spike_wind", 1.2F, 0L);
+         }
+         case "Scan" -> {
+            this.soundQueue.schedule("kill_impact", 1.0F, 0L);
+            this.soundQueue.schedule("impact", 1.0F, 150L);
+            this.soundQueue.schedule("kill_crystal", 0.2F, 300L);
+            this.soundQueue.schedule("kill2", 0.6F, 450L);
+         }
+         default -> {
+            // В эталоне этих режимов нет звуковой очереди.
+         }
       }
    }
 

@@ -4,12 +4,16 @@ import com.mojang.blaze3d.opengl.GlStateManager;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.OtherClientPlayerEntity;
+import net.minecraft.client.render.OutlineVertexConsumerProvider;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.command.BatchingRenderCommandQueue;
 import net.minecraft.client.render.command.ModelCommandRenderer;
@@ -18,12 +22,14 @@ import net.minecraft.client.render.entity.EntityRenderManager;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.render.state.CameraRenderState;
+import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.Entity.RemovalReason;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL14;
 import ru.fluxvisuals.util.render.core.Renderer2D;
@@ -84,7 +90,7 @@ public final class KillEffectSoulRenderer {
       Iterator<Structured> it = EFFECTS.iterator();
       while (it.hasNext()) {
          Structured effect = it.next();
-         if (now - effect.startedAt >= effect.durationMs) {
+         if (now - effect.startedAt > effect.durationMs) {
             remove(effect);
             it.remove();
          }
@@ -99,10 +105,10 @@ public final class KillEffectSoulRenderer {
       long now = System.currentTimeMillis();
       for (Structured effect : EFFECTS) {
          long elapsed = now - effect.startedAt;
-         if (elapsed >= effect.durationMs) {
+         if (elapsed > effect.durationMs) {
             continue;
          }
-         float t = (float) elapsed / effect.durationMs;
+         float t = Math.min(1.0F, (float) elapsed / effect.durationMs);
          if (effect.soul) {
             renderSoul(renderer, effect, t, elapsed);
          } else {
@@ -217,13 +223,17 @@ public final class KillEffectSoulRenderer {
 
       Vec3d soulPos = base.add(0.0, rise, 0.0);
       float flicker = (float) (Math.sin(elapsed / 80.0) * 0.06 + 0.94);
-      int soulAlpha = (int) (255.0F * flicker * fadeOut * fadeIn);
+      int soulAlpha = Math.max(0, Math.min(255, (int) (255.0F * flicker * fadeOut * fadeIn)));
       Entity visible = effect.ghost != null ? effect.ghost : effect.source;
-      if (soulAlpha > 0 && visible != null) {
+      if (visible != null) {
          if (effect.ghost != null) {
+            // Как в эталоне: re.setPos(soulPos) каждый кадр, yaw применяется и к сущности, и к матрице.
             effect.ghost.setPos(soulPos.x, soulPos.y, soulPos.z);
+            effect.ghost.setYaw(effect.yaw);
+            effect.ghost.headYaw = effect.yaw;
+            effect.ghost.bodyYaw = effect.yaw;
          }
-         drawEntity(renderer, visible, soulAlpha, renderer.tickDelta());
+         drawEntity(renderer, visible, soulPos, effect.yaw, soulAlpha, renderer.tickDelta());
       }
       Vec3d auraCenter = soulPos.add(0.0, 1.0, 0.0);
 
@@ -373,9 +383,9 @@ public final class KillEffectSoulRenderer {
       }
    }
 
-   /** Рендер сущности с прозрачностью, соответствующий исходной реализации. */
+   /** Рендер сущности-призрака: буквально по эталону, адаптировано под API 1.21.11. */
    @SuppressWarnings({"rawtypes", "unchecked"})
-   private static void drawEntity(WorldRenderer renderer, Entity entity, int alpha, float tickDelta) {
+   private static void drawEntity(WorldRenderer renderer, Entity entity, Vec3d pos, float yaw, int alpha, float tickDelta) {
       if (!(entity instanceof LivingEntity living)) {
          return;
       }
@@ -387,11 +397,16 @@ public final class KillEffectSoulRenderer {
       MatrixStack matrices = renderer.matrixStack();
       matrices.push();
       try {
+         // Эталон: translate(pos) + rotate(yaw) + scale(1,1,1)
+         matrices.translate(pos.x - cam.x, pos.y - cam.y, pos.z - cam.z);
+         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(yaw));
+         matrices.scale(1.0F, 1.0F, 1.0F);
+
+         // Эталон: enableBlend; SRC_ALPHA / ONE_MINUS_SRC_ALPHA; enableDepthTest; setShaderColor(...alpha/255)
          GlStateManager._enableBlend();
-         GL14.glBlendColor(1.0F, 1.0F, 1.0F, alpha / 255.0F);
-         GlStateManager._blendFuncSeparate(GL14.GL_CONSTANT_ALPHA, GL14.GL_ONE_MINUS_CONSTANT_ALPHA,
-               1, 0);
+         GlStateManager._blendFuncSeparate(GL14.GL_SRC_ALPHA, GL14.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
          GlStateManager._enableDepthTest();
+         // Альфа применяется обёрткой VertexConsumer ниже.
 
          EntityRenderManager dispatcher = client.getEntityRenderDispatcher();
          EntityRenderer entityRenderer = dispatcher.getRenderer(living);
@@ -405,24 +420,29 @@ public final class KillEffectSoulRenderer {
             cameraState.orientation = renderer.camera().getRotation();
             cameraState.initialized = true;
 
+            // В 1.21.11 прямой EntityRenderer.render(state, matrices, consumers, light) недоступен в том же виде;
+            // используем ближайший API: dispatcher.render -> batching queue -> ModelCommandRenderer + draw().
             OrderedRenderCommandQueueImpl queue = new OrderedRenderCommandQueueImpl();
-            dispatcher.render(state, cameraState,
-                  living.getX() - cam.x, living.getY() - cam.y, living.getZ() - cam.z,
-                  matrices, queue);
+            dispatcher.render(state, cameraState, 0.0, 0.0, 0.0, matrices, queue);
 
             BatchingRenderCommandQueue batching = (BatchingRenderCommandQueue) queue.getBatchingQueue(0);
             if (batching != null) {
-               VertexConsumerProvider.Immediate entities = client.getBufferBuilders().getEntityVertexConsumers();
-               VertexConsumerProvider.Immediate effects = client.getBufferBuilders().getEffectVertexConsumers();
-               new ModelCommandRenderer().render(batching, entities,
-                     client.getBufferBuilders().getOutlineVertexConsumers(), effects);
+               VertexConsumerProvider.Immediate entities = new AlphaVertexConsumerProvider(
+                     client.getBufferBuilders().getEntityVertexConsumers(), alpha);
+               VertexConsumerProvider.Immediate effects = new AlphaVertexConsumerProvider(
+                     client.getBufferBuilders().getEffectVertexConsumers(), alpha);
+               OutlineVertexConsumerProvider outlines = new AlphaOutlineVertexConsumerProvider(
+                     client.getBufferBuilders().getOutlineVertexConsumers(), alpha);
+               new ModelCommandRenderer().render(batching, entities, outlines, effects);
+               // Эталон: immediate.draw()
                entities.draw();
                effects.draw();
             }
          }
 
+         // Эталон: setShaderColor(1,1,1,1); disableBlend
+         // Сброс альфы не нужен: обёртка живет только внутри этого кадра.
          GlStateManager._blendFuncSeparate(770, 771, 1, 0);
-         GL14.glBlendColor(1.0F, 1.0F, 1.0F, 1.0F);
          GlStateManager._disableBlend();
       } finally {
          matrices.pop();
@@ -531,14 +551,132 @@ public final class KillEffectSoulRenderer {
 
    private record Structured(Vec3d pos, int color, long durationMs, long startedAt, int seed,
                              boolean soul, List<ShardLine> shards, LivingEntity source,
-                             OtherClientPlayerEntity ghost) {
+                             OtherClientPlayerEntity ghost, float yaw) {
       private static Structured create(LivingEntity entity, Vec3d pos, int color, long durationMs,
             boolean soul) {
          long startedAt = System.currentTimeMillis();
          int seed = (int) System.nanoTime();
          List<ShardLine> shards = soul ? List.of() : buildShards(pos, seed);
          OtherClientPlayerEntity ghost = soul ? createGhost(entity) : null;
-         return new Structured(pos, color, durationMs, startedAt, seed, soul, shards, entity, ghost);
+         float yaw = entity != null ? entity.getYaw() : 0.0F;
+         return new Structured(pos, color, durationMs, startedAt, seed, soul, shards, entity, ghost, yaw);
+      }
+   }
+
+   /** Слой 1.21.11: альфа entity-призрака задаётся на уровне вершин. */
+   private static final class AlphaVertexConsumer implements VertexConsumer {
+      private final VertexConsumer delegate;
+      private final int alpha;
+
+      private AlphaVertexConsumer(VertexConsumer delegate, int alpha) {
+         this.delegate = delegate;
+         this.alpha = clampAlpha(alpha);
+      }
+
+      @Override
+      public VertexConsumer vertex(float x, float y, float z) {
+         this.delegate.vertex(x, y, z);
+         return this;
+      }
+
+      @Override
+      public VertexConsumer color(int red, int green, int blue, int alpha) {
+         this.delegate.color(red, green, blue, alpha * this.alpha / 255);
+         return this;
+      }
+
+      @Override
+      public VertexConsumer color(int argb) {
+         int a = ((argb >>> 24) & 0xFF) * this.alpha / 255;
+         this.delegate.color((argb & 0x00FFFFFF) | (a << 24));
+         return this;
+      }
+
+      @Override
+      public VertexConsumer texture(float u, float v) {
+         this.delegate.texture(u, v);
+         return this;
+      }
+
+      @Override
+      public VertexConsumer overlay(int u, int v) {
+         this.delegate.overlay(u, v);
+         return this;
+      }
+
+      @Override
+      public VertexConsumer light(int u, int v) {
+         this.delegate.light(u, v);
+         return this;
+      }
+
+      @Override
+      public VertexConsumer normal(float x, float y, float z) {
+         this.delegate.normal(x, y, z);
+         return this;
+      }
+
+      @Override
+      public VertexConsumer lineWidth(float width) {
+         this.delegate.lineWidth(width);
+         return this;
+      }
+   }
+
+   private static final class AlphaVertexConsumerProvider extends VertexConsumerProvider.Immediate {
+      private final VertexConsumerProvider.Immediate delegate;
+      private final int alpha;
+
+      private AlphaVertexConsumerProvider(VertexConsumerProvider.Immediate delegate, int alpha) {
+         super(new BufferAllocator(1024), new LinkedHashMap<>());
+         this.delegate = delegate;
+         this.alpha = alpha;
+      }
+
+      @Override
+      public VertexConsumer getBuffer(RenderLayer layer) {
+         return new AlphaVertexConsumer(this.delegate.getBuffer(layer), this.alpha);
+      }
+
+      @Override
+      public void drawCurrentLayer() {
+         this.delegate.drawCurrentLayer();
+      }
+
+      @Override
+      public void draw() {
+         this.delegate.draw();
+      }
+
+      @Override
+      public void draw(RenderLayer layer) {
+         this.delegate.draw(layer);
+      }
+   }
+
+   private static final class AlphaOutlineVertexConsumerProvider extends OutlineVertexConsumerProvider {
+      private final OutlineVertexConsumerProvider delegate;
+      private final int alpha;
+
+      private AlphaOutlineVertexConsumerProvider(OutlineVertexConsumerProvider delegate, int alpha) {
+         super();
+         this.delegate = delegate;
+         this.alpha = alpha;
+      }
+
+      @Override
+      public VertexConsumer getBuffer(RenderLayer layer) {
+         return new AlphaVertexConsumer(this.delegate.getBuffer(layer), this.alpha);
+      }
+
+      @Override
+      public void setColor(int color) {
+         this.delegate.setColor(color);
+      }
+
+      @Override
+      public void draw() {
+         this.delegate.draw();
       }
    }
 }

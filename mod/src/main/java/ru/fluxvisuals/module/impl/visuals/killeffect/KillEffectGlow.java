@@ -14,13 +14,13 @@ import ru.fluxvisuals.util.render.world.WorldRenderLayers;
 /** Прямой порт appendGlow из эталонного KillEffect$LaserEffect. */
 @Environment(EnvType.CLIENT)
 public final class KillEffectGlow {
-   /** BLOOM_TEX эталона: auravisuals:textures/bloom.png -> fluxvisuals:textures/bloom.png. */
+   /** BLOOM_TEX эталона: fluxvisuals:textures/bloom.png. */
    private static final Identifier BLOOM_TEX = Identifier.of("fluxvisuals", "textures/bloom.png");
 
    private KillEffectGlow() {}
 
    public static VertexConsumer buffer(WorldRenderer renderer) {
-      return renderer.getBuffer(WorldRenderLayers.TEXTURED_QUADS_NO_DEPTH_ADDITIVE(BLOOM_TEX));
+      return renderer.getBuffer(WorldRenderLayers.POS_TEX_COLOR_QUADS_ADD(BLOOM_TEX));
    }
 
    /** Glow-квад, повёрнутый к камере: те же 4 вершины и UV, что в эталоне. */

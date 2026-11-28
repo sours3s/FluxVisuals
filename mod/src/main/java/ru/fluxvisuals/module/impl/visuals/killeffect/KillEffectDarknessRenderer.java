@@ -14,7 +14,16 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.command.BatchingRenderCommandQueue;
+import net.minecraft.client.render.command.ModelCommandRenderer;
+import net.minecraft.client.render.command.OrderedRenderCommandQueueImpl;
+import net.minecraft.client.render.entity.EntityRenderManager;
+import net.minecraft.client.render.entity.EntityRenderer;
+import net.minecraft.client.render.entity.state.EntityRenderState;
+import net.minecraft.client.render.state.CameraRenderState;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -31,10 +40,8 @@ import ru.fluxvisuals.util.render.world.WorldRenderer;
 @Environment(EnvType.CLIENT)
 public final class KillEffectDarknessRenderer {
    private static final int MAX_EFFECTS = 20;
-   private static final long BEAM_DURATION_MS = 1800L;
    private static final long DARKNESS_DURATION_MS = 1650L;
    private static final long SPIKE_DURATION_MS = 4200L;
-   private static final float BEAM_HEIGHT = 64.0F;
    private static final int BEAM_SEGMENTS = 24;
    private static final float DARK_CYLINDER_HEIGHT = 2.7F;
    private static final float GLOW_CYLINDER_HEIGHT = 2.9F;
@@ -43,8 +50,8 @@ public final class KillEffectDarknessRenderer {
 
    private KillEffectDarknessRenderer() {}
 
-   public static void spawn(Vec3d pos, int color, float durationSeconds, float height, float width,
-         float radius, float speed, int particles, boolean spikes) {
+   public static void spawn(LivingEntity victim, Vec3d pos, int color, float durationSeconds,
+         float height, float width, float radius, float speed, int particles, boolean spikes) {
       if (pos == null) {
          return;
       }
@@ -53,23 +60,52 @@ public final class KillEffectDarknessRenderer {
       }
       // Эталон фиксирует длительности режимов: duration из настроек не растягивает фазы.
       long durationMs = spikes ? SPIKE_DURATION_MS : DARKNESS_DURATION_MS;
-      double yaw = MinecraftClient.getInstance().player == null
-            ? 0.0 : MinecraftClient.getInstance().player.getYaw();
+      // Направление и bodyYaw берутся из убитого, а не из локального игрока.
+      double yaw = victim == null ? 0.0 : victim.getYaw();
       double angle = Math.toRadians(yaw);
-      EFFECTS.add(new Darkness(pos, color, durationMs, Math.max(0.25F, radius),
+      EFFECTS.add(new Darkness(victim, pos, color, durationMs, Math.max(0.25F, radius),
             Math.max(0.1F, speed), Math.max(4, Math.min(12, particles)), spikes,
-            -Math.sin(angle), Math.cos(angle), ThreadLocalRandom.current().nextLong()));
+            (float) yaw, -Math.sin(angle), Math.cos(angle),
+            ThreadLocalRandom.current().nextLong()));
    }
 
    public static void tick() {
       long now = System.currentTimeMillis();
-      EFFECTS.removeIf(effect -> now - effect.startedAt >= effect.durationMs);
+      expireEffects(now);
       SPIKE_MODEL.tickAnimation();
+      emitSpikeTrail(now);
+   }
+
+   private static void expireEffects(long now) {
+      EFFECTS.removeIf(effect -> now - effect.startedAt >= effect.durationMs);
+   }
+
+   /** След шипа эмитируется один раз за клиентский тик, как в эталоне. */
+   private static void emitSpikeTrail(long now) {
+      MinecraftClient client = MinecraftClient.getInstance();
+      if (client == null || client.world == null) {
+         return;
+      }
+      for (Darkness effect : EFFECTS) {
+         if (!effect.spikeMode) {
+            continue;
+         }
+         float progress = KillEffectEasing.clamp((float) (now - effect.startedAt) / effect.durationMs);
+         if (progress >= 0.28F && progress <= 0.56F) {
+            continue;
+         }
+         double path = spikePath(progress);
+         double px = effect.pos.x + effect.directionX * path;
+         double pz = effect.pos.z + effect.directionZ * path;
+         addParticle(px, effect.pos.y + 0.08, pz,
+               -effect.directionX * 0.035, 0.015, -effect.directionZ * 0.035,
+               ParticleTypes.CLOUD);
+      }
    }
 
    public static void render(WorldRenderer renderer) {
       // Очистка выполняется и здесь: во время паузы client-tick может не приходить.
-      tick();
+      expireEffects(System.currentTimeMillis());
       if (renderer == null || EFFECTS.isEmpty()) {
          return;
       }
@@ -117,7 +153,7 @@ public final class KillEffectDarknessRenderer {
       spawnDarknessParticles(effect, progress);
    }
 
-   /** Ванильные частицы из alphadcp200: 12 -> 6 штук плюс particles у основания. */
+   /** Ванильные частицы эталона: 12 -> 6 штук плюс particles у основания. */
    private static void spawnDarknessParticles(Darkness effect, float progress) {
       MinecraftClient client = MinecraftClient.getInstance();
       if (client == null || client.world == null) {
@@ -150,8 +186,8 @@ public final class KillEffectDarknessRenderer {
    }
 
    /**
-    * Похищение: путь -7.5 -> 0 -> 11.5, складка/подъём/полёт и модель шипа.
-    * В финальной фазе добавляется небесный луч с параметрами эталона.
+    * Похищение: путь -7.5 -> 0 -> 11.5, складка/подъём/полёт, тело жертвы и модель шипа.
+    * По эталону у Spike нет наземного кольца и небесного луча.
     */
    private static void renderSpikeAbduction(WorldRenderer renderer, Darkness effect, float progress) {
       double path = spikePath(progress);
@@ -164,37 +200,76 @@ public final class KillEffectDarknessRenderer {
             ? Math.max(0.0F, (float) Math.sin(escape * Math.PI * 5.0F)) * 0.38F : 0.0F;
       float runYaw = (float) Math.toDegrees(Math.atan2(-effect.directionX, effect.directionZ));
 
-      // alphadcp200: частица-след шипа, а не линия.
-      if (running) {
-         addParticle(spike.x, effect.pos.y + 0.08, spike.z,
-               -effect.directionX * 0.035, 0.015, -effect.directionZ * 0.035,
-               ParticleTypes.CRIT);
+      double bodyX = effect.pos.x;
+      double bodyY = effect.pos.y + 0.13;
+      double bodyZ = effect.pos.z;
+      if (progress > 0.4F) {
+         bodyX = lerp(lift, effect.pos.x, spike.x);
+         bodyY = lerp(lift, effect.pos.y + 0.13, effect.pos.y + 2.28) + jump;
+         bodyZ = lerp(lift, effect.pos.z, spike.z);
+      }
+      renderVictim(renderer, effect, bodyX, bodyY, bodyZ, fold, lift);
+
+      // Эталон использует Entity.age как часы анимации модели.
+      float entityAge = (effect.victim == null ? 0 : effect.victim.age) + renderer.tickDelta();
+      SPIKE_MODEL.render(renderer, spike.add(0.0, jump, 0.0), runYaw,
+            running ? 1.0F : 0.08F, running ? 0.105F : 0.0F, lift, entityAge);
+   }
+
+   /** Тело убитого: трансформы и fullbright из renderVictim эталона (R:298-305). */
+   @SuppressWarnings({"rawtypes", "unchecked"})
+   private static void renderVictim(WorldRenderer renderer, Darkness effect,
+         double x, double y, double z, float fold, float lift) {
+      LivingEntity victim = effect.victim;
+      MinecraftClient client = MinecraftClient.getInstance();
+      if (victim == null || client == null || client.world == null) {
+         return;
       }
 
-      SPIKE_MODEL.render(renderer, spike.add(0.0, jump, 0.0), runYaw,
-            running ? 1.0F : 0.08F, running ? 0.105F : 0.0F, lift);
+      Vec3d cam = renderer.camera().getCameraPos();
+      MatrixStack matrices = renderer.matrixStack();
+      matrices.push();
+      try {
+         matrices.translate(x - cam.x, y - cam.y, z - cam.z);
+         matrices.multiply(new Quaternionf().rotateY(
+               (float) Math.toRadians(180.0F - effect.bodyYaw)));
+         matrices.multiply(new Quaternionf().rotateX(
+               (float) Math.toRadians(88.0F + lift * 4.0F)));
+         matrices.multiply(new Quaternionf().rotateZ(
+               (float) Math.toRadians(fold * 24.0F)));
+         matrices.scale(0.92F, 0.92F - fold * 0.25F, 0.92F);
 
-      float ringRadius = effect.radius * (0.25F + KillEffectEasing.quintOut(progress) * 1.1F);
-      drawGroundRing(renderer, effect.pos.add(0.0, 0.02, 0.0), ringRadius, ringRadius * 0.22F,
-            0.24F, 0.01F, 0.38F, 0.3F * (1.0F - escape),
-            WorldRenderLayers.POSITION_COLOR_QUADS_NO_DEPTH());
+         EntityRenderManager dispatcher = client.getEntityRenderDispatcher();
+         EntityRenderer entityRenderer = dispatcher.getRenderer(victim);
+         if (entityRenderer == null) {
+            return;
+         }
+         EntityRenderState state = entityRenderer.getAndUpdateRenderState(victim, renderer.tickDelta());
+         if (state == null) {
+            return;
+         }
+         state.light = 15728880;
 
-      if (escape > 0.0F) {
-         float beamProgress = Math.min(1.0F, (float) (System.currentTimeMillis() - effect.startedAt)
-               / BEAM_DURATION_MS);
-         float appear = Math.min(1.0F, beamProgress / 0.08F);
-         float fade = 1.0F - smoothstep(0.62F, 1.0F, escape);
-         float beamRadius = (1.28F * (1.0F - escape) + 0.035F) * appear;
-         Vec3d beamBase = spike.add(0.0, jump, 0.0);
-         drawCylinder(renderer, beamBase, beamRadius * 1.75F, BEAM_HEIGHT + jump,
-               0.72F, 0.58F, 1.0F, 0.22F * fade,
-               WorldRenderLayers.POSITION_COLOR_QUADS_NO_DEPTH_BLEND());
-         drawGroundRing(renderer, beamBase, beamRadius * 2.5F, beamRadius * 0.72F,
-               0.86F, 0.75F, 1.0F, 0.3F * fade,
-               WorldRenderLayers.POSITION_COLOR_QUADS_NO_DEPTH_BLEND());
-         drawCylinder(renderer, beamBase, beamRadius * 0.62F, BEAM_HEIGHT + jump,
-               1.0F, 0.96F, 1.0F, 0.9F * fade,
-               WorldRenderLayers.POSITION_COLOR_QUADS_NO_DEPTH_BLEND());
+         CameraRenderState cameraState = new CameraRenderState();
+         cameraState.blockPos = renderer.camera().getBlockPos();
+         cameraState.pos = cam;
+         cameraState.entityPos = client.player == null ? cam : client.player.getEntityPos();
+         cameraState.orientation = renderer.camera().getRotation();
+         cameraState.initialized = true;
+
+         OrderedRenderCommandQueueImpl queue = new OrderedRenderCommandQueueImpl();
+         entityRenderer.render(state, matrices, queue, cameraState);
+         BatchingRenderCommandQueue batching = (BatchingRenderCommandQueue) queue.getBatchingQueue(0);
+         if (batching != null) {
+            VertexConsumerProvider.Immediate entities = client.getBufferBuilders().getEntityVertexConsumers();
+            VertexConsumerProvider.Immediate effects = client.getBufferBuilders().getEffectVertexConsumers();
+            new ModelCommandRenderer().render(batching, entities,
+                  client.getBufferBuilders().getOutlineVertexConsumers(), effects);
+            entities.draw();
+            effects.draw();
+         }
+      } finally {
+         matrices.pop();
       }
    }
 
@@ -285,13 +360,15 @@ public final class KillEffectDarknessRenderer {
       geometry.emitQuad(z0, z1, z2, z3, color);
    }
 
-   private record Darkness(Vec3d pos, int color, long durationMs, long startedAt, float radius,
-                           float speed, int particles, boolean spikeMode, double directionX,
+   private record Darkness(LivingEntity victim, Vec3d pos, int color, long durationMs,
+                           long startedAt, float radius, float speed, int particles,
+                           boolean spikeMode, float bodyYaw, double directionX,
                            double directionZ, long seed) {
-      private Darkness(Vec3d pos, int color, long durationMs, float radius, float speed, int particles,
-            boolean spikeMode, double directionX, double directionZ, long seed) {
-         this(pos, color, durationMs, System.currentTimeMillis(), radius, speed, particles, spikeMode,
-               directionX, directionZ, seed);
+      private Darkness(LivingEntity victim, Vec3d pos, int color, long durationMs, float radius,
+            float speed, int particles, boolean spikeMode, float bodyYaw,
+            double directionX, double directionZ, long seed) {
+         this(victim, pos, color, durationMs, System.currentTimeMillis(), radius, speed, particles,
+               spikeMode, bodyYaw, directionX, directionZ, seed);
       }
    }
 
@@ -301,6 +378,8 @@ public final class KillEffectDarknessRenderer {
             Identifier.of("fluxvisuals", "models/killeffect/spike_mesh.json");
       private static final Identifier TEXTURE_LOCATION =
             Identifier.of("fluxvisuals", "textures/models/killeffect/spike.png");
+      // Непрозрачный слой с depth write требует правки WorldRenderLayers
+      // (RenderLayer.of и RenderPipelines.register там package-private/private).
       private static final RenderLayer TEXTURED_LAYER = WorldRenderLayers.TEXTURED_QUADS(TEXTURE_LOCATION);
       private static final float MODEL_SCALE = 1.18F;
       private final List<ModelNode> nodes = new ArrayList<>();
@@ -315,6 +394,7 @@ public final class KillEffectDarknessRenderer {
       private float centerZ;
       private float minY;
       private float walkBlend;
+      private float smoothedYaw;
       private float cycle;
       private long lastAnimationNanos;
 
@@ -332,7 +412,7 @@ public final class KillEffectDarknessRenderer {
       }
 
       void render(WorldRenderer renderer, Vec3d position, float yaw, float walkAmount,
-            float moveSpeed, float carryPose) {
+            float moveSpeed, float carryPose, float entityAge) {
          this.ensureLoaded();
          if (this.failed || this.nodes.isEmpty()) {
             return;
@@ -341,14 +421,18 @@ public final class KillEffectDarknessRenderer {
          float targetBlend = walkAmount > 0.025F ? Math.min(1.0F, walkAmount * 1.35F) : 0.0F;
          this.walkBlend = approach(this.walkBlend, targetBlend, delta, 3.6F);
          this.cycle += delta * (1.45F + moveSpeed * 58.0F);
-         float age = System.currentTimeMillis() / 50.0F;
+         float age = entityAge;
          float idleCycle = age * 0.06F;
          float idleBlend = 1.0F - this.walkBlend;
          float bob = ((float) Math.sin(idleCycle) * 7.0E-4F
                + (float) Math.sin(idleCycle * 0.31F + 0.9F) * 4.5E-4F) * idleBlend
                + Math.abs((float) Math.sin(this.cycle * 2.0F)) * 0.0012F * this.walkBlend;
+         float bodyRoll = (float) Math.sin(idleCycle * 0.45F) * 0.018F * idleBlend
+               + (float) Math.sin(this.cycle * 2.0F) * 0.035F * this.walkBlend;
          float bodyPitch = ((float) Math.cos(idleCycle * 0.42F) * 0.026F - 0.018F) * idleBlend
                + ((float) Math.cos(this.cycle * 2.0F) * 0.035F - 0.008F) * this.walkBlend;
+         float sideShift = (float) Math.cos(this.cycle * 2.0F) * 3.5E-4F * this.walkBlend;
+         this.smoothedYaw = smoothYaw(this.smoothedYaw, this.modelYawOffset - yaw, delta, 10.0F);
          float stride = 30.0F * this.walkBlend;
          float frontLeftSwing = (float) Math.cos(this.cycle) * stride;
          float frontRightSwing = (float) Math.cos(this.cycle + Math.PI) * stride;
@@ -371,11 +455,14 @@ public final class KillEffectDarknessRenderer {
          MatrixStack stack = renderer.matrixStack();
          stack.push();
          // WorldGeometryEmitter сам переводит вершины в пространство камеры.
-         stack.translate(position.x, position.y + bob, position.z);
-         stack.multiply(new Quaternionf().rotateY((float) Math.toRadians(this.modelYawOffset - yaw)));
+         stack.translate(position.x + sideShift, position.y + bob - 0.1F, position.z);
+         stack.multiply(new Quaternionf().rotateY((float) Math.toRadians(this.smoothedYaw)));
          stack.scale(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
          stack.translate(-this.centerX, -this.minY, -this.centerZ);
+         stack.translate(this.centerX, 0.0F, this.centerZ);
+         stack.multiply(new Quaternionf().rotateZ(bodyRoll));
          stack.multiply(new Quaternionf().rotateX(bodyPitch));
+         stack.translate(-this.centerX, 0.0F, -this.centerZ);
          VertexConsumer vertices = renderer.getBuffer(TEXTURED_LAYER);
          for (int root : this.rootNodes) {
             this.renderNode(stack, renderer, vertices, root, pose);
@@ -476,6 +563,21 @@ public final class KillEffectDarknessRenderer {
 
       private static float approach(float current, float target, float delta, float speed) {
          return current + (target - current) * (1.0F - (float) Math.exp(-delta * speed));
+      }
+
+      private static float wrapDegrees(float angle) {
+         float fixed = angle % 360.0F;
+         if (fixed >= 180.0F) {
+            fixed -= 360.0F;
+         } else if (fixed < -180.0F) {
+            fixed += 360.0F;
+         }
+         return fixed;
+      }
+
+      private static float smoothYaw(float current, float target, float delta, float speed) {
+         float alpha = 1.0F - (float) Math.exp(-delta * speed);
+         return normalizeDegrees(current + wrapDegrees(target - current) * alpha);
       }
 
       private float updateClock() {

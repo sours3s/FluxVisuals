@@ -35,6 +35,7 @@ import ru.fluxvisuals.event.render.EventRender3D;
 import ru.fluxvisuals.event.render.WorldRenderEvent;
 import ru.fluxvisuals.module.impl.visuals.DynamicLights;
 import ru.fluxvisuals.module.impl.visuals.ShaderFog;
+import ru.fluxvisuals.module.impl.visuals.killeffect.KillEffectScanRenderer;
 import ru.fluxvisuals.util.render.backends.gl.GlState;
 import ru.fluxvisuals.util.render.capture.EntityFramebufferCaptureManager;
 
@@ -103,6 +104,7 @@ public class WorldRendererMixin {
             } finally {
                GlState.pop(snapshot);
             }
+            KillEffectScanRenderer.renderDistortion(client.getFramebuffer(), positionMatrix, projectionMatrix, camera);
          }
       }
    }

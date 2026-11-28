@@ -47,11 +47,21 @@ public abstract class GameRendererMixin {
       }
    }
 
-   /** Кратковременный зум Kill Effect поверх любого другого FOV. */
+   /** Кратковременный зум Kill Effect множителем, как в эталонной реализации. */
    @ModifyReturnValue(method = "getFov(Lnet/minecraft/client/render/Camera;FZ)F", at = @At("RETURN"))
    private float fluxvisuals$killEffectZoom(float original) {
-      float offset = KillEffectCameraState.fovOffset();
-      return offset == 0.0F ? original : original + offset;
+      float scale = KillEffectCameraState.fovScale();
+      return scale == 1.0F ? original : original * scale;
+   }
+
+   /** Поворот камеры по Z — эталонная тряска Scan. */
+   @ModifyReturnValue(method = "getBasicProjectionMatrix", at = @At("RETURN"))
+   private Matrix4f fluxvisuals$killEffectShake(Matrix4f original) {
+      float degrees = KillEffectCameraState.shakeDegrees();
+      if (original == null || degrees == 0.0F) {
+         return original;
+      }
+      return new Matrix4f(original).rotateZ((float) Math.toRadians(degrees));
    }
 
    /**

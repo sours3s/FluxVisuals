@@ -9,18 +9,18 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.Vec3d;
+import ru.fluxvisuals.ui.fluxgui.theme.ThemeManager;
 import ru.fluxvisuals.util.render.world.WorldGeometryEmitter;
 import ru.fluxvisuals.util.render.world.WorldRenderer;
 import ru.fluxvisuals.util.render.world.WorldRenderLayers;
 
 /**
  * Прямой порт двух эталонных реализаций:
- *  - Beam: auravisual KillEffect$LaserEffect (40 срезов, 3 glow на срез, 10 нижних слоёв);
- *  - Sky Beam: alphadcp200 KillEffect (цилиндр 64 блока, 24 сегмента, ground ring).
+ *  - Beam: эталонный LaserEffect (40 срезов, 3 glow на срез, 10 нижних слоёв);
+ *  - Sky Beam: эталонный Kill Effect (цилиндр 64 блока, 24 сегмента, ground ring).
  */
 @Environment(EnvType.CLIENT)
 public final class KillEffectBeamRenderer {
-   private static final int MAX_BEAMS = 24;
    private static final long LASER_DURATION_MS = 1500L;
    private static final long SKY_DURATION_MS = 1800L;
    private static final int LASER_SLICES = 40;
@@ -37,9 +37,6 @@ public final class KillEffectBeamRenderer {
          float radius, float speed, int particles, boolean sky) {
       if (pos == null) {
          return;
-      }
-      if (BEAMS.size() >= MAX_BEAMS) {
-         BEAMS.remove(0);
       }
       BEAMS.add(new Beam(pos, color, sky ? SKY_DURATION_MS : LASER_DURATION_MS, sky));
       if (sky) {
@@ -78,11 +75,12 @@ public final class KillEffectBeamRenderer {
       BEAMS.clear();
    }
 
-   /** auravisual: 40 срезов по 3 glow-квада и 10 нижних разворачивающихся слоёв. */
+   /** Эталон: 40 срезов по 3 glow-квада и 10 нижних разворачивающихся слоёв. */
    private static void renderLaser(WorldRenderer renderer, VertexConsumer glow, Beam beam, float progress) {
-      int r = (beam.color >> 16) & 0xFF;
-      int g = (beam.color >> 8) & 0xFF;
-      int b = beam.color & 0xFF;
+      int color = beamColor(beam.color);
+      int r = (color >> 16) & 0xFF;
+      int g = (color >> 8) & 0xFF;
+      int b = color & 0xFF;
       float globalAlpha = progress < 0.15F
             ? progress / 0.15F
             : (progress > 0.75F ? (1.0F - progress) / 0.25F : 1.0F);
@@ -110,7 +108,7 @@ public final class KillEffectBeamRenderer {
       }
    }
 
-   /** alphadcp200: цилиндры и кольцо с теми же параметрами и длительностью. */
+   /** Эталон: цилиндры и кольцо с теми же параметрами и длительностью. */
    private static void renderSkyBeam(WorldRenderer renderer, Beam beam, float progress) {
       float appear = Math.min(1.0F, progress / 0.08F);
       float fade = 1.0F - smoothstep(0.62F, 1.0F, progress);
@@ -190,6 +188,18 @@ public final class KillEffectBeamRenderer {
    private static float smoothstep(float edge0, float edge1, float value) {
       float t = Math.max(0.0F, Math.min(1.0F, (value - edge0) / (edge1 - edge0)));
       return t * t * (3.0F - 2.0F * t);
+   }
+
+   /** Эталон берёт цвет из темы каждый кадр; цвет спавна используется только как fallback. */
+   private static int beamColor(int fallback) {
+      try {
+         ThemeManager theme = ThemeManager.INSTANCE;
+         if (theme != null) {
+            return theme.getVisualModulesColor() & 0xFFFFFF;
+         }
+      } catch (Throwable ignored) {
+      }
+      return fallback & 0xFFFFFF;
    }
 
    private record Beam(Vec3d pos, int color, long durationMs, long startedAt, boolean sky) {

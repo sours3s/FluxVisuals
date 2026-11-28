@@ -11,7 +11,7 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
 - **Только кастомные режимы.** `Lightning / Blood / Explosion / Heart / Smoke` удаляются из GUI. Старые сохранённые значения мигрируют в `Beam`; `Soul` и `Shatter` становятся полноценными отдельными режимами, а не маппятся на ванильные.
 - **Единый trigger.** Атака запоминает цель; смерть приходит из `EntityDeathEvent`/death status `3`; есть tick-fallback. Дубли подавляются по entity id и временным окнам. Тотем `status == 35` обрабатывается отдельным прямым хуком.
 - **Состояние эффектов с TTL.** Активные эффекты живут в небольшом state-хранилище с ограничениями по количеству; просроченные записи удаляются и в `tick()`, и в `render()`, чтобы не рисовать мёртвые эффекты на паузе.
-- **Рендер через существующие API.** Мир — `WorldRenderer.drawLine/drawQuad/drawCube`; экран — `Renderer2D`; камера — `CameraPositionEvent`/`EventRotation` и, если понадобится, минимальная правка `GameRendererMixin`. Полноценный framebuffer-distortion не переносится: в исходной реализации он заглушка, а в FluxVisuals нет безопасного готового API.
+- **Рендер через существующие API.** Мир — `WorldRenderer.drawLine/drawQuad/drawCube`; экран — `Renderer2D`; камера — `CameraPositionEvent`/`EventRotation` и, если понадобится, минимальная правка `GameRendererMixin`. Framebuffer-distortion переносится напрямую: эталонный `frag_effect_scan` включается через `KillEffectScanPass` и depth основного framebuffer.
 - **Скрытие тела опционально.** Делается через существующий `EntityCullingMixin` по набору скрываемых entity id, только если включена настройка `Hide Body`.
 - **Лицензионная чистота.** Никаких имен сторонних клиентов, пакетов, ассетов и `Figura/JIJ/LuaJ` в коде и UI.
 
@@ -161,9 +161,26 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Verification: `dotnet build`; `/api/mod/version`; continuous deployment `cb6da6a`.
   - Files: `server-repo/AuthServer/Services/ReleaseSyncService.cs`, `Program.cs`, `appsettings.json`.
 
+### Phase 8: Прямой порт эталонных триггеров и Scan-pass
+
+- [x] Task 22: Beam/Soul/Spike/Scan по исходной логике
+  - Acceptance: Beam — динамический цвет темы, эталонный `bloom.png`, LIGHTNING/LEQUAL, волна 1750 мс; Soul — `drawEntity` с yaw/альфой каждый кадр и удаление по `elapsed > duration`; Spike — victim-driven направление, тело жертвы, `CLOUD`-след, root-трансформенты; Scan — виньетка 600 мс, камера 650 мс, эталонные звуки и формулы.
+  - Verification: `compileJava`; `test obfuscateJar`.
+  - Files: `KillEffect.java`, `KillEffectBeamRenderer.java`, `KillEffectSoulRenderer.java`, `KillEffectDarknessRenderer.java`, `KillEffectOverlayRenderer.java`, `KillEffectCameraState.java`, `KillEffectSoundQueue.java`, `WorldRenderLayers.java`, `bloom.png`.
+
+- [x] Task 23: Scan через эталонный шейдер вместо самодельной геометрии
+  - Acceptance: `frag_effect_scan.vsh/fsh` подключены через `KillEffectScanPass` с UBO, depth основного framebuffer и аддитивным копированием прямо в цветовую текстуру сцены; sphere/cells/geometries удалены; лимит волн 4; глобальный `Shockwave` убран.
+  - Verification: `test obfuscateJar`; SHA256 `327362238B3E099FCB90BE2B6F50D9F0C3D2EFEC8DCE758FBFB1948B7A8FA8F2`.
+  - Files: `KillEffectScanPass.java`, `KillEffectScanRenderer.java`, `WorldRendererMixin.java`, `KillEffect.java`.
+
+- [ ] Task 24: Визуальная проверка 8 режимов пользователем
+  - Acceptance: пользователь подтверждает, что все режимы выглядят как эталонные реализации, настройки сохраняются, автообновление работает с `v1.0.17`.
+  - Verification: ручной запуск через loader `v1.0.17`; отдельное подтверждение перед новым бампом/публикацией.
+  - Files: только отчёт пользователя; релиз не публиковать без подтверждения.
+
 ### Known deviation
 
-- Полноценный framebuffer-pass `killdistortion` не подключён: в 1.21.11 безопасный GPU-pass требует отдельного `RenderPass` до HUD, а текущий хук даёт только экранный слой. Шейдеры лежат в `assets/fluxvisuals`, Java-код использует виньетку/кольцо/десатурацию. Решение по полному pass — после визуальной проверки.
+- Полноценный framebuffer-pass `killdistortion` подключён в Phase 8. Java-заглушка эталона не содержала логики; использован сам шейдер `frag_effect_scan` с UBO и depth-текстурой основного framebuffer. Самодельные sphere/cells/геометрия из Scan удалены.
 
 ## Risks and Mitigations
 
@@ -171,12 +188,12 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
 |------|--------|------------|
 | Слишком много режимов и настроек усложнят поддержку | High | Маленькие рендер-хелперы, общий state, hidden()-настройки, лимиты TTL |
 | Правка FOV/камеры конфликтует с `Custom FOV`/`Zoom` | High | Минимальные правки существующих хуков, возврат состояния в `finally`, проверка в одиночном мире |
-| Framebuffer-distortion нет в безопасном виде | Medium | Экранный слой как fallback; полный GPU-pass отдельным шагом |
+| Полный GPU-pass может конфликтовать с framegraph | Medium | Рендер в отдельный `RenderTarget` и копирование в основной framebuffer; при отсутствии depth-текстуры pass пропускается |
 | Старые конфиги с ванильными режимами сломают UI | Medium | Нормализация после `load()` + regression-тест |
 | Производительность приToMany эффектах | Medium | Cap частиц/волн, удаление просроченных записей в render/tick |
 | Лицензионные ограничения исходных реализаций | High | Пользователь явно разрешил 1:1 ассеты; код/UI без чужих имен |
 
 ## Open Questions
 
-- Реальное обесцвечивание/искажение мира через post-processing пока заменяется экранным слоем; если нужен настоящий shader-pass — решить отдельно.
+- Настоящий shader-pass подключён; остаётся визуально подтвердить 8 режимов через loader `v1.0.17`.
 - Скрытие модели цели реализуем через уже существующий `EntityCullingMixin`; если это вызовет проблемы с косметикой, оставить только осколки.

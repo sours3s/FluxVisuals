@@ -119,3 +119,20 @@ Plan: `tasks/plan-killeffect.md`
 
 - [x] Task 20: Loader `v1.0.17` берёт версию и обе ссылки только из `/api/mod/version`; 404 устранён, автообновление работает по ссылке из панели.
 - [x] Task 21: Сервер автосинхронизирует ссылки на мод и лоадер из GitHub Releases (интервал 15 минут); вручную задавать не нужно.
+
+## Phase 8: Прямой порт эталонных триггеров и Scan-pass
+
+- [x] Task 22: Beam/Soul/Spike/Scan по исходной логике
+  - Acceptance: Beam — динамический цвет темы, эталонный `bloom.png`, LIGHTNING/LEQUAL, волна 1750 мс; Soul — `drawEntity` с yaw/альфой каждый кадр и удаление по `elapsed > duration`; Spike — victim-driven направление, тело жертвы, `CLOUD`-след; Scan — виньетка 600 мс, камера 650 мс, эталонные звуки и формулы.
+  - Verification: `compileJava`; `test obfuscateJar`.
+  - Files: `KillEffect.java`, `KillEffectBeamRenderer.java`, `KillEffectSoulRenderer.java`, `KillEffectDarknessRenderer.java`, `KillEffectOverlayRenderer.java`, `KillEffectCameraState.java`, `KillEffectSoundQueue.java`, `WorldRenderLayers.java`, `bloom.png`.
+
+- [x] Task 23: Scan через эталонный шейдер вместо самодельной геометрии
+  - Acceptance: `frag_effect_scan.vsh/fsh` подключены через `KillEffectScanPass` с UBO, depth основного framebuffer и аддитивным копированием прямо в цветовую текстуру сцены; sphere/cells/geometries удалены; лимит волн 4; глобальный `Shockwave` убран.
+  - Verification: `test obfuscateJar`; SHA256 `327362238B3E099FCB90BE2B6F50D9F0C3D2EFEC8DCE758FBFB1948B7A8FA8F2`.
+  - Files: `KillEffectScanPass.java`, `KillEffectScanRenderer.java`, `WorldRendererMixin.java`, `KillEffect.java`.
+
+- [ ] Task 24: Визуальная проверка 8 режимов пользователем
+  - Acceptance: пользователь подтверждает 8 эталонных эффектов, сохранение настроек и работу автообновления с `v1.0.17`.
+  - Verification: ручной запуск через loader `v1.0.17`; перед новым бампом/публикацией требуется отдельное подтверждение.
+  - Status: ожидает пользователя; релиз не публиковать.
