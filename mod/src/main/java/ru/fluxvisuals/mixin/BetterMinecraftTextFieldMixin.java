@@ -38,7 +38,7 @@ public abstract class BetterMinecraftTextFieldMixin {
 
    @Inject(method = "renderWidget", at = @At("HEAD"))
    private void fluxvisuals$onRenderHead(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-      if (!BetterMinecraft.chatAnimationsEnabled() || !BetterMinecraft.chatCharAnim.get()) return;
+      if (!BetterMinecraft.INSTANCE.isEnabled() || !BetterMinecraft.INSTANCE.chatCharAnim.get()) return;
 
       String currentText = this.getText();
       if (!currentText.equals(fluxvisuals$prevText)) {
@@ -60,7 +60,7 @@ public abstract class BetterMinecraftTextFieldMixin {
       )
    )
    private void fluxvisuals$wrapDrawText(DrawContext context, TextRenderer textRenderer, OrderedText orderedText, int x, int y, int color, boolean shadow, Operation<Void> original) {
-      if (!BetterMinecraft.chatAnimationsEnabled() || !BetterMinecraft.chatCharAnim.get()) {
+      if (!BetterMinecraft.INSTANCE.isEnabled() || !BetterMinecraft.INSTANCE.chatCharAnim.get()) {
          original.call(context, textRenderer, orderedText, x, y, color, shadow);
          return;
       }
@@ -77,7 +77,7 @@ public abstract class BetterMinecraftTextFieldMixin {
 
       int currentX = x;
       long now = System.currentTimeMillis();
-      float animDuration = BetterMinecraft.animSpeed.get();
+      float animDuration = BetterMinecraft.INSTANCE.animSpeed.get();
       int fontHeight = textRenderer.fontHeight;
 
       for (CharInfo ci : chars) {

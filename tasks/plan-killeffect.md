@@ -197,3 +197,11 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
 
 - Настоящий shader-pass подключён; остаётся визуально подтвердить 8 режимов через loader `v1.0.17`.
 - Скрытие модели цели реализуем через уже существующий `EntityCullingMixin`; если это вызовет проблемы с косметикой, оставить только осколки.
+
+### Phase 9: Порт BetterMinecraft
+
+- [x] Task 25: BetterMinecraft по эталонной реализации 1:1
+  - Acceptance: singleton-модуль с настройками `Animation`, `Stack Messages`, `Anim Speed` (180/150/300, increment 1); точные `Animation`/`Easing`/`Easings`; обновление один раз за кадр до HUD; анимации инвентаря, таба, чата, хотбара и букв; склейка одинаковых сообщений. Пользовательские режимы `saturationDisplay`, `hideMessageIndicator`, `itemMoveAnim`, `hotbarChatLift` и самодельная геометрия удалены.
+  - Verification: `compileJava`, `test obfuscateJar` — `BUILD SUCCESSFUL`; `git diff --check` чистый; релиз не публиковался.
+  - Files: `BetterMinecraft.java`, `betterminecraft/{Animation,Easing,Easings}.java`, `Manager.java`, `InGameHudMixin.java`, `BetterMinecraft*Mixin.java`, `fluxvisuals.mixins.json`.
+  - Known deviation: хотбар-сдвиг обёрнут через `@WrapOperation` вокруг вызова `renderHotbar` с `finally`-pop, чтобы не утекла матрица при отмене ванильного хотбара кастомным HUD; формула `30f * (1f - hotbarT)` и порог `0.001f` сохранены. `animSpeed` остаётся на верхнем уровне настроек, потому что UI-группа FluxVisuals принимает только boolean-настройки; значения 180/150/300/increment 1 совпадают с эталоном.

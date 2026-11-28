@@ -1,62 +1,47 @@
 package ru.fluxvisuals.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.render.RenderTickCounter;
+import org.joml.Matrix3x2fStack;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.fluxvisuals.module.impl.visuals.BetterMinecraft;
 
-/** Плавная рамка хотбара и его подъём при открытом чате. */
+/** Эталонная анимация хотбара: подъём снизу вокруг ванильного вызова renderHotbar. */
 @Environment(EnvType.CLIENT)
 @Mixin(InGameHud.class)
 public abstract class BetterMinecraftHotbarMixin {
-   @Unique
-   private boolean fluxvisuals$hotbarLifted;
+    @WrapOperation(
+       method = "render(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V",
+       at = @At(
+          value = "INVOKE",
+          target = "Lnet/minecraft/client/gui/hud/InGameHud;renderHotbar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V"
+       )
+    )
+    private void fluxvisuals$wrapHotbar(
+       DrawContext context, RenderTickCounter tickCounter, Operation<Void> original
+    ) {
+       BetterMinecraft mod = BetterMinecraft.INSTANCE;
+       boolean applyHotbarAnim = mod.isEnabled() && mod.hotbarAnim.get();
+       float hotbarT = mod.getHotbarAnim();
+       if (!applyHotbarAnim || hotbarT <= 0.001F) {
+          original.call(context, tickCounter);
+          return;
+       }
 
-   @ModifyArg(
-      method = "renderHotbar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V",
-      at = @At(
-         value = "INVOKE",
-         target = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIII)V",
-         ordinal = 1
-      ),
-      index = 2,
-      require = 0
-   )
-   private int fluxvisuals$smoothSelection(int x) {
-      return BetterMinecraft.animateHotbarSelectionX(x);
-   }
-
-   @Inject(
-      method = "renderHotbar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V",
-      at = @At("HEAD")
-   )
-   private void fluxvisuals$liftHead(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-      this.fluxvisuals$hotbarLifted = false;
-      float offset = BetterMinecraft.chatHotbarLiftOffset();
-      if (offset == 0.0F) {
-         return;
-      }
-      context.getMatrices().pushMatrix();
-      context.getMatrices().translate(0.0F, -offset);
-      this.fluxvisuals$hotbarLifted = true;
-   }
-
-   @Inject(
-      method = "renderHotbar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V",
-      at = @At("RETURN")
-   )
-   private void fluxvisuals$liftTail(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-      if (this.fluxvisuals$hotbarLifted) {
-         context.getMatrices().popMatrix();
-         this.fluxvisuals$hotbarLifted = false;
-      }
-   }
+       float offsetY = 30F * (1F - hotbarT);
+       Matrix3x2fStack matrices = context.getMatrices();
+       matrices.pushMatrix();
+       matrices.translate(0, offsetY);
+       try {
+          original.call(context, tickCounter);
+       } finally {
+          matrices.popMatrix();
+       }
+    }
 }

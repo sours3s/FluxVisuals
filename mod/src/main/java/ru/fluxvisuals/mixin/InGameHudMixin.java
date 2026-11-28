@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.fluxvisuals.client.FluxVisualsClient;
 import ru.fluxvisuals.module.api.Module;
+import ru.fluxvisuals.module.impl.visuals.BetterMinecraft;
 import ru.fluxvisuals.module.impl.visuals.Hud;
 import ru.fluxvisuals.ui.fluxgui.util.render.FluxGlassPipeline;
 import ru.fluxvisuals.util.render.HudRenderBridge;
@@ -34,6 +35,9 @@ public class InGameHudMixin {
         if (FluxVisualsClient.isModInitialized() && hudModule != null && hudModule.enable
               && (liquidGlass || Hud.blur.get("HUD"))) {
             FluxGlassPipeline.captureHudFrame();
+        }
+        if (BetterMinecraft.INSTANCE.isEnabled()) {
+            BetterMinecraft.INSTANCE.update();
         }
     }
 

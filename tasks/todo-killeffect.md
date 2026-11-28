@@ -137,3 +137,10 @@ Plan: `tasks/plan-killeffect.md`
   - Acceptance: пользователь подтверждает 8 эталонных эффектов, сохранение настроек и работу автообновления с `v1.0.17`.
   - Verification: ручной запуск через loader `v1.0.17`; перед следующим бампом/публикацией требуется отдельное подтверждение.
   - Status: ожидает пользователя; повторную публикацию не выполнять без подтверждения.
+
+## Phase 9: Порт BetterMinecraft
+
+- [x] Task 25: BetterMinecraft по эталонной реализации 1:1
+  - Acceptance: singleton-модуль, точные `Animation`/`Easing`/`Easings`, настройки `Animation`, `Stack Messages`, `Anim Speed` (180/150/300, increment 1), анимации инвентаря, таба, чата, хотбара и букв, склейка сообщений. Самодельные режимы удалены.
+  - Verification: `compileJava`, `test obfuscateJar` — `BUILD SUCCESSFUL`; `git diff --check` чистый.
+  - Status: готово локально; хотбар обёрнут через `@WrapOperation` с безопасным pop матрицы; релиз не публиковался, ждём следующий модуль.
