@@ -10,6 +10,7 @@ import net.minecraft.client.render.RenderTickCounter;
 import org.joml.Matrix3x2fStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Coerce;
 import ru.fluxvisuals.module.impl.visuals.BetterMinecraft;
 
 /** Эталонная анимация хотбара: подъём снизу вокруг ванильного вызова renderHotbar. */
@@ -17,20 +18,20 @@ import ru.fluxvisuals.module.impl.visuals.BetterMinecraft;
 @Mixin(InGameHud.class)
 public abstract class BetterMinecraftHotbarMixin {
     @WrapOperation(
-       method = "render(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V",
+       method = "renderMainHud(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V",
        at = @At(
           value = "INVOKE",
           target = "Lnet/minecraft/client/gui/hud/InGameHud;renderHotbar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V"
        )
     )
     private void fluxvisuals$wrapHotbar(
-       DrawContext context, RenderTickCounter tickCounter, Operation<Void> original
+       @Coerce Object instance, DrawContext context, RenderTickCounter tickCounter, Operation<Void> original
     ) {
        BetterMinecraft mod = BetterMinecraft.INSTANCE;
        boolean applyHotbarAnim = mod.isEnabled() && mod.hotbarAnim.get();
        float hotbarT = mod.getHotbarAnim();
        if (!applyHotbarAnim || hotbarT <= 0.001F) {
-          original.call(context, tickCounter);
+          original.call(instance, context, tickCounter);
           return;
        }
 
@@ -39,7 +40,7 @@ public abstract class BetterMinecraftHotbarMixin {
        matrices.pushMatrix();
        matrices.translate(0, offsetY);
        try {
-          original.call(context, tickCounter);
+          original.call(instance, context, tickCounter);
        } finally {
           matrices.popMatrix();
        }
