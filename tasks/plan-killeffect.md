@@ -115,10 +115,10 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Verification: `./gradlew.bat test --no-daemon`.
   - Files: `KillEffectParticleSystem.java`, `KillEffectSoundQueue.java`, `sounds.json`, sounds assets.
 
-- [ ] Task 14: Версия 1.1.6, сборка и публикация
-  - Acceptance: `test obfuscateJar` проходит, changelog/release notes обновлены, релиз опубликован только после подтверждения.
-  - Verification: SHA256 артефакта; `gh release view`.
-  - Status: ожидает визуальной проверки и явного подтверждения бампа/публикации.
+- [x] Task 14: Версия 1.1.6, сборка и публикация
+  - Acceptance: `test obfuscateJar` проходит, changelog/release notes обновлены, релиз `v1.1.6` опубликован после прямого подтверждения пользователя.
+  - Verification: `gh release view v1.1.6`; обфускированный `fluxvisuals-1.1.6.jar`.
+  - Status: опубликовано.
 
 ### Phase 6: Возврат к эталонной логике вместо кубиков и линий
 
@@ -144,9 +144,22 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Verification: SHA256 `2AC0076205830F9A4311239DC37108E23873FF57A62FD37E52D0F1504B46A536`.
   - Files: `mod/build/release/fluxvisuals-1.1.5.jar`.
 
-- [ ] Task 19: Визуальная проверка и публикация
-  - Acceptance: пользователь проверяет 8 режимов через loader `v1.0.16`; после положительного ответа — отдельное подтверждение на `1.1.6` и публикацию.
-  - Status: локальный артефакт готов; публикация запрещена без подтверждения.
+- [x] Task 19: Публикация по прямому подтверждению
+  - Acceptance: пользователь прямо попросил «залей релиз новой версии мода»; релизы `v1.1.6` и `v1.0.17-loader` опубликованы.
+  - Verification: `gh release view`; `/api/mod/version`.
+  - Status: опубликовано; визуальная проверка 8 режимов пользователем ещё ожидается.
+
+### Phase 7: Версии и ссылки из админ-панели
+
+- [x] Task 20: Loader `v1.0.17` — версия и ссылки только из админ-панели
+  - Acceptance: GitHub Releases больше не переопределяет URL мода; устаревший `modDownloadUrl` в конфиге не вызывает `404`; автообновление exe работает по ссылке из панели.
+  - Verification: `dotnet build`; `gh release view v1.0.17-loader`.
+  - Files: `loader/Core/{AuthService,Config,Defaults,GameSession,UpdateService}.cs`, `MainWindow.xaml.cs`.
+
+- [x] Task 21: Автосинхронизация ссылок из релизов в админ-панель
+  - Acceptance: сервер раз в 15 минут подтягивает последний `.jar` и `FluxVisualsLoader.exe` из GitHub Releases в настройки; вручную ссылки задавать не нужно.
+  - Verification: `dotnet build`; `/api/mod/version`; continuous deployment `cb6da6a`.
+  - Files: `server-repo/AuthServer/Services/ReleaseSyncService.cs`, `Program.cs`, `appsettings.json`.
 
 ### Known deviation
 
