@@ -171,3 +171,25 @@ Plan: `tasks/plan-killeffect.md`
   - Acceptance: `BlockOutlineMixin` с static guard, регистрация и mixin-конфиг без изменений, упоминаний источника нет.
   - Files: `BlockOutlineMixin.java`.
   - Status: готово локально; `git diff --check` чистый; релиз и бамп версий не делались.
+
+## Phase 11: Порт MaceHelper
+
+- [x] Task 31: Модуль `MaceHelper`, настройки и заряд булавы
+  - Acceptance: три boolean-настройки `Сообщение в чат`, `Подсветка в руке`, `Подсветка в хотбаре` (по умолчанию `true`), точные `isMace`/`isHoldingMace`/`getChargePercentage`/`getChargeColor`, сообщение `Булава заряжена на N%` через `AttackEvent` и target `ChatUtil`.
+  - Files: `MaceHelper.java`.
+  - Status: `compileJava` зелёный.
+
+- [x] Task 32: `MaceHelperHandConsumer`
+  - Acceptance: точный `VertexConsumer`-обёртыватель, factor `0.95F`, обрезка `(int)`, alpha без изменений, пустые `quad(...)`.
+  - Files: `MaceHelperHandConsumer.java`.
+  - Status: `compileJava` зелёный.
+
+- [x] Task 33: Хуки рендера руки и хотбара
+  - Acceptance: `MaceHelperRenderState`, подмена consumer в `renderBakedItemQuads`, подсветка слота через `DrawContext.drawItem` цветом заряда с alpha `120`.
+  - Files: `MaceHelperItemRendererMixin.java`, `MaceHelperHeldItemRendererMixin.java`, `MaceHelperDrawContextMixin.java`, `MaceHelperRenderState.java`.
+  - Status: `compileJava` зелёный.
+
+- [x] Task 34: Регистрация, событие атаки, финальная сборка
+  - Acceptance: модуль уже зарегистрирован в `Manager`, событие атаки подключено, mixin-конфиг обновлён, нейминг под `fluxvisuals`, упоминаний источника нет.
+  - Files: `fluxvisuals.mixins.json`.
+  - Status: `compileJava` и `test obfuscateJar` зелёные (`-PgrunteonXmx=768m`); релиз и бамп версий не делались.

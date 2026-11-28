@@ -229,3 +229,23 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
 - [x] Task 30: Скрытие ванильного контура, регистрация, финальная сборка
   - Acceptance: mixin на `drawBlockOutline`, static guard, регистрация в `Manager`, записи в mixin-конфиге, никаких упоминаний источника в коде.
   - Verification: `test obfuscateJar` — `BUILD SUCCESSFUL` с `-PgrunteonXmx=768m` из-за занятой памяти запущенным клиентом; `git diff --check` чистый; релиз не публиковать.
+
+### Phase 11: Порт MaceHelper
+
+- [x] Task 31: Модуль `MaceHelper`, настройки и заряд булавы
+  - Acceptance: точные три boolean-настройки `Сообщение в чат`, `Подсветка в руке`, `Подсветка в хотбаре` (по умолчанию `true`), `isMace`, `isHoldingMace`, `getChargePercentage`, `getChargeColor`, событие атаки с сообщением `Булава заряжена на N%`.
+  - Verification: `compileJava` — `BUILD SUCCESSFUL`.
+  - Known deviation: префикс чата берётся из target `ChatUtil` (`FluxVisuals ->`) вместо Префикса источника; категория `Visuals` по требованию порта в визуалы.
+
+- [x] Task 32: `MaceHelperHandConsumer`
+  - Acceptance: полный `VertexConsumer`-обёртыватель с теми же delegation-методами, factor `0.95F`, обрезкой `(int)`, сохранением alpha и пустыми `quad(...)`.
+  - Verification: `compileJava` — `BUILD SUCCESSFUL`.
+
+- [x] Task 33: Хуки рендера руки и хотбара
+  - Acceptance: отслеживание состояния первой руки/булавы, подмена consumer для `renderBakedItemQuads`, подсветка хотбара цветом заряда с alpha `120`.
+  - Verification: `compileJava` — `BUILD SUCCESSFUL`.
+  - Known deviation: source-оверрайт `renderGuiItemOverlay` с посторонними модулями не портирован; подсветка хотбара перенесена через `DrawContext.drawItem`, который в 1.21.11 является активным путём.
+
+- [x] Task 34: Регистрация, событие атаки, финальная сборка
+  - Acceptance: модуль зарегистрирован, событие атаки подключено через target event API (`AttackEvent`), mixin-конфиг обновлён, нейминг под `fluxvisuals`, релиз не публиковать.
+  - Verification: `compileJava` и `test obfuscateJar` — `BUILD SUCCESSFUL` с `-PgrunteonXmx=768m`; упоминаний источника в портированных файлах нет; релиз и бамп версий не делались.
