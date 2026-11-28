@@ -284,28 +284,28 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
 ### Phase 14: Порт NameTags (этап 1 — функционал)
 
 - [x] Task 41: Настройки, отбор игроков и элементы плашки на текущем 2D-стеке
-  - Acceptance: перенесены настройки донора без чит-зависимостей (`HP mode`, `Size`, `Background`, `Opacity`, `Range`, `Targets`, `Render parts`, `Vanilla nametags`, `Hide empty slots`, `Item count`, `Simplify far`, `Simplify range`); отбор только игроков по друзьям/врагам/врагам в броне, сортировка по дистанции, префикс, цветное HP, режим HP, броня, руки, количество предметов, упрощение вдали; `canSee` сохраняет отсутствие сквозьстенного рендера; `Protect`, `StreamBypass`, обход HP и `VoicechatBridge` не переносятся.
+  - Acceptance: перенесены настройки донора без чит-зависимостей (`Режим HP`, `Размер`, `Фон плашки`, `Прозрачность плашки`, `Дистанция`, `Цели`, `Что рендерить`, `Ванильные неймтеги`, `Скрывать пустые слоты`, `Количество предметов`, `Упрощать вдали`, `Дистанция упрощения`); отбор только игроков по друзьям/врагам/врагам в броне, сортировка по дистанции, префикс, цветное HP, режим HP, броня, руки, количество предметов, упрощение вдали; `canSee` сохраняет отсутствие сквозьстенного рендера; `Protect`, `StreamBypass`, обход HP и `VoicechatBridge` не переносятся.
   - Verification: `compileJava` — `BUILD SUCCESSFUL`; `git diff --check`.
   - Files: `mod/src/main/java/ru/fluxvisuals/module/impl/visuals/NameTags.java`, `mod/src/main/java/ru/fluxvisuals/mixin/PlayerEntityRendererMixin.java`.
 
 ### Phase 15: Порт NameTags (этап 2 — шейдерный стек донора)
 
-- [ ] Task 42: Шейдерные ресурсы донора
-  - Acceptance: в `assets/fluxvisuals/shaders/core` адаптированы под GLSL 330/UBO все шейдеры, реально используемые стеком NameTags (`text`, `text_blur`, `texture`, `rect`, `liquidglass_rect`, `circle`, `svg` и зависимости); активные шейдеры MotionBlur, BlockOutline и ClickGUI не перезаписаны.
+- [x] Task 42: Шейдерные ресурсы донора
+  - Acceptance: в `assets/fluxvisuals/shaders/core` адаптированы под GLSL 330/UBO шейдеры стека NameTags (`text`, `text_blur`, `texture`, `rect`, `liquidglass_rect`, `svg`); `circle` донора используется только `Trajectories` и в NameTags не нужен; активные шейдеры MotionBlur, BlockOutline и ClickGUI не перезаписаны.
   - Verification: `processResources`, `compileJava`; `git diff --check`.
 
-- [ ] Task 43: Шейдерный Java-стек донора
-  - Acceptance: под `ru.fluxvisuals.render.nametags` портированы `TextShader`, `ShapeShader`, `SvgShader`, `RoundedTextureShader`, `RotationBuffer`, `MathUtil`; формулы и порядок отрисовки сохранены, API адаптировано под `RenderPipeline`/UBO 1.21.11.
+- [x] Task 43: Шейдерный Java-стек донора
+  - Acceptance: под `ru.fluxvisuals.render.nametags` портированы конвейеры `NameTagPipelines` и отрисовка `NameTagRenderer`; формулы и порядок отрисовки соответствуют `TextShader`, `ShapeShader`, `SvgShader`, `RoundedTextureShader`, `RotationBuffer`, `MathUtil` донора, API адаптировано под `RenderPipeline`/UBO 1.21.11. std140-порядок `NameTagData` (32 поля + 256 сегментов SVG, 4608 байт) и привязки `DynamicTransforms`/`Projection`/`Sampler0` сверены. Бэкдроп liquidglass использует `ScreenBlur.capture(1)` с принудительным LOD 0: в 1.21.11 нет API генерации mip-уровней для `GpuTexture`, поэтому донорская mip-цепочка не воспроизводится.
+  - Verification: `compileJava`, `test obfuscateJar`.
+
+- [x] Task 44: Данные, анимации и иконки NameTags
+  - Acceptance: портированы `NameTagData`, `NameTagAnimations`, `NameTagFont` (атласы `a/aa/c/cc`), `NameTagSvg` (`close.json`/`friends.json`), кэш спрайтов предметов; геометрия плашки, гистерезис упрощения и кривые анимации соответствуют донору; `VoiceIcon` остаётся `NONE`.
   - Verification: `compileJava`.
 
-- [ ] Task 44: Данные, анимации и иконки NameTags
-  - Acceptance: портированы `GlyphQuad`, `NameTagEntry`, `NameTagAnimations`, `AnimatedInt`, `DistanceScale`, `ItemIconCache`, `ItemIcons`, LOADER шрифтов `a/aa/c/cc`, SVG `close.json`/`friends.json`; геометрия плашки и анимации соответствуют донору; `VoiceIcon` остаётся `NONE`.
-  - Verification: `compileJava`.
-
-- [ ] Task 45: NameTagCache с безопасной видимостью
-  - Acceptance: компоновка и отрисовка плашки портированы, но `disableDepthTest`/`glDepthFunc(519)` исключены, depth test остаётся включённым, кандидаты фильтруются по прямой видимости; `FramebufferSwap` не переносится; ничего не рисуется сквозь стены или блоки.
+- [x] Task 45: NameTagCache с безопасной видимостью
+  - Acceptance: компоновка и отрисовка плашки портированы, но `disableDepthTest`/`glDepthFunc(519)` исключены, конвейеры используют `LEQUAL_DEPTH_TEST` и `depthWrite(false)`, кандидаты фильтруются по `canSee` с кэшем на тик; `FramebufferSwap` не переносится; ничего не рисуется сквозь стены или блоки.
   - Verification: `compileJava`; поиск по портированному коду не находит выключения depth test и сквозьстенных хуков.
 
-- [ ] Task 46: Переход рендера на 3D и финальная сборка
-  - Acceptance: рендер идёт через `EventRender3D` с камерой и матрицей мира; настройка `Ванильные неймтеги` управляет подавлением ванильного лейбла; релиз и бамп версий не публиковать.
+- [x] Task 46: Переход рендера на 3D и финальная сборка
+  - Acceptance: рендер идёт через `EventRender3D` с камерой и матрицей мира; при отказе инициализации шейдеров работает fallback на `render2DLegacy(EventScreen)`; настройка `Ванильные неймтеги` управляет подавлением ванильного лейбла; релиз и бамп версий не публиковать.
   - Verification: `compileJava`, `test obfuscateJar`, `git diff --check`; в портированных файлах нет упоминаний источника и сторонних clients.

@@ -226,9 +226,14 @@ Plan: `tasks/plan-killeffect.md`
 
 ## Phase 15: Порт NameTags (этап 2 — шейдерный стек донора)
 
-- [ ] Task 42: Шейдерные ресурсы донора
-- [ ] Task 43: Шейдерный Java-стек донора
-- [ ] Task 44: Данные, анимации и иконки NameTags
-- [ ] Task 45: NameTagCache с безопасной видимостью
-- [ ] Task 46: Переход рендера на 3D и финальная сборка
+- [x] Task 42: Шейдерные ресурсы донора
+  - Status: шейдеры `nametag_text`, `nametag_text_blur`, `nametag_texture`, `nametag_rect`, `nametag_liquidglass_rect`, `nametag_svg` адаптированы под GLSL 330/UBO; `circle` не нужен (используется только `Trajectories` донора); чужие шейдеры не тронуты.
+- [x] Task 43: Шейдерный Java-стек донора
+  - Status: `NameTagPipelines`/`NameTagRenderer` на `RenderPipeline`/UBO; std140, uniform-имена, атрибуты и depth проверены; liquidglass использует Kawase-бэкдроп с LOD 0 вместо донорской mip-цепочки (нет API в 1.21.11).
+- [x] Task 44: Данные, анимации и иконки NameTags
+  - Status: `NameTagData`, `NameTagAnimations`, `NameTagFont` (`a/aa/c/cc`), `NameTagSvg`, кэш спрайтов портированы; метрики, кривые и гистерезис сверены с донором; `VoiceIcon` = `NONE`.
+- [x] Task 45: NameTagCache с безопасной видимостью
+  - Status: `LEQUAL_DEPTH_TEST`, `depthWrite(false)`, `canSee` с кэшем на тик; `disableDepthTest`/`glDepthFunc(519)`/`FramebufferSwap` не переносятся.
+- [x] Task 46: Переход рендера на 3D и финальная сборка
+  - Status: рендер через `EventRender3D`, fallback на 2D при ошибке шейдеров, `Ванильные неймтеги` управляет лейблом; `test obfuscateJar` зелёный.
   - Verification: `compileJava`, `test obfuscateJar`, `git diff --check`; релиз и бамп версий не делать.

@@ -23,6 +23,7 @@ import ru.fluxvisuals.event.EventInit;
 import ru.fluxvisuals.event.impl.EventChangeWorld;
 import ru.fluxvisuals.event.impl.EventScreen;
 import ru.fluxvisuals.event.render.EventRender3D;
+import ru.fluxvisuals.render.nametags.NameTagRenderer;
 import ru.fluxvisuals.module.api.Category;
 import ru.fluxvisuals.module.api.IModule;
 import ru.fluxvisuals.module.api.Module;
@@ -55,26 +56,26 @@ public class NameTags extends Module {
    private static final Map<PlayerEntity, TagData> tagCache = new HashMap<>();
    private static long lastVisibleCacheTime = 0L;
 
-   public final ModeSetting hpMode = new ModeSetting("HP mode", "Health points", "Health points", "Hearts");
-   public final SliderSetting size = new SliderSetting("Size", 0.35F, 0.01F, 1.0F, 0.05F, false);
-   public final BooleanSetting background = new BooleanSetting("Background", true);
-   public final SliderSetting opacity = new SliderSetting("Opacity", 100.0F, 0.0F, 100.0F, 5.0F, true)
+   public final ModeSetting hpMode = new ModeSetting("Режим HP", "Очки здоровья", "Очки здоровья", "Сердца");
+   public final SliderSetting size = new SliderSetting("Размер", 0.35F, 0.01F, 1.0F, 0.05F, false);
+   public final BooleanSetting background = new BooleanSetting("Фон плашки", true);
+   public final SliderSetting opacity = new SliderSetting("Прозрачность плашки", 100.0F, 0.0F, 100.0F, 5.0F, true)
          .hidden(() -> !this.background.get());
-   public final SliderSetting range = new SliderSetting("Range", 64.0F, 8.0F, 256.0F, 4.0F, false);
+   public final SliderSetting range = new SliderSetting("Дистанция", 64.0F, 8.0F, 256.0F, 4.0F, false);
    public final MultiBooleanSetting targets = new MultiBooleanSetting(
-         "Targets",
-         new BooleanSetting("Friends", true),
-         new BooleanSetting("Enemies", true),
-         new BooleanSetting("Enemies in armor", false)
+         "Цели",
+         new BooleanSetting("Друзья", true),
+         new BooleanSetting("Враги", true),
+         new BooleanSetting("Враги только в броне", false)
    );
    public final ListSetting renderParts = new ListSetting(
-         "Render parts", "Prefix", "Armor", "Left hand", "Right hand", "Color HP"
+         "Что рендерить", "Префикс", "Броня", "Левая рука", "Правая рука", "Цветное HP"
    );
-   public final BooleanSetting vanillaTags = new BooleanSetting("Vanilla nametags", false);
-   public final BooleanSetting hideEmptySlots = new BooleanSetting("Hide empty slots", false);
-   public final BooleanSetting itemCount = new BooleanSetting("Item count", true);
-   public final BooleanSetting simplifyFar = new BooleanSetting("Simplify far", false);
-   public final SliderSetting simplifyRange = new SliderSetting("Simplify range", 30.0F, 8.0F, 128.0F, 2.0F, false)
+   public final BooleanSetting vanillaTags = new BooleanSetting("Ванильные неймтеги", false);
+   public final BooleanSetting hideEmptySlots = new BooleanSetting("Скрывать пустые слоты", false);
+   public final BooleanSetting itemCount = new BooleanSetting("Количество предметов", true);
+   public final BooleanSetting simplifyFar = new BooleanSetting("Упрощать вдали", false);
+   public final SliderSetting simplifyRange = new SliderSetting("Дистанция упрощения", 30.0F, 8.0F, 128.0F, 2.0F, false)
          .hidden(() -> !this.simplifyFar.get());
 
    private static final float TAG_FONT_SIZE = 25.0F;
@@ -99,10 +100,10 @@ public class NameTags extends Module {
    private float tickDelta = 0.0F;
 
    public NameTags() {
-      this.renderParts.selected.add("Prefix");
-      this.renderParts.selected.add("Armor");
-      this.renderParts.selected.add("Left hand");
-      this.renderParts.selected.add("Color HP");
+      this.renderParts.selected.add("Префикс");
+      this.renderParts.selected.add("Броня");
+      this.renderParts.selected.add("Левая рука");
+      this.renderParts.selected.add("Цветное HP");
       this.addSettings(new Setting[]{
             this.hpMode,
             this.size,
@@ -124,12 +125,13 @@ public class NameTags extends Module {
       visibleCache.clear();
       tagCache.clear();
       this.visiblePlayers.clear();
+      NameTagRenderer.clear();
    }
 
    @EventInit
    public void onRender3D(EventRender3D event) {
       this.tickDelta = event.getTickDelta();
-      this.updatePositions(this.tickDelta);
+      NameTagRenderer.render(this, event);
    }
 
    private void updatePositions(float tickDelta) {
@@ -146,9 +148,9 @@ public class NameTags extends Module {
 
       Vec3d cam = mc.gameRenderer.getCamera().getCameraPos();
       double maxDistSq = this.range.get() * (double) this.range.get();
-      boolean friends = this.targets.get("Friends");
-      boolean enemies = this.targets.get("Enemies");
-      boolean enemiesInArmor = this.targets.get("Enemies in armor");
+      boolean friends = this.targets.get("Друзья");
+      boolean enemies = this.targets.get("Враги");
+      boolean enemiesInArmor = this.targets.get("Враги только в броне");
 
       for (PlayerEntity player : mc.world.getPlayers()) {
          if (player == mc.player || !player.isAlive()) continue;
@@ -185,9 +187,19 @@ public class NameTags extends Module {
 
    @EventInit
    public void onRender2D(EventScreen event) {
+      // Stage B: вся отрисовка идёт через world-space shader pipeline в onRender3D.
+      // Старый 2D-стек остаётся только на случай отказа инициализации шейдеров.
+      if (!NameTagRenderer.hasFailed()) {
+         return;
+      }
+      render2DLegacy(event);
+   }
+
+   private void render2DLegacy(EventScreen event) {
       if (mc.world == null || mc.player == null) {
          return;
       }
+      this.updatePositions(this.tickDelta);
       Renderer2D renderer = event.renderer();
       DrawContext drawContext = event.drawContext();
       Vec3d cameraPos = mc.gameRenderer.getCamera().getCameraPos();
@@ -240,7 +252,7 @@ public class NameTags extends Module {
    }
 
    private String hpModeText(float hp, float maxHp) {
-      if (this.hpMode.is("Hearts")) {
+      if (this.hpMode.is("Сердца")) {
          int full = (int) Math.ceil(hp / 2.0F);
          return "❤".repeat(Math.max(0, full)) + " " + String.format("%.1f", hp).replace(',', '.');
       }
@@ -285,7 +297,7 @@ public class NameTags extends Module {
       renderer.text(FontRegistry.INTER_MEDIUM, textX, textY, TAG_FONT_SIZE, cached.name,
             Renderer2D.ColorUtil.getTextColor(1, 1));
       textX += cached.nameWidth + gap;
-      int hpColor = this.renderParts.isSelected("Color HP") ? getHealthColor(hp / maxHp)
+      int hpColor = this.renderParts.isSelected("Цветное HP") ? getHealthColor(hp / maxHp)
             : Renderer2D.ColorUtil.getTextColor(1, 1);
       renderer.text(FontRegistry.INTER_MEDIUM, textX, textY, TAG_FONT_SIZE, cached.hpText, hpColor);
 
@@ -295,10 +307,10 @@ public class NameTags extends Module {
 
       if (!near) return;
 
-      if (this.renderParts.isSelected("Armor")) {
+      if (this.renderParts.isSelected("Броня")) {
          this.queueArmorIcons(renderer, entity, screenX, screenY, scale);
       }
-      if (this.renderParts.isSelected("Right hand") || this.renderParts.isSelected("Left hand")) {
+      if (this.renderParts.isSelected("Правая рука") || this.renderParts.isSelected("Левая рука")) {
          renderer.pushTranslation(legsX, legsY);
          renderer.pushScale(scale, scale);
          this.drawPlayerHands(renderer, entity, legsX, legsY, scale);
@@ -390,11 +402,11 @@ public class NameTags extends Module {
    private void drawPlayerHands(Renderer2D renderer, PlayerEntity player,
                                 float screenX, float screenY, float scale) {
       List<ItemStack> items = new ArrayList<>();
-      // Донор: «Левая рука» = offhand, «Правая рука» = main hand.
-      if (this.renderParts.isSelected("Left hand") && !player.getOffHandStack().isEmpty()) {
+      // «Левая рука» = offhand, «Правая рука» = main hand.
+      if (this.renderParts.isSelected("Левая рука") && !player.getOffHandStack().isEmpty()) {
          items.add(player.getOffHandStack());
       }
-      if (this.renderParts.isSelected("Right hand") && !player.getMainHandStack().isEmpty()) {
+      if (this.renderParts.isSelected("Правая рука") && !player.getMainHandStack().isEmpty()) {
          items.add(player.getMainHandStack());
       }
       if (items.isEmpty()) return;
