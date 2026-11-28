@@ -213,8 +213,8 @@ public class GameSession
             LauncherLog.Info($"Mod version changed ({_cfg.ModVersion} -> {remoteVersion}), redownloading...");
             needsModRedownload = true;
         }
-        // Страховка: маркер версии на сервере захардкожен и при новом билде не меняется,
-        // поэтому автообновление по нему молча не срабатывало. Сверяем размер удалённого jar с локальным.
+        // Страховка: если версия в URL не задана, сверяем размер jar на сервере с локальным,
+        // чтобы автообновление не пропустило новую сборку с тем же именем файла.
         else if (File.Exists(modDst) && await ModSizeChangedAsync(modUrl, modDst, ct))
         {
             LauncherLog.Info("Mod size changed on server, redownloading...");
