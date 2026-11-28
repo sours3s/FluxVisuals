@@ -28,7 +28,7 @@ public final class TooltipRegistrar {
       registerModule(TargetESP.class, "ESP для цели в прицеле: бокс, линии, здоровье, название, дистанция.");
       registerModule(SkinManager.class, "Менеджер скинов: загрузка кастомных скинов, случайные скины, скины по никам.");
       registerModule(SmoothCamera.class, "Сглаживание вращения камеры для плавных движений головы (third-person).");
-      registerModule(ItemPhysics.class, "Физика предметов на земле: вращение, парение, анимация подбора.");
+      registerModule(ItemPhysics.class, "Реалистичное вращение и физика предметов на земле.");
       registerModule(SwingAnimation.class, "Анимация замаха руки: старый стиль, сглаживание, раскачивание, 1.7/1.8/1.9 стили.");
       registerModule(NoRender.class, "Отключает рендер выбранных элементов: туман, небо, облака, партиклы, эндерменов и др.");
       registerModule(CustomWorld.class, "Единые настройки мира: время суток (пресеты и кастомные тики), погода и FullBright.");

@@ -249,3 +249,19 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
 - [x] Task 34: Регистрация, событие атаки, финальная сборка
   - Acceptance: модуль зарегистрирован, событие атаки подключено через target event API (`AttackEvent`), mixin-конфиг обновлён, нейминг под `fluxvisuals`, релиз не публиковать.
   - Verification: `compileJava` и `test obfuscateJar` — `BUILD SUCCESSFUL` с `-PgrunteonXmx=768m`; упоминаний источника в портированных файлах нет; релиз и бамп версий не делались.
+
+### Phase 12: Порт ItemPhysics
+
+- [x] Task 35: Модуль `ItemPhysics` и настройки
+  - Acceptance: донорский модуль без настроек; имя `Item Physics`, описание `Реалистичное вращение и физика предметов на земле`, категория `Visuals`, ключ конфига сохраняется.
+  - Verification: `compileJava` — `BUILD SUCCESSFUL`.
+  - Known deviation: target использует `bind = -1` вместо донорского `bindKey = 0`, что эквивалентно отсутствию бинда; singleton сохранён для mixin-доступа.
+
+- [x] Task 36: Рендер-хуки выброшенных предметов
+  - Acceptance: донорская логика в полном объёме — подавление `MatrixStack.multiply(Quaternionfc)` в `ItemEntityRenderer.render` и для `ItemDisplayContext.GROUND` translate `0.0F, 0.47F, 0.0F` + rotation X `90°` в `ItemRenderer.renderItem`.
+  - Verification: `compileJava` — `BUILD SUCCESSFUL`; точка инъекции подтверждена байткодом 1.21.11 (`MatrixStack.multiply:(Lorg/joml/Quaternionfc;)V`).
+  - Known deviation: дескриптор метода и тип `Quaternionfc` адаптированы под 1.21.11; `require = 0` сохранён только у Redirect, как у донора.
+
+- [x] Task 37: Регистрация, конфиг и финальная сборка
+  - Acceptance: модуль уже зарегистрирован в `Manager`, оба mixin уже в конфиге, нейминг под `fluxvisuals`, подсказки приведены к донорскому описанию, релиз и бамп версий не публиковать.
+  - Verification: `compileJava` и `test obfuscateJar` — `BUILD SUCCESSFUL` с `-PgrunteonXmx=768m`; `git diff --check` чистый; упоминаний источника в портированных файлах нет.

@@ -174,7 +174,7 @@ public final class TooltipManager {
       registerModule("Smooth Camera", "Плавно сглаживает повороты камеры за спиной игрока (убирает рывки).");
       registerModule("Block Outline", "Красивая подсветка граней блока, на который смотрит игрок.");
       registerModule("Hit Effect", "Визуальный эффект при попадании по сущности: вспышка или частицы.");
-      registerModule("Item Physics", "Заставляет выброшенные предметы плавно вращаться в воздухе.");
+      registerModule("Item Physics", "Реалистичное вращение и физика предметов на земле.");
       registerModule("Kill Effect", "Пять типов эффекта при убийстве: молния, кровь, взрыв, сердце и дым.");
       registerModule("Hand Effects", "Эффекты руки: стекло, свечение, контуры и анимированные шейдеры.");
 

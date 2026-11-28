@@ -193,3 +193,20 @@ Plan: `tasks/plan-killeffect.md`
   - Acceptance: модуль уже зарегистрирован в `Manager`, событие атаки подключено, mixin-конфиг обновлён, нейминг под `fluxvisuals`, упоминаний источника нет.
   - Files: `fluxvisuals.mixins.json`.
   - Status: `compileJava` и `test obfuscateJar` зелёные (`-PgrunteonXmx=768m`); релиз и бамп версий не делались.
+
+## Phase 12: Порт ItemPhysics
+
+- [x] Task 35: Модуль `ItemPhysics` и настройки
+  - Acceptance: донорский модуль без настроек, имя/описание/категория приведены к донорским, конфиг по имени `Item Physics` сохранён.
+  - Files: `ItemPhysics.java`.
+  - Status: `compileJava` зелёный.
+
+- [x] Task 36: Рендер-хуки выброшенных предметов
+  - Acceptance: подавление ванильного вращения и применение `translate(0, 0.47F, 0)` + `RotationAxis.POSITIVE_X.rotationDegrees(90.0F)` для `GROUND` с донорскими константами.
+  - Files: `ItemEntityRendererPhysicsMixin.java`, `ItemRendererPhysicsMixin.java`.
+  - Status: `compileJava` зелёный; точка инъекции подтверждена байткодом 1.21.11.
+
+- [x] Task 37: Регистрация, конфиг и финальная сборка
+  - Acceptance: регистрация и mixin-конфиг без изменений, подсказки обновлены, нейминг под `fluxvisuals`, релиз не публиковать.
+  - Files: `TooltipRegistrar.java`, `TooltipManager.java`.
+  - Status: `compileJava` и `test obfuscateJar` зелёные; `git diff --check` чистый; релиз и бамп версий не делались.

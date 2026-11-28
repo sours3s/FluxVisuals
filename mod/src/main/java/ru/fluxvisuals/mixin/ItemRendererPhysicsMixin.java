@@ -19,11 +19,9 @@ import ru.fluxvisuals.module.impl.visuals.ItemPhysics;
 
 /**
  * Кладет выброшенный предмет плоско на землю, когда включён Item Physics.
- *
- * Это вторая половина логики эталонной реализации: пока
- * {@link ItemEntityRendererPhysicsMixin} убирает вращение, здесь для контекста
- * {@link ItemDisplayContext#GROUND} модель поднимается и поворачивается на 90°
- * по X — предмет лежит, а не стоит «торчком» и не парит в воздухе.
+ * Пока {@link ItemEntityRendererPhysicsMixin} убирает вращение, здесь для
+ * контекста {@link ItemDisplayContext#GROUND} модель поднимается на 0.47 по Y
+ * и поворачивается на 90° по X.
  */
 @Environment(EnvType.CLIENT)
 @Mixin(ItemRenderer.class)
