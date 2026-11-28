@@ -38,7 +38,7 @@ public abstract class PlayerEntityRendererMixin {
             return;
         }
 
-        if (nameTags.entityType.get("Player")) {
+        if (!nameTags.vanillaTags.get()) {
             ci.cancel();
         }
     }
