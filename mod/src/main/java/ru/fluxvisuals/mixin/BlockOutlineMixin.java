@@ -19,9 +19,10 @@ public abstract class BlockOutlineMixin {
    @Inject(
          method = "drawBlockOutline(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;DDDLnet/minecraft/client/render/state/OutlineRenderState;IF)V",
          at = @At("HEAD"),
-         cancellable = true
+         cancellable = true,
+         require = 0
    )
-   private void fluxvisuals$cancelVanillaOutline(
+   private void fluxvisuals$hideVanillaBlockOutline(
          MatrixStack matrices,
          VertexConsumer vertexConsumer,
          double x,
@@ -32,8 +33,7 @@ public abstract class BlockOutlineMixin {
          float alpha,
          CallbackInfo ci
    ) {
-      BlockOutline module = BlockOutline.getInstance();
-      if (module != null && module.enable) {
+      if (BlockOutline.shouldHideVanillaOutline()) {
          ci.cancel();
       }
    }

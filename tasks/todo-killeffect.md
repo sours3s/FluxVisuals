@@ -144,3 +144,30 @@ Plan: `tasks/plan-killeffect.md`
   - Acceptance: singleton-модуль, точные `Animation`/`Easing`/`Easings`, настройки `Animation`, `Stack Messages`, `Anim Speed` (180/150/300, increment 1), анимации инвентаря, таба, чата, хотбара и букв, склейка сообщений. Самодельные режимы удалены.
   - Verification: `compileJava`, `test obfuscateJar` — `BUILD SUCCESSFUL`; `git diff --check` чистый.
   - Status: готово локально; хотбар обёрнут через `@WrapOperation` с безопасным pop матрицы; релиз не публиковался, ждём следующий модуль.
+
+## Phase 10: Порт BlockOutline
+
+- [x] Task 26: Настройки и каркас модуля
+  - Acceptance: точные 12 настроек, порядок, значения и видимость по эталону; hidden-условия адаптированы под target API.
+  - Files: `BlockOutline.java`, `ColorSetting.java`, `Module.java`.
+  - Status: `compileJava` зелёный.
+
+- [x] Task 27: Геометрия и анимация переключения блоков
+  - Acceptance: `getOutlineShape`, `expand(0.002)`, дистанция 10000, smoothstep, длительность `max(35, round(280 / speed))`, объявленные `LINE_WIDTH`/`BASE_SWITCH_ANIMATION_MS` сохранены.
+  - Files: `BlockOutline.java`.
+  - Status: `compileJava` зелёный.
+
+- [x] Task 28: Обычный рендер заливки и контура
+  - Acceptance: 6 граней с отсечением по камере, 12 линий, `depthTest = !3D`, градиент и альфа по эталону.
+  - Files: `BlockOutline.java`, `ColorUtil.java`.
+  - Status: `compileJava` зелёный.
+
+- [x] Task 29: Шейдерный рендер и ассеты
+  - Acceptance: `BlockOutlineShaderUtil` с 21 режимом и скрытыми `Солнце`/`Комета`, UBO/pipeline под `fluxvisuals`, нейтральный pass label; шейдеры совпадают с эталоном.
+  - Files: `BlockOutlineShaderUtil.java`, `assets/fluxvisuals/shaders/core/block_shader.vsh/.fsh`.
+  - Status: `compileJava` и `test obfuscateJar` зелёные.
+
+- [x] Task 30: Скрытие ванильного контура, регистрация, финальная сборка
+  - Acceptance: `BlockOutlineMixin` с static guard, регистрация и mixin-конфиг без изменений, упоминаний источника нет.
+  - Files: `BlockOutlineMixin.java`.
+  - Status: готово локально; `git diff --check` чистый; релиз и бамп версий не делались.

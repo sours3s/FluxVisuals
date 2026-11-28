@@ -1,6 +1,7 @@
 package ru.fluxvisuals.module.api;
 
 import com.google.gson.JsonObject;
+import java.awt.Color;
 import java.util.ArrayList;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -11,6 +12,7 @@ import ru.fluxvisuals.module.api.setting.Config;
 import ru.fluxvisuals.module.api.setting.Setting;
 import ru.fluxvisuals.module.api.setting.impl.BindSettings;
 import ru.fluxvisuals.module.api.setting.impl.BooleanSetting;
+import ru.fluxvisuals.module.api.setting.impl.ColorSetting;
 import ru.fluxvisuals.module.api.setting.impl.HueSetting;
 import ru.fluxvisuals.module.api.setting.impl.ListSetting;
 import ru.fluxvisuals.module.api.setting.impl.ModeSetting;
@@ -132,6 +134,8 @@ public class Module extends Config {
             propertiesObject.addProperty(set.name, ((BindSettings)set).key);
          } else if (set instanceof StringSetting) {
             propertiesObject.addProperty(set.name, ((StringSetting)set).input);
+         } else if (set instanceof ColorSetting) {
+            propertiesObject.addProperty(set.name, ((ColorSetting)set).getColor().getRGB());
          } else if (set instanceof HueSetting) {
             propertiesObject.addProperty(set.name, ((HueSetting)set).current);
          } else if (set instanceof MultiBooleanSetting) {
@@ -172,6 +176,8 @@ public class Module extends Config {
                   ((BindSettings)set).key = propertiesObject.get(set.name).getAsInt();
                } else if (set instanceof StringSetting) {
                   ((StringSetting)set).input = propertiesObject.get(set.name).getAsString();
+               } else if (set instanceof ColorSetting) {
+                  ((ColorSetting)set).setColor(new Color(propertiesObject.get(set.name).getAsInt(), true));
                } else if (set instanceof HueSetting) {
                   ((HueSetting)set).current = propertiesObject.get(set.name).getAsFloat();
                } else if (set instanceof MultiBooleanSetting) {

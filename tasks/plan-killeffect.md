@@ -205,3 +205,27 @@ Source spec: запрос пользователя от 26.11.2026 — «сое�
   - Verification: `compileJava`, `test obfuscateJar` — `BUILD SUCCESSFUL`; `git diff --check` чистый; релиз не публиковался.
   - Files: `BetterMinecraft.java`, `betterminecraft/{Animation,Easing,Easings}.java`, `Manager.java`, `InGameHudMixin.java`, `BetterMinecraft*Mixin.java`, `fluxvisuals.mixins.json`.
   - Known deviation: хотбар-сдвиг обёрнут через `@WrapOperation` вокруг вызова `renderHotbar` с `finally`-pop, чтобы не утекла матрица при отмене ванильного хотбара кастомным HUD; формула `30f * (1f - hotbarT)` и порог `0.001f` сохранены. `animSpeed` остаётся на верхнем уровне настроек, потому что UI-группа FluxVisuals принимает только boolean-настройки; значения 180/150/300/increment 1 совпадают с эталоном.
+
+### Phase 10: Порт BlockOutline
+
+- [x] Task 26: Настройки и каркас модуля
+  - Acceptance: точные режимы `Обычный`/`Шейдер`, 21 шейдерный тип, `Скорость шейдера` 1.0/0.1/1.0/0.01, `Прозрачность контура` 150/0/255/1, `Скорость анимации` 2.0/1.0/3.0/0.1, `3D`, `Показывать заливку`, `Прозрачность заливки` 50/0/255/1, `Свой цвет`, `Цвет 1`, `Градиент`, `Цвет 2`, порядок и видимость по эталону.
+  - Verification: `compileJava` — `BUILD SUCCESSFUL`.
+  - Known deviation: эталонные `visibility`- suppliers инвертированы в target `hidden`; `ColorSetting` реализован через `HueSetting` с сохранением точного RGB и записью/чтением RGB в `Module.save()`/`load()`.
+
+- [x] Task 27: Геометрия и анимация переключения блоков
+  - Acceptance: `getOutlineShape`, `expand(0.002)`, дистанция 10000, `LINE_WIDTH = 6.5F`, smoothstep-интерполяция коробок, длительность `max(35, round(280 / speed))`, сброс при смене цели/пустом shape.
+  - Verification: `compileJava` — `BUILD SUCCESSFUL`.
+
+- [x] Task 28: Обычный рендер заливки и контура
+  - Acceptance: те же 6 граней с отсечением по камере, 12 линий, `depthTest = !3D`, цвет/градиент/альфа по эталону.
+  - Verification: `compileJava` — `BUILD SUCCESSFUL`.
+
+- [x] Task 29: Шейдерный рендер и ассеты
+  - Acceptance: перенос shader util, 21 режим + скрытые `Солнце`/`Комета`, UBO/pipeline, идентичные шейдеры под namespace мода, `threeD` выбирает pipeline без depth.
+  - Verification: `compileJava`, `test obfuscateJar` — `BUILD SUCCESSFUL`; шейдеры совпадают с эталоном после нормализации переводов строк.
+  - Known deviation: pass label переименован в `_FluxBlockShader_`; вызовы `DrawParameters` используют intermediate-имена `comp_752()`/`comp_751()`.
+
+- [x] Task 30: Скрытие ванильного контура, регистрация, финальная сборка
+  - Acceptance: mixin на `drawBlockOutline`, static guard, регистрация в `Manager`, записи в mixin-конфиге, никаких упоминаний источника в коде.
+  - Verification: `test obfuscateJar` — `BUILD SUCCESSFUL` с `-PgrunteonXmx=768m` из-за занятой памяти запущенным клиентом; `git diff --check` чистый; релиз не публиковать.
