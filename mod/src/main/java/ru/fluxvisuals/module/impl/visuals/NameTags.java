@@ -96,6 +96,7 @@ public class NameTags extends Module {
    private static final double SCALE_REFERENCE_DISTANCE = 4.0;
 
    private final List<PlayerEntity> visiblePlayers = new ArrayList<>();
+   private float tickDelta = 0.0F;
 
    public NameTags() {
       this.renderParts.selected.add("Prefix");
@@ -127,7 +128,8 @@ public class NameTags extends Module {
 
    @EventInit
    public void onRender3D(EventRender3D event) {
-      this.updatePositions(event.getTickDelta());
+      this.tickDelta = event.getTickDelta();
+      this.updatePositions(this.tickDelta);
    }
 
    private void updatePositions(float tickDelta) {
@@ -194,7 +196,10 @@ public class NameTags extends Module {
       double simplifyDistSq = this.simplifyRange.get() * (double) this.simplifyRange.get();
 
       for (PlayerEntity player : this.visiblePlayers) {
-         Vec3d entityPos = new Vec3d(player.getX(), player.getY(), player.getZ());
+         double px = MathHelper.lerp(this.tickDelta, player.lastRenderX, player.getX());
+         double py = MathHelper.lerp(this.tickDelta, player.lastRenderY, player.getY());
+         double pz = MathHelper.lerp(this.tickDelta, player.lastRenderZ, player.getZ());
+         Vec3d entityPos = new Vec3d(px, py, pz);
          double distance = cameraPos.distanceTo(entityPos);
          float scale = (float) (SCALE_REFERENCE_DISTANCE / Math.max(distance, 1.0));
          scale = MathHelper.clamp(scale, MIN_DISTANCE_SCALE, MAX_DISTANCE_SCALE) * fontScale;
